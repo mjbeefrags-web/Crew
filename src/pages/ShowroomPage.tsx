@@ -1,0 +1,340 @@
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { Button } from '../components/Button';
+import { featuredProducts } from '../data/mock/catalog';
+import type { Product } from '../domain/product';
+import { useCommerceStore } from '../state/commerceStore';
+import type { CartLine } from '../domain/commerce';
+import { HomepageIntroSections, HomepageStorySections } from './HomepageSections';
+import { formatCurrency } from '../utils/formatCurrency';
+import { useLocation } from 'react-router-dom';
+
+const HoodieViewer = lazy(() => import('../components/HoodieViewer').then((module) => ({ default: module.HoodieViewer })));
+const CrewwwWorld = lazy(() => import('../scenes/CrewwwWorld').then((module) => ({ default: module.CrewwwWorld })));
+
+const worldCollections = {
+  graphic: 'CREWWW / GRAPHIC HOODIES',
+  outside: 'CREWWW / OUTSIDE HOURS',
+  city: 'CREWWW / CITY NOTES',
+  essentials: 'CREWWW / ESSENTIALS',
+} as const;
+
+type Origin = { x: number; y: number; scale: number };
+const categories = ['All pieces', 'Jackets', 'Tops', 'Hoodies', 'Shirts', 'Denim', 'Trousers', 'Accessories'];
+const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'ONE SIZE'];
+export function ShowroomPage() {
+  const location = useLocation();
+  const [category, setCategory] = useState('All pieces');
+  const [collection, setCollection] = useState('');
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState('featured');
+  const [size, setSize] = useState('');
+  const [color, setColor] = useState('');
+  const [availableOnly, setAvailableOnly] = useState(false);
+  const [newOnly, setNewOnly] = useState(false);
+  const [bestOnly, setBestOnly] = useState(false);
+  const [minPrice, setMinPrice] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(250);
+  const wishlist = useCommerceStore((state) => state.wishlist);
+  const cartLines = useCommerceStore((state) => state.cartLines);
+  const addCartLine = useCommerceStore((state) => state.addCartLine);
+  const removeCartLine = useCommerceStore((state) => state.removeCartLine);
+  const toggleWishlistState = useCommerceStore((state) => state.toggleWishlist);
+  const cartCount = cartLines.reduce((sum, line) => sum + line.quantity, 0);
+  const [cartOpen, setCartOpen] = useState(false);
+  const cartOpenerRef = useRef<HTMLElement | null>(null);
+  const cartCloseRef = useRef<HTMLButtonElement | null>(null);
+  const [activeProduct, setActiveProduct] = useState<Product | null>(null);
+  const [origin, setOrigin] = useState<Origin>({ x: 0, y: 0, scale: 0.5 });
+  const [closing, setClosing] = useState(false);
+  const [activeSize, setActiveSize] = useState('M');
+  const [activeColor, setActiveColor] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [details, setDetails] = useState('');
+  const [toast, setToast] = useState('');
+  const cardRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const transitionTimerRef = useRef<number | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
+  const transitionLockRef = useRef(false);
+  const closingRef = useRef(false);
+  const historyMarkerRef = useRef(false);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const originForProduct = (productId: string): Origin | null => {
+    const rect = cardRefs.current[productId]?.getBoundingClientRect();
+    if (!rect) return null;
+    return { x: rect.left + rect.width / 2 - window.innerWidth / 2, y: rect.top + rect.height / 2 - window.innerHeight / 2, scale: rect.width / Math.min(500, window.innerWidth * 0.8) };
+  };
+
+  const selectWorldDestination = (destination: keyof typeof worldCollections) => {
+    setCategory('All pieces'); setCollection(worldCollections[destination]); setQuery(''); setSort('featured'); setSize(''); setColor('');
+    setAvailableOnly(false); setNewOnly(false); setBestOnly(false); setMinPrice(0); setMaxPrice(250);
+    if (window.location.hash !== '#collection') window.history.pushState({}, '', `${location.pathname}${location.search}#collection`);
+    const reducedMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.requestAnimationFrame(() => document.getElementById('collection')?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' }));
+  };
+
+  useEffect(() => {
+    const openBag = (event: Event) => {
+      cartOpenerRef.current = (event as CustomEvent<HTMLElement>).detail ?? document.activeElement as HTMLElement;
+      setCartOpen(true);
+    };
+    window.addEventListener('arcfield:open-bag', openBag);
+    return () => window.removeEventListener('arcfield:open-bag', openBag);
+  }, []);
+
+  useEffect(() => {
+    if (!cartOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.requestAnimationFrame(() => cartCloseRef.current?.focus());
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeCart();
+      }
+      if (event.key !== 'Tab') return;
+      const dialog = document.querySelector<HTMLElement>('.cart-drawer');
+      const focusable = dialog?.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), [tabindex="0"]');
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [cartOpen]);
+
+  const closeCart = () => {
+    setCartOpen(false);
+    window.setTimeout(() => cartOpenerRef.current?.focus({ preventScroll: true }), 0);
+  };
+
+  const openCart = (opener: HTMLElement) => {
+    cartOpenerRef.current = opener;
+    setCartOpen(true);
+  };
+
+  useEffect(() => () => {
+    if (transitionTimerRef.current !== null) window.clearTimeout(transitionTimerRef.current);
+    if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current);
+  }, []);
+
+  const products = useMemo(() => {
+    const result = featuredProducts.filter((product) => {
+      const matchesCategory = category === 'All pieces' || product.category.toLowerCase() === category.toLowerCase();
+      const matchesQuery = `${product.name} ${product.category} ${product.collection}`.toLowerCase().includes(query.toLowerCase());
+      return matchesCategory && (!collection || product.collection === collection) && matchesQuery && (!size || product.sizes.includes(size)) &&
+        (!color || product.colors.some((item) => item.name === color)) && (!availableOnly || product.available) &&
+        (!newOnly || product.isNew) && (!bestOnly || product.bestSeller) && product.price >= minPrice && product.price <= maxPrice;
+    });
+    if (sort === 'price-low') result.sort((a, b) => a.price - b.price);
+    if (sort === 'price-high') result.sort((a, b) => b.price - a.price);
+    if (sort === 'name') result.sort((a, b) => a.name.localeCompare(b.name));
+    return result;
+  }, [category, collection, query, sort, size, color, availableOnly, newOnly, bestOnly, minPrice, maxPrice]);
+
+  const openStudio = (product: Product) => {
+    if (transitionLockRef.current || activeProduct) return;
+    const sourceCard = cardRefs.current[product.id];
+    const capturedOrigin = originForProduct(product.id);
+    if (!sourceCard || !capturedOrigin) return;
+    transitionLockRef.current = true;
+    closingRef.current = false;
+    restoreFocusRef.current = sourceCard;
+    setClosing(false);
+    setOrigin(capturedOrigin);
+    window.history.pushState({ ...(window.history.state ?? {}), arcfieldInspectionId: product.id }, '', `${location.pathname}${location.search}#inspection`);
+    historyMarkerRef.current = true;
+    setActiveProduct(product);
+    setActiveSize(product.sizes.find((item) => item !== 'ONE SIZE') ?? 'ONE SIZE');
+    setActiveColor(product.colors[0]?.name ?? product.color);
+    setQuantity(1);
+    setDetails('');
+    window.requestAnimationFrame(() => closeButtonRef.current?.focus());
+    transitionTimerRef.current = window.setTimeout(() => {
+      transitionLockRef.current = false;
+      transitionTimerRef.current = null;
+    }, 650);
+  };
+  const closeStudio = () => {
+    if (!activeProduct || closingRef.current) return;
+    const currentOrigin = originForProduct(activeProduct.id);
+    if (currentOrigin) setOrigin(currentOrigin);
+    closingRef.current = true;
+    transitionLockRef.current = true;
+    if (transitionTimerRef.current !== null) window.clearTimeout(transitionTimerRef.current);
+    setClosing(true);
+    const reducedMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const delay = reducedMotion ? 0 : 460;
+    transitionTimerRef.current = window.setTimeout(() => {
+      setActiveProduct(null);
+      setClosing(false);
+      closingRef.current = false;
+      transitionLockRef.current = false;
+      window.setTimeout(() => restoreFocusRef.current?.focus({ preventScroll: true }), 0);
+      transitionTimerRef.current = null;
+    }, delay);
+  };
+  const requestCloseStudio = () => {
+    if (historyMarkerRef.current) {
+      window.history.back();
+      return;
+    }
+    closeStudio();
+  };
+
+  useEffect(() => {
+    if (!activeProduct) return undefined;
+    const previousOverflow = window.document.body.style.overflow;
+    const previousPaddingRight = window.document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - window.document.documentElement.clientWidth;
+    window.document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) window.document.body.style.paddingRight = `${scrollbarWidth}px`;
+    window.requestAnimationFrame(() => closeButtonRef.current?.focus());
+    const onPopState = () => {
+      if (!historyMarkerRef.current) return;
+      historyMarkerRef.current = false;
+      closeStudio();
+    };
+    window.addEventListener('popstate', onPopState);
+    const updateOrigin = () => {
+      const nextOrigin = originForProduct(activeProduct.id);
+      if (nextOrigin) setOrigin(nextOrigin);
+    };
+    window.addEventListener('resize', updateOrigin);
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+      window.removeEventListener('resize', updateOrigin);
+      window.document.body.style.overflow = previousOverflow;
+      window.document.body.style.paddingRight = previousPaddingRight;
+    };
+  }, [activeProduct]);
+
+  const handleStudioKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      requestCloseStudio();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusable = event.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), [tabindex="0"]');
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
+  const showToast = (message: string) => {
+    if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current);
+    setToast(message);
+    toastTimerRef.current = window.setTimeout(() => { setToast(''); toastTimerRef.current = null; }, 2800);
+  };
+  const clearFilters = () => { setCategory('All pieces'); setCollection(''); setQuery(''); setSize(''); setColor(''); setAvailableOnly(false); setNewOnly(false); setBestOnly(false); setMinPrice(0); setMaxPrice(250); setSort('featured'); };
+  const toggleWish = (product: Product) => {
+    const removing = wishlist.includes(product.id);
+    toggleWishlistState(product.id);
+    showToast(removing ? 'Removed from saved pieces.' : 'Saved to your wishlist.');
+  };
+  const addToBag = () => {
+    if (!activeProduct) return;
+    const line: CartLine = { productId: activeProduct.id, size: activeSize, color: activeColor, quantity };
+    addCartLine(line);
+    showToast(`${activeProduct.name} · ${activeColor} · ${activeSize} added to your bag.`);
+  };
+
+  return (
+    <div className="showroom">
+      <section className="showroom-hero" aria-labelledby="showroom-title">
+        <div className="showroom-hero-copy">
+          <p className="showroom-eyebrow"><span className="live-mark" /> CREWWW / YOUR DISTRICT</p>
+          <h1 id="showroom-title" aria-label="The block is yours">The block<br />is <em>yours.</em></h1>
+          <p className="showroom-lede">Find your next layer in the neighborhood.<br />Explore a little or shop the full edit.</p>
+          <a className="hero-cta" href="#collection" onClick={(event) => { event.preventDefault(); clearFilters(); if (window.location.hash !== '#collection') window.history.pushState({}, '', `${location.pathname}${location.search}#collection`); const reducedMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches; document.getElementById('collection')?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' }); }}>SHOP ALL HOODIES <span>↘</span></a>
+        </div>
+        <Suspense fallback={<div className="world-stage world-stage-fallback" aria-label="Loading Crewww district"><div className="world-fallback-scene"><span>CREWWW</span><b>THE BLOCK / FIRST RUN</b></div></div>}><CrewwwWorld onDestination={selectWorldDestination} /></Suspense>
+        <nav className="world-destinations" aria-label="Explore Crewww collections">
+          {(Object.entries(worldCollections) as [keyof typeof worldCollections, string][]).map(([id, name], index) => <a href="#collection" key={id} onClick={(event) => { event.preventDefault(); selectWorldDestination(id); }}><span>0{index + 1}</span><strong>{name.replace('CREWWW / ', '')}</strong><i aria-hidden="true">↗</i></a>)}
+        </nav>
+        <span className="hero-footnote">SELECT A STORE / OR SHOP ALL ↘</span>
+      </section>
+
+      <HomepageIntroSections />
+
+      <section className="collection" id="collection" aria-labelledby="collection-title">
+        <div className="collection-heading">
+          <div><p className="showroom-eyebrow">THE FIRST RUN / 08 HOODIES</p><h2 id="collection-title">Find your <em>crew.</em></h2></div>
+          <p>Heavy fleece, expressive graphics,<br />and room to make the look your own.</p>
+        </div>
+        <div className="catalog-tools">
+          <label className="catalog-search"><span aria-hidden="true">⌕</span><input aria-label="Search pieces" placeholder="Search the collection" value={query} onChange={(event) => setQuery(event.target.value)} /><kbd>↵</kbd></label>
+          <label className="sort-control">SORT BY <select aria-label="Sort products" value={sort} onChange={(event) => setSort(event.target.value)}><option value="featured">Featured</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option><option value="name">Name</option></select></label>
+        </div>
+        <div className="catalog-layout">
+          <aside className="filter-panel" aria-label="Product filters">
+            <div className="filter-title"><span>REFINE</span><button type="button" onClick={clearFilters}>CLEAR ALL</button></div>
+            <fieldset className="filter-group"><legend>Category</legend>{categories.map((item) => <button className={category === item ? 'filter-choice selected' : 'filter-choice'} key={item} type="button" onClick={() => setCategory(item)}>{item}<span>{category === item ? '●' : ''}</span></button>)}</fieldset>
+            <label className="filter-group select-filter"><span>Collection</span><select aria-label="Filter by collection" value={collection} onChange={(event) => setCollection(event.target.value)}><option value="">All collections</option>{[...new Set(featuredProducts.map((item) => item.collection))].map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label className="filter-group select-filter"><span>Size</span><select aria-label="Filter by size" value={size} onChange={(event) => setSize(event.target.value)}><option value="">Any size</option>{sizes.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <fieldset className="filter-group color-filter"><legend>Color</legend><div>{[...new Map(featuredProducts.flatMap((item) => item.colors).map((item) => [item.name, item])).values()].map((item) => <button key={item.name} type="button" title={item.name} aria-label={`Filter color ${item.name}`} aria-pressed={color === item.name} className={color === item.name ? 'color-choice selected' : 'color-choice'} style={{ '--swatch': item.value } as CSSProperties} onClick={() => setColor(color === item.name ? '' : item.name)} />)}</div></fieldset>
+            <fieldset className="filter-group price-filter"><legend>Price range</legend><span>{formatCurrency(minPrice, 'USD')} – {formatCurrency(maxPrice, 'USD')}</span><label>FROM<input type="range" min="0" max={Math.max(0, maxPrice - 10)} step="10" value={minPrice} aria-label="Minimum price" onChange={(event) => setMinPrice(Number(event.target.value))} /></label><label>TO<input type="range" min={Math.min(50, minPrice + 10)} max="250" step="10" value={maxPrice} aria-label="Maximum price" onChange={(event) => setMaxPrice(Number(event.target.value))} /></label></fieldset>
+            <fieldset className="filter-group toggle-filter"><legend>Availability</legend><label><input type="checkbox" checked={availableOnly} onChange={(event) => setAvailableOnly(event.target.checked)} /> In stock</label><label><input type="checkbox" checked={newOnly} onChange={(event) => setNewOnly(event.target.checked)} /> New arrivals</label><label><input type="checkbox" checked={bestOnly} onChange={(event) => setBestOnly(event.target.checked)} /> Best sellers</label></fieldset>
+          </aside>
+          <div className="product-area">
+            <div className="results-line"><span>{products.length} PIECES</span><span>SELECT A PIECE TO INSPECT ↗</span></div>
+            {products.length ? <div className="product-grid">{products.map((product, index) => <article className={`product-tile tile-${index % 5}`} key={product.id}>
+              <div className="tile-image-wrap"><button ref={(node) => { cardRefs.current[product.id] = node; }} className="tile-image-button" type="button" aria-label={`Inspect ${product.name}`} onClick={() => openStudio(product)}><img src={product.imageUrl} alt={`${product.name}, ${product.color}`} loading="lazy" /><span className="inspect-chip"><i /> INSPECT PIECE</span></button>
+                <button className={wishlist.includes(product.id) ? 'wishlist-button saved' : 'wishlist-button'} type="button" aria-label={`${wishlist.includes(product.id) ? 'Remove' : 'Add'} ${product.name} ${wishlist.includes(product.id) ? 'from' : 'to'} wishlist`} aria-pressed={wishlist.includes(product.id)} onClick={() => toggleWish(product)}>{wishlist.includes(product.id) ? '♥' : '♡'}</button>
+                {product.isNew && <span className="product-tag">NEW SEASON</span>}
+              </div><div className="tile-meta"><div><span>{product.collection.toUpperCase()}</span><h3>{product.name}</h3></div><strong>{formatCurrency(product.price, product.currency)}</strong></div>
+              <div className="tile-colors"><span>{product.colors.length} COLORS</span><div>{product.colors.slice(0, 4).map((item) => <i key={item.name} title={item.name} style={{ background: item.value }} />)}</div><span>{product.available ? 'IN STOCK' : 'SOLD OUT'}</span></div>
+            </article>)}</div> : <div className="empty-catalog"><span>NO PIECES FOUND</span><h3>Nothing in this edit.<br /><em>Try another search.</em></h3><button type="button" onClick={clearFilters}>CLEAR FILTERS ↗</button></div>}
+          </div>
+        </div>
+      </section>
+
+      <section className="showroom-editorial"><span>CREWWW / NOTE 01</span><p>Find your people.<br /><em>Keep your own style.</em></p><a href="#collection">BACK TO THE HOODIES ↑</a></section>
+
+      <HomepageStorySections />
+
+      {activeProduct && <div className={`studio-overlay ${closing ? 'is-closing' : ''}`} role="dialog" aria-modal="true" aria-label={`${activeProduct.name} inspection studio`} tabIndex={-1} onKeyDown={handleStudioKeyDown}>
+        <div className="studio-backdrop" />
+        <button ref={closeButtonRef} className="studio-close" type="button" onClick={requestCloseStudio} disabled={closing}>← <span>BACK TO COLLECTION</span></button>
+        <div className="studio-layout">
+          <div className="studio-stage">
+            <div className="studio-stage-label"><span>INSPECTION STUDIO</span><span>OBJECT / {activeProduct.id.slice(-2)}</span></div>
+            <div className="studio-visual" style={{ '--origin-x': `${origin.x}px`, '--origin-y': `${origin.y}px`, '--origin-scale': origin.scale } as CSSProperties}>
+              <div className="studio-glow" />
+              <Suspense fallback={<div className="hoodie-viewer viewer-unavailable">Loading 3D preview…</div>}><HoodieViewer color={activeProduct.colors.find((item) => item.name === activeColor)?.value ?? '#171719'} label={activeProduct.name} /></Suspense>
+              <a className="reference-image-link" href={activeProduct.imageUrl} target="_blank" rel="noreferrer">VIEW REFERENCE PHOTO ↗</a>
+            </div>
+            <div className="studio-controls" aria-label="3D garment preview"><span>DRAG TO ROTATE</span><span>COLOR VARIANT UPDATES VIEW</span></div>
+          </div>
+          <aside className="studio-details">
+            <p className="showroom-eyebrow">{activeProduct.collection.toUpperCase()} / {activeProduct.category.toUpperCase()}</p>
+            <h2>{activeProduct.name}</h2><p className="studio-description">{activeProduct.description}</p><strong className="studio-price">{formatCurrency(activeProduct.price, activeProduct.currency)}</strong>
+              <div className="variant-block"><div className="variant-heading"><span>COLOR</span><span>{activeColor}</span></div><div className="variant-colors">{activeProduct.colors.map((item) => <button type="button" key={item.name} aria-label={`Select ${item.name}`} aria-pressed={activeColor === item.name} className={activeColor === item.name ? 'variant-color selected' : 'variant-color'} style={{ '--swatch': item.value } as CSSProperties} onClick={() => setActiveColor(item.name)} />)}</div></div>
+            <div className="variant-block"><div className="variant-heading"><span>SELECT SIZE</span><button type="button" onClick={() => setDetails(details === 'Measurements' ? '' : 'Measurements')}>SIZE GUIDE +</button></div><div className="size-grid">{activeProduct.sizes.map((item) => <button type="button" key={item} aria-pressed={activeSize === item} className={activeSize === item ? 'size-button selected' : 'size-button'} onClick={() => setActiveSize(item)}>{item}</button>)}</div></div>
+            <div className="quantity-row"><span>QUANTITY</span><div><button type="button" aria-label="Decrease quantity" onClick={() => setQuantity(Math.max(1, quantity - 1))}>−</button><span>{quantity}</span><button type="button" aria-label="Increase quantity" onClick={() => setQuantity(quantity + 1)}>+</button></div></div>
+            <Button className="studio-add" onClick={addToBag}>ADD TO BAG — {formatCurrency(activeProduct.price * quantity, activeProduct.currency)} <span>↗</span></Button>
+            <button className="studio-save" type="button" onClick={() => toggleWish(activeProduct)}>{wishlist.includes(activeProduct.id) ? '♥ SAVED TO WISHLIST' : '♡ SAVE TO WISHLIST'}</button>
+            <div className="detail-accordions">{(['Description', 'Material', 'Fit', 'Care', 'Measurements', 'Design details'] as const).map((item) => <div className="detail-row" key={item}><button type="button" aria-expanded={details === item} onClick={() => setDetails(details === item ? '' : item)}>{item}<span>{details === item ? '−' : '+'}</span></button>{details === item && <p>{item === 'Description' ? activeProduct.description : item === 'Material' ? activeProduct.specifications.material : item === 'Fit' ? activeProduct.specifications.fit : item === 'Care' ? activeProduct.specifications.care : item === 'Measurements' ? `Available sizes: ${activeProduct.sizes.join(', ')}. Fit guidance is a demo and should be confirmed against the final garment.` : activeProduct.specifications.details}</p>}</div>)}</div>
+          </aside>
+        </div>
+      </div>}
+
+      {cartOpen && <div className="cart-scrim" onClick={closeCart}><section className="cart-drawer" role="dialog" aria-modal="true" aria-label="Shopping bag" tabIndex={-1} onClick={(event) => event.stopPropagation()}><button ref={cartCloseRef} className="cart-close" type="button" aria-label="Close shopping bag" onClick={closeCart}>×</button><span className="showroom-eyebrow">YOUR SELECTION / {cartCount}</span><h2>The bag.</h2>{cartLines.length ? <div className="bag-lines">{cartLines.map((line, index) => { const product = featuredProducts.find((item) => item.id === line.productId); if (!product) return null; return <div className="bag-line" key={`${line.productId}-${line.size}-${line.color}`}><img src={product.imageUrl} alt="" /><div><strong>{product.name}</strong><span>{line.color} / {line.size} / QTY {line.quantity}</span><span>{formatCurrency(product.price * line.quantity, product.currency)}</span></div><button type="button" aria-label={`Remove ${product.name} from bag`} onClick={() => removeCartLine(index)}>×</button></div>; })}<p className="bag-note">Demo checkout is not connected yet.</p></div> : <p>Your bag is waiting for something good.</p>}<button type="button" onClick={() => { closeCart(); document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' }); }}>CONTINUE EXPLORING ↗</button></section></div>}
+      {toast && <div className="showroom-toast" role="status">{toast}<button type="button" aria-label="Dismiss" onClick={() => setToast('')}>×</button></div>}
+      <button className="floating-bag" type="button" aria-label={`Shopping bag, ${cartCount} items`} onClick={(event) => openCart(event.currentTarget)}>BAG <span>{cartCount}</span></button>
+    </div>
+  );
+}
