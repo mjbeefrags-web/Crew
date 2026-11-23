@@ -40,11 +40,6 @@ export function CatalogPage({ route }: { route: CatalogRoute }) {
     queryKey: ['catalog', route.path, query, visibleCount],
     queryFn: () => catalogService.listProducts({ ...query, page: 1, pageSize: visibleCount }),
   });
-  const suggestionsQuery = useQuery({
-    queryKey: ['catalog-suggestions', term],
-    queryFn: () => catalogService.suggestProducts(term),
-    enabled: term.trim().length > 1,
-  });
   const products = productsQuery.data?.items ?? [];
   const loadedProductsQuery = useQuery({
     queryKey: ['catalog-facets', route.path],
@@ -75,9 +70,7 @@ export function CatalogPage({ route }: { route: CatalogRoute }) {
     <section className="catalog-results" aria-label={`${route.title} product results`}>
       <aside className="catalog-filter-panel" aria-label="Filter products">
         <div className="filter-heading"><span>REFINE</span><button type="button" onClick={clear}>CLEAR ALL</button></div>
-        <label className="catalog-filter-field"><span>SEARCH</span><input type="search" value={term} onChange={(event) => { setTerm(event.target.value); setVisibleCount(PAGE_STEP); }} placeholder="Pieces, fits, collections" aria-label="Search this category" />
-          {suggestionsQuery.data && suggestionsQuery.data.length > 0 && term.trim().length > 1 && <div className="search-suggestions" role="listbox" aria-label="Search suggestions">{suggestionsQuery.data.map((product) => <Link role="option" key={product.id} to={`/products/${product.slug}`}>{product.name}<span>{product.category}</span></Link>)}</div>}
-        </label>
+        <label className="catalog-filter-field"><span>SEARCH</span><input type="search" value={term} onChange={(event) => { setTerm(event.target.value); setVisibleCount(PAGE_STEP); }} placeholder="Pieces, fits, collections" aria-label="Search this category" /></label>
         {route.filters?.includes('collection') && collections.length > 1 && <label className="catalog-filter-field"><span>COLLECTION</span><select value={collectionFilter} aria-label="Filter collection" onChange={(event) => { setCollectionFilter(event.target.value); setVisibleCount(PAGE_STEP); }}><option value="">All collections</option>{collections.map((collection) => <option key={collection} value={collection}>{collection.replace('CREWWW / ', '').replace('DEMO / ', 'SAMPLE / ')}</option>)}</select></label>}
         {route.filters?.includes('size') && <label className="catalog-filter-field"><span>SIZE / AGE</span><select aria-label="Filter size" value={size} onChange={(event) => setSize(event.target.value)}><option value="">Any size</option>{sizes.map((item) => <option key={item}>{item}</option>)}</select></label>}
         {route.filters?.includes('color') && <label className="catalog-filter-field"><span>COLOR</span><select aria-label="Filter color" value={color} onChange={(event) => setColor(event.target.value)}><option value="">All colors</option>{colors.map((item) => <option key={item}>{item}</option>)}</select></label>}

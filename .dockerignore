@@ -1,0 +1,15 @@
+.git
+.env
+.env.*
+node_modules
+dist
+test-results
+playwright-report
+backend/.venv
+backend/__pycache__
+backend/**/*.pyc
+backend/*.db
+backend/.pytest_cache
+backend/pytest-debug.txt
+.pytest_cache
+

@@ -1,0 +1,89 @@
+import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from redis.asyncio import Redis
+
+from app.api import admin as admin_routes
+from app.api import auth, catalog, commerce, system
+from app.core.config import Settings, get_settings
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+logger = logging.getLogger("crewww.api")
+
+
+def create_app(settings: Settings | None = None) -> FastAPI:
+    config = settings or get_settings()
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        app.state.redis = (
+            Redis.from_url(config.redis_url, decode_responses=True) if config.redis_url else None
+        )
+        logger.info(
+            "application_start env=%s redis_configured=%s", config.app_env, bool(config.redis_url)
+        )
+        yield
+        if app.state.redis is not None:
+            await app.state.redis.aclose()
+        logger.info("application_stop")
+
+    app = FastAPI(title=config.app_name, version="0.1.0", debug=config.debug, lifespan=lifespan)
+    app.state.redis = None
+    app.dependency_overrides[get_settings] = lambda: config
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=config.allowed_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "Idempotency-Key", "X-Request-ID"],
+    )
+
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next):
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault(
+            "Cache-Control",
+            "no-store"
+            if "/auth/" in request.url.path or "/admin/" in request.url.path
+            else "no-cache",
+        )
+        if config.app_env == "production":
+            response.headers.setdefault(
+                "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+            )
+        return response
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(
+        request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
+        del request
+        errors = [
+            {
+                "loc": error.get("loc", []),
+                "msg": error.get("msg", "Invalid value"),
+                "type": error.get("type", "value_error"),
+            }
+            for error in exc.errors()
+        ]
+        return JSONResponse(status_code=422, content={"detail": errors})
+
+    app.include_router(system.router, prefix="/api")
+    app.include_router(system.admin, dependencies=[])
+    app.include_router(auth.router, prefix=config.api_v1_prefix)
+    app.include_router(catalog.router, prefix=config.api_v1_prefix)
+    app.include_router(catalog.admin, prefix=config.api_v1_prefix)
+    app.include_router(commerce.router, prefix=config.api_v1_prefix)
+    app.include_router(admin_routes.router)
+    return app
+
+
+app = create_app()

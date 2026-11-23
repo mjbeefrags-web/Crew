@@ -77,9 +77,10 @@ test('mobile navigation, search focus, home and footer routes work', async ({ pa
   const menu = page.locator('.menu-toggle');
   await menu.click();
   await expect(menu).toHaveAttribute('aria-expanded', 'true');
-  await page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'THE EDIT' }).click();
-  await expect(page).toHaveURL(/#collection$/);
+  await page.getByRole('navigation', { name: 'Mobile navigation' }).getByRole('link', { name: 'Shop all' }).click();
+  await expect(page).toHaveURL(/\/shop$/);
   await expect(menu).toHaveAttribute('aria-expanded', 'false');
+  await page.getByRole('link', { name: 'Crewww home' }).click();
 
   await page.getByRole('textbox', { name: 'Search pieces' }).click();
   await expect(page.getByRole('textbox', { name: 'Search pieces' })).toBeFocused();
@@ -128,7 +129,7 @@ test('inspection transition preserves selection, handles back and restores focus
   await expect(page.getByRole('dialog', { name: 'Shopping bag' }).locator('.bag-line')).toHaveCount(2);
   await expect(page.getByRole('dialog', { name: 'Shopping bag' })).toContainText('Black / M / QTY 1');
   await page.reload();
-  await expect(page.getByRole('button', { name: /open shopping bag, 3 items/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /shopping bag, 3 items/i })).toBeVisible();
   await page.getByRole('button', { name: /^Shopping bag, 3 items$/i }).click();
   await expect(page.getByRole('dialog', { name: 'Shopping bag' }).locator('.bag-line')).toHaveCount(2);
   const bagDialog = page.getByRole('dialog', { name: 'Shopping bag' });
@@ -170,13 +171,10 @@ test('responsive layout stays within five target viewport widths and captures sc
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
     expect(await page.locator('body').evaluate((element) => element.scrollWidth)).toBeLessThanOrEqual(viewport.width);
     const pageHeight = await page.locator('body').evaluate((element) => element.scrollHeight);
-    for (let y = 0; y < pageHeight; y += viewport.height * 0.75) {
-      await page.evaluate((scrollY) => window.scrollTo(0, scrollY), y);
-      await page.waitForTimeout(70);
-    }
+    expect(pageHeight).toBeGreaterThan(viewport.height);
     await expect(page.locator('.tile-image-button img')).toHaveCount(8);
+    await page.locator('.product-grid').scrollIntoViewIfNeeded();
     await expect.poll(() => page.locator('.tile-image-button img').evaluateAll((images) => images.every((image) => (image as HTMLImageElement).naturalWidth > 0))).toBe(true);
-    await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({ path: `docs/visual-checks/${viewport.file}`, fullPage: true });
   }
 });

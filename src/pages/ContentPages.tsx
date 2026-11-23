@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { catalogService, commerceService, contentService } from '../app/services';
+import { API_MODE } from '../config/runtime';
 import { ProductCard } from '../components/ProductCard';
 import { fits } from '../data/mock/storefront';
 
@@ -58,10 +59,12 @@ export function ContactPage() {
     if (!form.reportValidity()) return;
     setBusy(true);
     const data = new FormData(form);
-    await commerceService.submitContact({ name: String(data.get('name')), email: String(data.get('email')), topic: String(data.get('topic')), message: String(data.get('message')) });
-    setBusy(false);
-    setMessage('Saved to this browser preview. The Crewww team was not contacted.');
-    form.reset();
+    try {
+      await commerceService.submitContact({ name: String(data.get('name')), email: String(data.get('email')), topic: String(data.get('topic')), message: String(data.get('message')) });
+      setMessage(API_MODE ? 'Your message was stored by the local API. No team email was sent.' : 'Saved to this browser preview. The Crewww team was not contacted.');
+      form.reset();
+    } catch { setMessage('The message could not be saved. Please try again.'); }
+    finally { setBusy(false); }
   };
   return <div className="storefront-page contact-page"><section className="simple-page-hero"><p className="store-eyebrow">CREWWW / OPEN LINE</p><h1>Say <em>hello.</em></h1><p className="page-hero-copy">Send a sample enquiry. It will be stored locally in this preview and will not reach a team inbox.</p></section><div className="contact-layout"><div><p className="store-eyebrow">NEED A HAND?</p><h2>We're listening<br /><em>in preview mode.</em></h2><Link to="/support" className="text-link">OPEN CUSTOMER SUPPORT ↗</Link></div><form onSubmit={submit}><label>YOUR NAME<input name="name" autoComplete="name" required /></label><label>EMAIL<input type="email" name="email" autoComplete="email" required /></label><label>WHAT'S THIS ABOUT?<select name="topic" defaultValue="general"><option value="general">General enquiry</option><option value="product">Product question</option><option value="stores">Store discovery</option><option value="press">Press / collaboration</option></select></label><label>MESSAGE<textarea name="message" minLength={10} maxLength={1200} rows={5} required /></label><button className="primary-store-button" disabled={busy}>{busy ? 'SAVING PREVIEW…' : 'SEND PREVIEW ENQUIRY ↗'}</button>{message && <p className="form-message" role="status">{message}</p>}<small>Local-only form prototype · no email delivery.</small></form></div></div>;
 }

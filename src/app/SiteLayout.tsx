@@ -4,6 +4,9 @@ import { BrandMark } from '../components/BrandMark';
 import { Toast } from '../components/Toast';
 import { useCommerceStore } from '../state/commerceStore';
 import { useUiStore } from '../state/uiStore';
+import { API_MODE } from '../config/runtime';
+import { apiCommerceService } from '../services/apiCommerceService';
+import { apiAuthService } from '../services/apiAuthService';
 
 const shopColumns = [
   { label: 'THE EDIT', links: [['Shop all', '/shop'], ['New arrivals', '/new-arrivals'], ['Best sellers', '/best-sellers'], ['Current drops', '/drops']] },
@@ -23,6 +26,27 @@ export function SiteLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const isHome = location.pathname === '/';
+
+  useEffect(() => {
+    if (!API_MODE) return;
+    let mounted = true;
+    const onApiError = (event: Event) => {
+      const message = (event as CustomEvent<{ message?: string }>).detail?.message;
+      useUiStore.getState().showNotice(message || 'The store could not be reached.');
+    };
+    window.addEventListener('crewww:api-error', onApiError);
+    const hydrate = async () => {
+      try { const lines = await apiCommerceService.getCart(); if (mounted) useCommerceStore.getState().setRemoteCart(lines); }
+      catch { /* Page queries surface connectivity errors where the user needs them. */ }
+      const user = await apiAuthService.currentUser();
+      if (mounted && user) {
+        try { useCommerceStore.getState().setRemoteWishlist(await apiCommerceService.getWishlist()); }
+        catch { /* The server remains authoritative; anonymous sessions have no wishlist. */ }
+      }
+    };
+    void hydrate();
+    return () => { mounted = false; window.removeEventListener('crewww:api-error', onApiError); };
+  }, []);
 
   useEffect(() => {
     setMenuOpen(false);

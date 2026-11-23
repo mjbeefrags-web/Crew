@@ -3,6 +3,16 @@ dist
 coverage
 playwright-report
 test-results
+backend/.venv/
+backend/.pytest_cache/
+backend/.ruff_cache/
+backend/__pycache__/
+backend/**/*.py[cod]
+backend/*.db
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.venv/
 .env
 .env.*
 !.env.example

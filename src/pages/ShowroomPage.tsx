@@ -7,6 +7,9 @@ import type { CartLine } from '../domain/commerce';
 import { HomepageIntroSections, HomepageStorySections } from './HomepageSections';
 import { formatCurrency } from '../utils/formatCurrency';
 import { useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { catalogService } from '../app/services';
+import { API_MODE } from '../config/runtime';
 
 const HoodieViewer = lazy(() => import('../components/HoodieViewer').then((module) => ({ default: module.HoodieViewer })));
 const CrewwwWorld = lazy(() => import('../scenes/CrewwwWorld').then((module) => ({ default: module.CrewwwWorld })));
@@ -22,6 +25,8 @@ type Origin = { x: number; y: number; scale: number };
 const categories = ['All pieces', 'Jackets', 'Tops', 'Hoodies', 'Shirts', 'Denim', 'Trousers', 'Accessories'];
 const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'ONE SIZE'];
 export function ShowroomPage() {
+  const catalogQuery = useQuery({ queryKey: ['showroom-products'], queryFn: () => catalogService.listFeaturedProducts(), enabled: API_MODE });
+  const catalogProducts = API_MODE ? (catalogQuery.data ?? []) : featuredProducts;
   const location = useLocation();
   const [category, setCategory] = useState('All pieces');
   const [collection, setCollection] = useState('');
@@ -124,7 +129,7 @@ export function ShowroomPage() {
   }, []);
 
   const products = useMemo(() => {
-    const result = featuredProducts.filter((product) => {
+    const result = catalogProducts.filter((product) => {
       const matchesCategory = category === 'All pieces' || product.category.toLowerCase() === category.toLowerCase();
       const matchesQuery = `${product.name} ${product.category} ${product.collection}`.toLowerCase().includes(query.toLowerCase());
       return matchesCategory && (!collection || product.collection === collection) && matchesQuery && (!size || product.sizes.includes(size)) &&
@@ -135,7 +140,7 @@ export function ShowroomPage() {
     if (sort === 'price-high') result.sort((a, b) => b.price - a.price);
     if (sort === 'name') result.sort((a, b) => a.name.localeCompare(b.name));
     return result;
-  }, [category, collection, query, sort, size, color, availableOnly, newOnly, bestOnly, minPrice, maxPrice]);
+  }, [catalogProducts, category, collection, query, sort, size, color, availableOnly, newOnly, bestOnly, minPrice, maxPrice]);
 
   const openStudio = (product: Product) => {
     if (transitionLockRef.current || activeProduct) return;
@@ -283,9 +288,9 @@ export function ShowroomPage() {
           <aside className="filter-panel" aria-label="Product filters">
             <div className="filter-title"><span>REFINE</span><button type="button" onClick={clearFilters}>CLEAR ALL</button></div>
             <fieldset className="filter-group"><legend>Category</legend>{categories.map((item) => <button className={category === item ? 'filter-choice selected' : 'filter-choice'} key={item} type="button" onClick={() => setCategory(item)}>{item}<span>{category === item ? '●' : ''}</span></button>)}</fieldset>
-            <label className="filter-group select-filter"><span>Collection</span><select aria-label="Filter by collection" value={collection} onChange={(event) => setCollection(event.target.value)}><option value="">All collections</option>{[...new Set(featuredProducts.map((item) => item.collection))].map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label className="filter-group select-filter"><span>Collection</span><select aria-label="Filter by collection" value={collection} onChange={(event) => setCollection(event.target.value)}><option value="">All collections</option>{[...new Set(catalogProducts.map((item) => item.collection))].map((item) => <option key={item}>{item}</option>)}</select></label>
             <label className="filter-group select-filter"><span>Size</span><select aria-label="Filter by size" value={size} onChange={(event) => setSize(event.target.value)}><option value="">Any size</option>{sizes.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <fieldset className="filter-group color-filter"><legend>Color</legend><div>{[...new Map(featuredProducts.flatMap((item) => item.colors).map((item) => [item.name, item])).values()].map((item) => <button key={item.name} type="button" title={item.name} aria-label={`Filter color ${item.name}`} aria-pressed={color === item.name} className={color === item.name ? 'color-choice selected' : 'color-choice'} style={{ '--swatch': item.value } as CSSProperties} onClick={() => setColor(color === item.name ? '' : item.name)} />)}</div></fieldset>
+            <fieldset className="filter-group color-filter"><legend>Color</legend><div>{[...new Map(catalogProducts.flatMap((item) => item.colors).map((item) => [item.name, item])).values()].map((item) => <button key={item.name} type="button" title={item.name} aria-label={`Filter color ${item.name}`} aria-pressed={color === item.name} className={color === item.name ? 'color-choice selected' : 'color-choice'} style={{ '--swatch': item.value } as CSSProperties} onClick={() => setColor(color === item.name ? '' : item.name)} />)}</div></fieldset>
             <fieldset className="filter-group price-filter"><legend>Price range</legend><span>{formatCurrency(minPrice, 'USD')} – {formatCurrency(maxPrice, 'USD')}</span><label>FROM<input type="range" min="0" max={Math.max(0, maxPrice - 10)} step="10" value={minPrice} aria-label="Minimum price" onChange={(event) => setMinPrice(Number(event.target.value))} /></label><label>TO<input type="range" min={Math.min(50, minPrice + 10)} max="250" step="10" value={maxPrice} aria-label="Maximum price" onChange={(event) => setMaxPrice(Number(event.target.value))} /></label></fieldset>
             <fieldset className="filter-group toggle-filter"><legend>Availability</legend><label><input type="checkbox" checked={availableOnly} onChange={(event) => setAvailableOnly(event.target.checked)} /> In stock</label><label><input type="checkbox" checked={newOnly} onChange={(event) => setNewOnly(event.target.checked)} /> New arrivals</label><label><input type="checkbox" checked={bestOnly} onChange={(event) => setBestOnly(event.target.checked)} /> Best sellers</label></fieldset>
           </aside>
@@ -332,7 +337,7 @@ export function ShowroomPage() {
         </div>
       </div>}
 
-      {cartOpen && <div className="cart-scrim" onClick={closeCart}><section className="cart-drawer" role="dialog" aria-modal="true" aria-label="Shopping bag" tabIndex={-1} onClick={(event) => event.stopPropagation()}><button ref={cartCloseRef} className="cart-close" type="button" aria-label="Close shopping bag" onClick={closeCart}>×</button><span className="showroom-eyebrow">YOUR SELECTION / {cartCount}</span><h2>The bag.</h2>{cartLines.length ? <div className="bag-lines">{cartLines.map((line, index) => { const product = featuredProducts.find((item) => item.id === line.productId); if (!product) return null; return <div className="bag-line" key={`${line.productId}-${line.size}-${line.color}`}><img src={product.imageUrl} alt="" /><div><strong>{product.name}</strong><span>{line.color} / {line.size} / QTY {line.quantity}</span><span>{formatCurrency(product.price * line.quantity, product.currency)}</span></div><button type="button" aria-label={`Remove ${product.name} from bag`} onClick={() => removeCartLine(index)}>×</button></div>; })}<p className="bag-note">Demo checkout is not connected yet.</p></div> : <p>Your bag is waiting for something good.</p>}<button type="button" onClick={() => { closeCart(); document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' }); }}>CONTINUE EXPLORING ↗</button></section></div>}
+      {cartOpen && <div className="cart-scrim" onClick={closeCart}><section className="cart-drawer" role="dialog" aria-modal="true" aria-label="Shopping bag" tabIndex={-1} onClick={(event) => event.stopPropagation()}><button ref={cartCloseRef} className="cart-close" type="button" aria-label="Close shopping bag" onClick={closeCart}>×</button><span className="showroom-eyebrow">YOUR SELECTION / {cartCount}</span><h2>The bag.</h2>{cartLines.length ? <div className="bag-lines">{cartLines.map((line, index) => { const product = catalogProducts.find((item) => item.id === line.productId); if (!product) return null; return <div className="bag-line" key={`${line.productId}-${line.size}-${line.color}`}><img src={product.imageUrl} alt="" /><div><strong>{product.name}</strong><span>{line.color} / {line.size} / QTY {line.quantity}</span><span>{formatCurrency((product.salePrice ?? product.price) * line.quantity, product.currency)}</span></div><button type="button" aria-label={`Remove ${product.name} from bag`} onClick={() => removeCartLine(index)}>×</button></div>; })}<p className="bag-note">{API_MODE ? 'Prices and availability are confirmed by the store service.' : 'Demo checkout is not connected yet.'}</p></div> : <p>Your bag is waiting for something good.</p>}<button type="button" onClick={() => { closeCart(); document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' }); }}>CONTINUE EXPLORING ↗</button></section></div>}
       {toast && <div className="showroom-toast" role="status">{toast}<button type="button" aria-label="Dismiss" onClick={() => setToast('')}>×</button></div>}
       <button className="floating-bag" type="button" aria-label={`Shopping bag, ${cartCount} items`} onClick={(event) => openCart(event.currentTarget)}>BAG <span>{cartCount}</span></button>
     </div>

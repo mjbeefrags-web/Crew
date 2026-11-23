@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -34,8 +34,9 @@ describe('foundation routes', () => {
     const user = userEvent.setup();
     renderApp('/');
     await user.type(screen.getByRole('textbox', { name: /search pieces/i }), 'Cherry');
-    expect(screen.getByText('Cherry Blossom Hoodie')).toBeInTheDocument();
-    expect(screen.queryByText('Vivre La Vie Hoodie')).not.toBeInTheDocument();
+    const collection = within(screen.getByRole('region', { name: /find your crew/i }));
+    expect(collection.getByRole('heading', { name: 'Cherry Blossom Hoodie' })).toBeInTheDocument();
+    expect(collection.queryByRole('heading', { name: 'Vivre La Vie Hoodie' })).not.toBeInTheDocument();
     await user.clear(screen.getByRole('textbox', { name: /search pieces/i }));
     await user.click(screen.getByRole('button', { name: /inspect joy of outdoors hoodie/i }));
     expect(screen.getByRole('dialog', { name: /joy of outdoors hoodie inspection studio/i })).toBeInTheDocument();

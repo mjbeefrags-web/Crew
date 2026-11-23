@@ -8,6 +8,7 @@ import { AboutPage, ContactPage, DenimFitsPage, EditorialDetailPage, FAQPage, Lo
 import { DesignSystemPage } from '../pages/DesignSystemPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { ShowroomPage } from '../pages/ShowroomPage';
+import { AdminSystemPage } from '../pages/AdminSystemPage';
 import { SiteLayout } from './SiteLayout';
 
 export function App() {
@@ -46,6 +47,7 @@ export function App() {
       <Route path="account/addresses" element={<AccountPage section="addresses" />} />
       <Route path="account/orders" element={<AccountPage section="orders" />} />
       <Route path="account/orders/:orderId" element={<AccountPage section="order-detail" />} />
+      <Route path="admin/system" element={<AdminSystemPage />} />
       <Route path="concept" element={<Navigate to="/about" replace />} />
       <Route path="design-system" element={<DesignSystemPage />} />
       <Route path="*" element={<NotFoundPage />} />

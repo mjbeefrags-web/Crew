@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { Product } from '../domain/product';
+import { API_MODE } from '../config/runtime';
+import { useAuthStore } from '../state/authStore';
 import { useCommerceStore } from '../state/commerceStore';
 import { useUiStore } from '../state/uiStore';
 import { formatCurrency } from '../utils/formatCurrency';
@@ -11,6 +13,8 @@ export function ProductCard({ product }: { product: Product }) {
   const toggleWishlist = useCommerceStore((state) => state.toggleWishlist);
   const addCartLine = useCommerceStore((state) => state.addCartLine);
   const showNotice = useUiStore((state) => state.showNotice);
+  const user = useAuthStore((state) => state.user);
+  const navigate = useNavigate();
   const saved = wishlist.includes(product.id);
 
   const quickAdd = () => {
@@ -27,7 +31,7 @@ export function ProductCard({ product }: { product: Product }) {
       </Link>
       {product.isPreviewData && <span className="preview-tag">SAMPLE</span>}
       {product.isNew && <span className="store-product-tag">NEW</span>}
-      <button className={`store-wishlist${saved ? ' is-saved' : ''}`} type="button" aria-label={`${saved ? 'Remove' : 'Add'} ${product.name} ${saved ? 'from' : 'to'} wishlist`} aria-pressed={saved} onClick={() => { toggleWishlist(product.id); showNotice(saved ? 'Removed from your wishlist.' : 'Saved to your wishlist.'); }}>{saved ? '♥' : '♡'}</button>
+      <button className={`store-wishlist${saved ? ' is-saved' : ''}`} type="button" aria-label={`${saved ? 'Remove' : 'Add'} ${product.name} ${saved ? 'from' : 'to'} wishlist`} aria-pressed={saved} onClick={() => { if (API_MODE && !user) { showNotice('Sign in to save pieces to your wishlist.'); navigate('/login'); return; } toggleWishlist(product.id); showNotice(saved ? 'Removed from your wishlist.' : 'Saved to your wishlist.'); }}>{saved ? '♥' : '♡'}</button>
     </div>
     <div className="store-product-copy">
       <p>{product.collection.replace('CREWWW / ', '')}</p>

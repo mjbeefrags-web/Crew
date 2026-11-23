@@ -941,3 +941,19 @@ body:has(.storefront-page),body:has(.showroom) { background:var(--store-bg); col
   .world-destinations a { min-height:43px; grid-template-columns:20px 1fr 13px; gap:5px; font-size:7px; }
   .showroom-hero .hero-footnote { left:16px; bottom:20px; }
 }
+
+.admin-system-page { padding-bottom: clamp(70px, 10vw, 140px); }
+.admin-status-overview,.admin-service-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1px; margin:0 5vw 34px; background:var(--hairline); border:1px solid var(--hairline); }
+.admin-status-overview>div,.admin-service-card { display:flex; flex-direction:column; gap:10px; min-height:108px; padding:20px; background:var(--paper); }
+.admin-status-overview span,.admin-service-card>span { color:var(--muted); font:9px var(--mono); letter-spacing:.1em; text-transform:uppercase; }
+.admin-status-overview strong,.admin-service-card strong { color:var(--ink); font:600 16px var(--sans); text-transform:capitalize; }
+.admin-service-card small { color:var(--muted); font:10px var(--mono); }
+.admin-service-card.status-healthy { box-shadow:inset 0 3px #4b8c5c; }
+.admin-service-card.status-degraded,.admin-service-card.status-not_configured { box-shadow:inset 0 3px #c18535; }
+.admin-service-card.status-unavailable { box-shadow:inset 0 3px #a64236; }
+.admin-warnings { margin:0 5vw; padding:24px; border:1px solid var(--hairline); }
+.admin-warnings ul { display:grid; gap:12px; padding:0; list-style:none; }
+.admin-warnings li { display:flex; flex-wrap:wrap; gap:8px 18px; padding:12px 0; border-bottom:1px solid var(--hairline); font-size:13px; }
+.admin-warnings li strong { font:10px var(--mono); }
+.admin-diagnostics-note { margin:22px 5vw; color:var(--muted); font-size:12px; }
+@media(max-width:760px) { .admin-status-overview,.admin-service-grid { grid-template-columns:repeat(2,minmax(0,1fr)); margin-right:20px; margin-left:20px; } .admin-warnings { margin-right:20px; margin-left:20px; padding:18px; } .admin-diagnostics-note { margin-right:20px; margin-left:20px; } }

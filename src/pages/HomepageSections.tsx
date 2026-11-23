@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { catalogService, commerceService } from '../app/services';
 import { ProductCard } from '../components/ProductCard';
+import { API_MODE } from '../config/runtime';
 
 const discovery = [
   { label: 'DENIM / FIND YOUR FIT', route: '/denim', image: '/images/editorial/candidate-denim.jpg', tone: 'sand' },
@@ -49,10 +50,12 @@ export function NewsletterSection() {
     event.preventDefault();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setMessage('Enter a valid email address.'); return; }
     setBusy(true);
-    await commerceService.submitNewsletter(email);
-    setBusy(false);
-    setMessage('Saved in this browser preview. No email service is connected.');
-    setEmail('');
+    try {
+      await commerceService.submitNewsletter(email);
+      setMessage(API_MODE ? 'Your address was saved by the local store API. Email delivery is not configured.' : 'Saved in this browser preview. No email service is connected.');
+      setEmail('');
+    } catch { setMessage('The list could not be updated. Please try again.'); }
+    finally { setBusy(false); }
   };
-  return <section id="newsletter" className="newsletter-section"><div><p className="store-eyebrow">CREWWW / NOTES FROM THE BLOCK</p><h2>When it moves,<br /><em>you’ll know.</em></h2><p>New pieces, picture notes and future drops. A quiet inbox, by design.</p></div><form onSubmit={submit} noValidate><label htmlFor="newsletter-email">YOUR EMAIL</label><div><input id="newsletter-email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com"/><button type="submit" disabled={busy}>{busy ? 'SAVING…' : 'JOIN THE LIST ↗'}</button></div><p className="newsletter-disclaimer">Development preview: address is stored locally in this browser only.</p>{message && <p className="form-message" role={message.startsWith('Enter') ? 'alert' : 'status'}>{message}</p>}</form></section>;
+  return <section id="newsletter" className="newsletter-section"><div><p className="store-eyebrow">CREWWW / NOTES FROM THE BLOCK</p><h2>When it moves,<br /><em>you’ll know.</em></h2><p>New pieces, picture notes and future drops. A quiet inbox, by design.</p></div><form onSubmit={submit} noValidate><label htmlFor="newsletter-email">YOUR EMAIL</label><div><input id="newsletter-email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com"/><button type="submit" disabled={busy}>{busy ? 'SAVING…' : 'JOIN THE LIST ↗'}</button></div><p className="newsletter-disclaimer">{API_MODE ? 'Development API: address saved locally; no email is sent.' : 'Development preview: address is stored locally in this browser only.'}</p>{message && <p className="form-message" role={message.startsWith('Enter') || message.startsWith('The list') ? 'alert' : 'status'}>{message}</p>}</form></section>;
 }
