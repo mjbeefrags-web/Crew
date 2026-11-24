@@ -6,6 +6,7 @@ import { App } from "./app/App";
 import "./styles/index.css";
 import "./styles/experience.css";
 import "./styles/drop-object.css";
+import "./styles/command-palette.css";
 
 const queryClient = new QueryClient({
   defaultOptions: {

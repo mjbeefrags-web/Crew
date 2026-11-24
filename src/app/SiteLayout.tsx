@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import { BrandMark } from "../components/BrandMark";
 import { ExperienceLayer } from "../components/ExperienceLayer";
+import { CommandPalette } from "../components/CommandPalette";
 import { SiteSoundToggle } from "../components/SiteSoundToggle";
 import { Toast } from "../components/Toast";
 import { useCommerceStore } from "../state/commerceStore";
@@ -255,6 +256,7 @@ export function SiteLayout() {
         SKIP TO CONTENT
       </a>
       <ExperienceLayer />
+      <CommandPalette />
       {!isTrip && (
         <div className="ambient-layer" aria-hidden="true">
           <i />
