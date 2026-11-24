@@ -11,7 +11,7 @@ Copy-Item .env.example .env
 docker compose up --build -d
 ```
 
-Open [http://localhost:8080](http://localhost:8080). The port is bound to loopback only. Compose runs Alembic migrations and an idempotent development seed before starting the API and website.
+Open [http://localhost:8080](http://localhost:8080). By default Docker opens the site at `/drops/psychedelic-minds`; set `VITE_INITIAL_ROUTE` in `.env` to change it. The port is bound to loopback only. Compose runs Alembic migrations and an idempotent development seed before starting the API and website.
 
 ```powershell
 docker compose ps
