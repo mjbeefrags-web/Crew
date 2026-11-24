@@ -23,12 +23,6 @@ export function SiteLayout() {
   const [activeMenu, setActiveMenu] = useState<'shop' | 'clothes' | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
-  // Move keyboard focus to the main landmark when the route changes, so
-  // screen-reader and keyboard users start each page in a predictable place.
-  useEffect(() => {
-    const id = window.setTimeout(() => mainRef.current?.focus({ preventScroll: true }), 50);
-    return () => window.clearTimeout(id);
-  }, [location.pathname]);
   const bagLines = useCommerceStore((state) => state.cartLines);
   const bagCount = bagLines.reduce((total, line) => total + line.quantity, 0);
   const notice = useUiStore((state) => state.notice);
@@ -38,6 +32,13 @@ export function SiteLayout() {
   const navigate = useNavigate();
   const isHome = location.pathname === '/';
   const isTrip = location.pathname === '/drops/psychedelic-minds';
+
+  // Move keyboard focus to the main landmark when the route changes, so
+  // screen-reader and keyboard users start each page in a predictable place.
+  useEffect(() => {
+    const id = window.setTimeout(() => mainRef.current?.focus({ preventScroll: true }), 50);
+    return () => window.clearTimeout(id);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!API_MODE) return;
