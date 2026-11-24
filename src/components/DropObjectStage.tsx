@@ -58,6 +58,7 @@ export function DropObjectStage({
 }: DropObjectStageProps) {
   const sectionRef = useRef<HTMLElement | null>(null);
   const userTabRef = useRef(false);
+  const [isActive, setIsActive] = useState(false);
   const [progress, setProgress] = useState(0);
   const [tab, setTab] = useState<DossierTab>('concept');
   const [reduceMotion] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
@@ -66,6 +67,7 @@ export function DropObjectStage({
   const selectedColor = colorways[colorIndex] ?? colorways[0];
   const selectedSize = product.sizes[sizeIndex] ?? product.sizes[0] ?? 'M';
   const phaseIndex = progress < 0.32 ? 0 : progress < 0.68 ? 1 : 2;
+  const scrollYaw = reduceMotion || !isActive ? 0 : progress * Math.PI * 2;
   const phase = PHASES[phaseIndex];
   const percentage = String(Math.round(progress * 100)).padStart(3, '0');
 
@@ -96,10 +98,17 @@ export function DropObjectStage({
     window.addEventListener('resize', onScroll);
     measure();
 
+    let observer: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== 'undefined') {
+      observer = new IntersectionObserver((entries) => setIsActive(entries.some((entry) => entry.isIntersecting)), { rootMargin: '140px 0px', threshold: 0.1 });
+      observer.observe(element);
+    }
+
     return () => {
       if (frame) window.cancelAnimationFrame(frame);
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
+      observer?.disconnect();
     };
   }, []);
 
@@ -123,7 +132,7 @@ export function DropObjectStage({
   } as CSSProperties;
 
   return <section
-    className="drop-object"
+    className={`drop-object${isActive ? '' : ' is-inactive'}`}
     ref={sectionRef}
     style={style}
     data-chapter="THE OBJECT"
@@ -227,7 +236,7 @@ export function DropObjectStage({
             color={selectedColor.value}
             label={piece.name}
             artworkUrl={piece.artwork}
-            scrollYaw={reduceMotion ? 0 : progress * Math.PI * 2}
+            scrollYaw={scrollYaw}
             fallbackUrl={piece.photo ?? piece.artwork}
           />
         </Suspense>

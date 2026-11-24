@@ -504,6 +504,10 @@
   transform: scaleX(var(--object-progress));
 }
 
+.drop-object.is-inactive .drop-object-stage { visibility: hidden; }
+.drop-object.is-inactive .drop-object-progress,
+.drop-object.is-inactive .drop-object-readout { opacity: 0; }
+
 /* Short desktop viewports ----------------------------------------- */
 @media (max-height: 760px) and (min-width: 1001px) {
   .drop-object-sticky { padding: 76px 6vw 58px; }
