@@ -1,4 +1,26 @@
-import { BoxGeometry, CanvasTexture, CatmullRomCurve3, CircleGeometry, Color, DoubleSide, EdgesGeometry, ExtrudeGeometry, Group, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, PlaneGeometry, RepeatWrapping, Shape, ShapeGeometry, TubeGeometry, Vector3 } from 'three';
+import {
+  BoxGeometry,
+  CanvasTexture,
+  CatmullRomCurve3,
+  CircleGeometry,
+  Color,
+  DoubleSide,
+  EdgesGeometry,
+  ExtrudeGeometry,
+  Group,
+  LineBasicMaterial,
+  LineSegments,
+  Mesh,
+  MeshBasicMaterial,
+  MeshPhysicalMaterial,
+  MeshStandardMaterial,
+  PlaneGeometry,
+  RepeatWrapping,
+  Shape,
+  ShapeGeometry,
+  TubeGeometry,
+  Vector3,
+} from "three";
 
 export type GarmentModel = {
   group: Group;
@@ -9,18 +31,26 @@ export type GarmentModel = {
 };
 
 function makeFabricBump() {
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = canvas.height = 256;
-  const context = canvas.getContext('2d');
+  const context = canvas.getContext("2d");
   if (!context) return null;
-  context.fillStyle = '#808080'; context.fillRect(0, 0, 256, 256);
+  context.fillStyle = "#808080";
+  context.fillRect(0, 0, 256, 256);
   for (let y = 0; y < 256; y += 4) {
-    context.strokeStyle = y % 8 === 0 ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.12)';
-    context.beginPath(); context.moveTo(0, y + 0.5); context.lineTo(256, y + 0.5); context.stroke();
+    context.strokeStyle =
+      y % 8 === 0 ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.12)";
+    context.beginPath();
+    context.moveTo(0, y + 0.5);
+    context.lineTo(256, y + 0.5);
+    context.stroke();
   }
   for (let x = 0; x < 256; x += 4) {
-    context.strokeStyle = 'rgba(0,0,0,.07)';
-    context.beginPath(); context.moveTo(x + 0.5, 0); context.lineTo(x + 0.5, 256); context.stroke();
+    context.strokeStyle = "rgba(0,0,0,.07)";
+    context.beginPath();
+    context.moveTo(x + 0.5, 0);
+    context.lineTo(x + 0.5, 256);
+    context.stroke();
   }
   for (let i = 0; i < 2400; i += 1) {
     const shade = Math.random() > 0.5 ? 255 : 0;
@@ -51,8 +81,15 @@ export function createHoodieModel(color: string): GarmentModel {
     bumpScale: 0.018,
     side: DoubleSide,
   });
-  const ribMaterial = new MeshStandardMaterial({ color: new Color(color).multiplyScalar(0.72), roughness: 0.94 });
-  const seamMaterial = new LineBasicMaterial({ color: new Color(color).multiplyScalar(0.5), transparent: true, opacity: 0.65 });
+  const ribMaterial = new MeshStandardMaterial({
+    color: new Color(color).multiplyScalar(0.72),
+    roughness: 0.94,
+  });
+  const seamMaterial = new LineBasicMaterial({
+    color: new Color(color).multiplyScalar(0.5),
+    transparent: true,
+    opacity: 0.65,
+  });
 
   const silhouette = new Shape();
   silhouette.moveTo(-0.53, -0.91);
@@ -77,8 +114,13 @@ export function createHoodieModel(color: string): GarmentModel {
   silhouette.lineTo(-0.56, 0.55);
   silhouette.closePath();
   const shellGeometry = new ExtrudeGeometry(silhouette, {
-    depth: 0.14, bevelEnabled: true, bevelSegments: 4, steps: 1,
-    bevelSize: 0.045, bevelThickness: 0.045, curveSegments: 14,
+    depth: 0.14,
+    bevelEnabled: true,
+    bevelSegments: 4,
+    steps: 1,
+    bevelSize: 0.045,
+    bevelThickness: 0.045,
+    curveSegments: 14,
   });
   const shell = new Mesh(shellGeometry, bodyMaterial);
   shell.position.z = -0.07;
@@ -89,15 +131,25 @@ export function createHoodieModel(color: string): GarmentModel {
   hoodShape.quadraticCurveTo(-0.44, 1.8, 0, 1.84);
   hoodShape.quadraticCurveTo(0.44, 1.8, 0.4, 1.18);
   hoodShape.quadraticCurveTo(0, 1.42, -0.4, 1.18);
-  const hood = new Mesh(new ExtrudeGeometry(hoodShape, {
-    depth: 0.18, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.03, bevelThickness: 0.03,
-  }), ribMaterial);
+  const hood = new Mesh(
+    new ExtrudeGeometry(hoodShape, {
+      depth: 0.18,
+      bevelEnabled: true,
+      bevelSegments: 3,
+      bevelSize: 0.03,
+      bevelThickness: 0.03,
+    }),
+    ribMaterial,
+  );
   hood.position.z = -0.11;
   group.add(hood);
 
   const hoodOpening = new Mesh(
     new CircleGeometry(0.26, 24),
-    new MeshStandardMaterial({ color: new Color(color).multiplyScalar(0.22), roughness: 1 }),
+    new MeshStandardMaterial({
+      color: new Color(color).multiplyScalar(0.22),
+      roughness: 1,
+    }),
   );
   hoodOpening.scale.set(1, 0.62, 1);
   hoodOpening.position.set(0, 1.53, 0.09);
@@ -105,34 +157,59 @@ export function createHoodieModel(color: string): GarmentModel {
 
   const cuffGeometry = new BoxGeometry(0.31, 0.24, 0.23);
   const rightCuff = new Mesh(cuffGeometry, ribMaterial);
-  rightCuff.position.set(1.31, -0.39, 0.015); rightCuff.rotation.z = -0.22; group.add(rightCuff);
+  rightCuff.position.set(1.31, -0.39, 0.015);
+  rightCuff.rotation.z = -0.22;
+  group.add(rightCuff);
   const leftCuff = new Mesh(cuffGeometry, ribMaterial);
-  leftCuff.position.set(-1.31, -0.39, 0.015); leftCuff.rotation.z = 0.22; group.add(leftCuff);
+  leftCuff.position.set(-1.31, -0.39, 0.015);
+  leftCuff.rotation.z = 0.22;
+  group.add(leftCuff);
   const hem = new Mesh(new BoxGeometry(1.04, 0.2, 0.22), ribMaterial);
-  hem.position.set(0, -0.83, 0.015); group.add(hem);
+  hem.position.set(0, -0.83, 0.015);
+  group.add(hem);
 
   const pocketShape = new Shape();
-  pocketShape.moveTo(-0.34, 0.08); pocketShape.lineTo(0.34, 0.08);
-  pocketShape.lineTo(0.28, -0.3); pocketShape.quadraticCurveTo(0, -0.42, -0.28, -0.3);
+  pocketShape.moveTo(-0.34, 0.08);
+  pocketShape.lineTo(0.34, 0.08);
+  pocketShape.lineTo(0.28, -0.3);
+  pocketShape.quadraticCurveTo(0, -0.42, -0.28, -0.3);
   pocketShape.closePath();
   const pocket = new Mesh(new ShapeGeometry(pocketShape), ribMaterial);
-  pocket.position.set(0, -0.24, 0.175); group.add(pocket);
-  const pocketOutline = new LineSegments(new EdgesGeometry(pocket.geometry), seamMaterial);
-  pocketOutline.position.copy(pocket.position); group.add(pocketOutline);
+  pocket.position.set(0, -0.24, 0.175);
+  group.add(pocket);
+  const pocketOutline = new LineSegments(
+    new EdgesGeometry(pocket.geometry),
+    seamMaterial,
+  );
+  pocketOutline.position.copy(pocket.position);
+  group.add(pocketOutline);
 
-  const drawstringMaterial = new MeshStandardMaterial({ color: '#ddd4c2', roughness: 0.8 });
+  const drawstringMaterial = new MeshStandardMaterial({
+    color: "#ddd4c2",
+    roughness: 0.8,
+  });
   for (const x of [-0.13, 0.13]) {
     const curve = new CatmullRomCurve3([
       new Vector3(x, 1.14, 0.11),
       new Vector3(x * 1.2, 0.98, 0.2),
       new Vector3(x * 0.9, 0.74, 0.2),
     ]);
-    group.add(new Mesh(new TubeGeometry(curve, 12, 0.012, 6, false), drawstringMaterial));
+    group.add(
+      new Mesh(
+        new TubeGeometry(curve, 12, 0.012, 6, false),
+        drawstringMaterial,
+      ),
+    );
   }
 
   const backPrint = new Mesh(
     new PlaneGeometry(0.92, 1.16),
-    new MeshBasicMaterial({ color: '#ffffff', transparent: true, toneMapped: false, side: DoubleSide }),
+    new MeshBasicMaterial({
+      color: "#ffffff",
+      transparent: true,
+      toneMapped: false,
+      side: DoubleSide,
+    }),
   );
   backPrint.position.set(0, 0.12, -0.16);
   backPrint.rotation.y = Math.PI;
@@ -141,7 +218,12 @@ export function createHoodieModel(color: string): GarmentModel {
 
   const chestMark = new Mesh(
     new PlaneGeometry(0.44, 0.2),
-    new MeshBasicMaterial({ color: '#ffffff', transparent: true, toneMapped: false, side: DoubleSide }),
+    new MeshBasicMaterial({
+      color: "#ffffff",
+      transparent: true,
+      toneMapped: false,
+      side: DoubleSide,
+    }),
   );
   chestMark.position.set(0, 0.62, 0.185);
   chestMark.visible = false;

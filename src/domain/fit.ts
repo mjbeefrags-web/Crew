@@ -1,24 +1,35 @@
 /** Provisional sizing guidance. The brand owner must confirm measurements against production samples. */
 
-export type FitPreference = 'snug' | 'true' | 'roomy';
+export type FitPreference = "snug" | "true" | "roomy";
 
 export type FitRecommendation = {
   size: string;
   chestCm: number;
   preference: FitPreference;
   rationale: string;
-  confidence: 'guided' | 'provisional';
+  confidence: "guided" | "provisional";
 };
 
 const CHEST_CENTRES: Record<string, number> = {
-  XS: 84, S: 92, M: 100, L: 108, XL: 116, XXL: 124, XXXL: 132, 'ONE SIZE': 100,
+  XS: 84,
+  S: 92,
+  M: 100,
+  L: 108,
+  XL: 116,
+  XXL: 124,
+  XXXL: 132,
+  "ONE SIZE": 100,
 };
 
-const PREFERENCE_OFFSET: Record<FitPreference, number> = { snug: -3, true: 0, roomy: 4 };
+const PREFERENCE_OFFSET: Record<FitPreference, number> = {
+  snug: -3,
+  true: 0,
+  roomy: 4,
+};
 const PREFERENCE_COPY: Record<FitPreference, string> = {
-  snug: 'a closer body feel',
-  true: 'your usual fit',
-  roomy: 'extra room over a layer',
+  snug: "a closer body feel",
+  true: "your usual fit",
+  roomy: "extra room over a layer",
 };
 
 /**
@@ -53,12 +64,14 @@ export function recommendSize(
     }
   }
 
-  const fitNote = fitLabel ? ` ${fitLabel} fit adds its own shape, so treat this as a starting point.` : '';
+  const fitNote = fitLabel
+    ? ` ${fitLabel} fit adds its own shape, so treat this as a starting point.`
+    : "";
   return {
     size,
     chestCm: chest,
     preference,
     rationale: `Based on a ${chest} cm chest and ${PREFERENCE_COPY[preference]}.${fitNote}`,
-    confidence: fitLabel ? 'guided' : 'provisional',
+    confidence: fitLabel ? "guided" : "provisional",
   };
 }

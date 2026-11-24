@@ -1,6 +1,13 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
-export type AuthUser = { id: string; email: string; first_name: string; last_name: string; role: string; is_active: boolean };
+export type AuthUser = {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  is_active: boolean;
+};
 type AuthState = {
   accessToken: string | null;
   user: AuthUser | null;

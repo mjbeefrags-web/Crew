@@ -1,8 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
-import { CanvasTexture, DirectionalLight, HemisphereLight, LineSegments, MathUtils, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, PointLight, SRGBColorSpace, Scene, TextureLoader, Vector3 } from 'three';
-import { crewMark } from '../data/drops';
-import { createStage } from '../scenes/lib/stage';
-import { createHoodieModel } from '../scenes/lib/garment';
+import { useEffect, useRef, useState } from "react";
+import {
+  CanvasTexture,
+  DirectionalLight,
+  HemisphereLight,
+  LineSegments,
+  MathUtils,
+  Mesh,
+  MeshBasicMaterial,
+  PerspectiveCamera,
+  PlaneGeometry,
+  PointLight,
+  SRGBColorSpace,
+  Scene,
+  TextureLoader,
+  Vector3,
+} from "three";
+import { crewMark } from "../data/drops";
+import { createStage } from "../scenes/lib/stage";
+import { createHoodieModel } from "../scenes/lib/garment";
 
 type HoodieViewerProps = {
   color: string;
@@ -14,7 +29,13 @@ type HoodieViewerProps = {
   fallbackUrl?: string;
 };
 
-export function HoodieViewer({ color, label, artworkUrl, scrollYaw = 0, fallbackUrl }: HoodieViewerProps) {
+export function HoodieViewer({
+  color,
+  label,
+  artworkUrl,
+  scrollYaw = 0,
+  fallbackUrl,
+}: HoodieViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [unsupported, setUnsupported] = useState(false);
   const [autoSpin, setAutoSpin] = useState(false);
@@ -31,35 +52,63 @@ export function HoodieViewer({ color, label, artworkUrl, scrollYaw = 0, fallback
     const scene = new Scene();
     const camera = new PerspectiveCamera(32, width / height, 0.1, 30);
     const disposables = new Set<{ dispose(): void }>();
-    const track = <T extends { dispose(): void }>(item: T): T => { disposables.add(item); return item; };
+    const track = <T extends { dispose(): void }>(item: T): T => {
+      disposables.add(item);
+      return item;
+    };
 
     const target = new Vector3(0, 0.2, 0);
-    scene.add(new HemisphereLight('#ffffff', '#33303b', 2));
-    const key = new DirectionalLight('#fff6e6', 3.2); key.position.set(-3.5, 4.2, 5); scene.add(key);
-    const rim = new DirectionalLight('#d5d2ff', 2.2); rim.position.set(4, 1.5, -3); scene.add(rim);
-    const warm = new PointLight('#ffd79a', 18, 12); warm.position.set(2, -1, 3); scene.add(warm);
+    scene.add(new HemisphereLight("#ffffff", "#33303b", 2));
+    const key = new DirectionalLight("#fff6e6", 3.2);
+    key.position.set(-3.5, 4.2, 5);
+    scene.add(key);
+    const rim = new DirectionalLight("#d5d2ff", 2.2);
+    rim.position.set(4, 1.5, -3);
+    scene.add(rim);
+    const warm = new PointLight("#ffd79a", 18, 12);
+    warm.position.set(2, -1, 3);
+    scene.add(warm);
 
-    const shadowSurface = document.createElement('canvas'); shadowSurface.width = shadowSurface.height = 128;
-    const shadowContext = shadowSurface.getContext('2d');
+    const shadowSurface = document.createElement("canvas");
+    shadowSurface.width = shadowSurface.height = 128;
+    const shadowContext = shadowSurface.getContext("2d");
     if (shadowContext) {
-      const gradient = shadowContext.createRadialGradient(64, 64, 2, 64, 64, 64);
-      gradient.addColorStop(0, 'rgba(255,255,255,1)');
-      gradient.addColorStop(1, 'rgba(255,255,255,0)');
-      shadowContext.fillStyle = gradient; shadowContext.fillRect(0, 0, 128, 128);
+      const gradient = shadowContext.createRadialGradient(
+        64,
+        64,
+        2,
+        64,
+        64,
+        64,
+      );
+      gradient.addColorStop(0, "rgba(255,255,255,1)");
+      gradient.addColorStop(1, "rgba(255,255,255,0)");
+      shadowContext.fillStyle = gradient;
+      shadowContext.fillRect(0, 0, 128, 128);
     }
     const shadowTexture = track(new CanvasTexture(shadowSurface));
-    const shadowMaterial = track(new MeshBasicMaterial({
-      color: '#000000', transparent: true, opacity: 0.28, depthWrite: false, map: shadowTexture,
-    }));
+    const shadowMaterial = track(
+      new MeshBasicMaterial({
+        color: "#000000",
+        transparent: true,
+        opacity: 0.28,
+        depthWrite: false,
+        map: shadowTexture,
+      }),
+    );
     const shadow = new Mesh(track(new PlaneGeometry(3.2, 1.2)), shadowMaterial);
-    shadow.rotation.x = -Math.PI / 2; shadow.position.y = -1.02; scene.add(shadow);
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.y = -1.02;
+    scene.add(shadow);
 
     const model = createHoodieModel(color);
     scene.add(model.group);
     model.group.traverse((object) => {
       if (object instanceof Mesh || object instanceof LineSegments) {
         track(object.geometry);
-        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        const materials = Array.isArray(object.material)
+          ? object.material
+          : [object.material];
         materials.forEach((material) => disposables.add(material));
       }
     });
@@ -71,7 +120,9 @@ export function HoodieViewer({ color, label, artworkUrl, scrollYaw = 0, fallback
         track(texture);
         if (model.backPrint) {
           const material = model.backPrint.material as MeshBasicMaterial;
-          material.map = texture; material.needsUpdate = true; model.backPrint.visible = true;
+          material.map = texture;
+          material.needsUpdate = true;
+          model.backPrint.visible = true;
         }
         stage?.requestRender();
       });
@@ -81,7 +132,9 @@ export function HoodieViewer({ color, label, artworkUrl, scrollYaw = 0, fallback
       track(texture);
       if (model.chestMark) {
         const material = model.chestMark.material as MeshBasicMaterial;
-        material.map = texture; material.needsUpdate = true; model.chestMark.visible = true;
+        material.map = texture;
+        material.needsUpdate = true;
+        model.chestMark.visible = true;
       }
       stage?.requestRender();
     });
@@ -94,8 +147,15 @@ export function HoodieViewer({ color, label, artworkUrl, scrollYaw = 0, fallback
     let lastX = 0;
 
     const stage = createStage(canvas, {
-      scene, camera, alpha: true, fps: 45, maxPixelRatio: 1.5,
-      onResize: (w, h) => { camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix(); },
+      scene,
+      camera,
+      alpha: true,
+      fps: 45,
+      maxPixelRatio: 1.5,
+      onResize: (w, h) => {
+        camera.aspect = w / Math.max(1, h);
+        camera.updateProjectionMatrix();
+      },
       onFrame: (delta) => {
         if (autoSpinRef.current) yaw += delta * 0.28;
         yaw += velocity * delta;
@@ -104,14 +164,22 @@ export function HoodieViewer({ color, label, artworkUrl, scrollYaw = 0, fallback
         const totalYaw = yaw + scrollYawRef.current;
         model.group.rotation.y = totalYaw;
         model.group.position.y = Math.sin(performance.now() * 0.0006) * 0.025;
-        camera.position.set(Math.sin(totalYaw * 0.18) * 0.35, target.y + 0.12, zoom);
+        camera.position.set(
+          Math.sin(totalYaw * 0.18) * 0.35,
+          target.y + 0.12,
+          zoom,
+        );
         camera.lookAt(target);
       },
     });
-    if (!stage) { setUnsupported(true); return undefined; }
+    if (!stage) {
+      setUnsupported(true);
+      return undefined;
+    }
 
     const onPointerDown = (event: PointerEvent) => {
-      dragging = true; lastX = event.clientX;
+      dragging = true;
+      lastX = event.clientX;
       canvas.setPointerCapture?.(event.pointerId);
       canvas.focus({ preventScroll: true });
     };
@@ -132,7 +200,7 @@ export function HoodieViewer({ color, label, artworkUrl, scrollYaw = 0, fallback
     };
     const onTurn = (event: Event) => {
       const direction = (event as CustomEvent<number>).detail;
-      yaw += direction * Math.PI / 4;
+      yaw += (direction * Math.PI) / 4;
       velocity = direction * 0.3;
     };
     const onReset = () => {
@@ -142,38 +210,94 @@ export function HoodieViewer({ color, label, artworkUrl, scrollYaw = 0, fallback
       targetZoom = 7.3;
       setAutoSpin(false);
     };
-    canvas.addEventListener('pointerdown', onPointerDown);
-    canvas.addEventListener('pointermove', onPointerMove);
-    canvas.addEventListener('pointerup', onPointerUp);
-    canvas.addEventListener('wheel', onWheel, { passive: false });
-    window.addEventListener('hoodie:turn', onTurn);
-    window.addEventListener('hoodie:reset', onReset);
+    canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerup", onPointerUp);
+    canvas.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("hoodie:turn", onTurn);
+    window.addEventListener("hoodie:reset", onReset);
 
     return () => {
-      canvas.removeEventListener('pointerdown', onPointerDown);
-      canvas.removeEventListener('pointermove', onPointerMove);
-      canvas.removeEventListener('pointerup', onPointerUp);
-      canvas.removeEventListener('wheel', onWheel);
-      window.removeEventListener('hoodie:turn', onTurn);
-      window.removeEventListener('hoodie:reset', onReset);
+      canvas.removeEventListener("pointerdown", onPointerDown);
+      canvas.removeEventListener("pointermove", onPointerMove);
+      canvas.removeEventListener("pointerup", onPointerUp);
+      canvas.removeEventListener("wheel", onWheel);
+      window.removeEventListener("hoodie:turn", onTurn);
+      window.removeEventListener("hoodie:reset", onReset);
       stage.dispose();
       disposables.forEach((item) => item.dispose());
     };
   }, [color, artworkUrl]);
 
-  return <div className="hoodie-viewer" role="group" aria-label={`${label} 3D product viewer`}>
-    {!unsupported
-      ? <canvas ref={canvasRef} tabIndex={0} data-cursor="TURN" aria-label={`${label}, drag to rotate and scroll to zoom`} />
-      : fallbackUrl
-        ? <img className="viewer-fallback" src={fallbackUrl} alt={`${label} garment preview`} />
-        : <div className="viewer-unavailable">3D preview is unavailable in this browser.</div>}
-    {!unsupported && <div className="viewer-controls">
-      <button type="button" aria-label="Rotate hoodie left" onClick={() => window.dispatchEvent(new CustomEvent('hoodie:turn', { detail: -1 }))}>↶</button>
-      <button type="button" aria-label="Rotate hoodie right" onClick={() => window.dispatchEvent(new CustomEvent('hoodie:turn', { detail: 1 }))}>↷</button>
-      <button type="button" aria-label="Reset hoodie view" onClick={() => window.dispatchEvent(new Event('hoodie:reset'))}>↺</button>
-      <span>DRAG · ZOOM · SPIN</span>
-      <button type="button" aria-label="Toggle automatic spin" aria-pressed={autoSpin} onClick={() => setAutoSpin((value) => !value)}>{autoSpin ? 'STOP SPIN' : 'AUTO SPIN'}</button>
-    </div>}
-    <span className="viewer-caption">ILLUSTRATIVE 3D GARMENT / CREWWW STUDY 01</span>
-  </div>;
+  return (
+    <div
+      className="hoodie-viewer"
+      role="group"
+      aria-label={`${label} 3D product viewer`}
+    >
+      {!unsupported ? (
+        <canvas
+          ref={canvasRef}
+          tabIndex={0}
+          data-cursor="TURN"
+          aria-label={`${label}, drag to rotate and scroll to zoom`}
+        />
+      ) : fallbackUrl ? (
+        <img
+          className="viewer-fallback"
+          src={fallbackUrl}
+          alt={`${label} garment preview`}
+        />
+      ) : (
+        <div className="viewer-unavailable">
+          3D preview is unavailable in this browser.
+        </div>
+      )}
+      {!unsupported && (
+        <div className="viewer-controls">
+          <button
+            type="button"
+            aria-label="Rotate hoodie left"
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent("hoodie:turn", { detail: -1 }),
+              )
+            }
+          >
+            ↶
+          </button>
+          <button
+            type="button"
+            aria-label="Rotate hoodie right"
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent("hoodie:turn", { detail: 1 }),
+              )
+            }
+          >
+            ↷
+          </button>
+          <button
+            type="button"
+            aria-label="Reset hoodie view"
+            onClick={() => window.dispatchEvent(new Event("hoodie:reset"))}
+          >
+            ↺
+          </button>
+          <span>DRAG · ZOOM · SPIN</span>
+          <button
+            type="button"
+            aria-label="Toggle automatic spin"
+            aria-pressed={autoSpin}
+            onClick={() => setAutoSpin((value) => !value)}
+          >
+            {autoSpin ? "STOP SPIN" : "AUTO SPIN"}
+          </button>
+        </div>
+      )}
+      <span className="viewer-caption">
+        ILLUSTRATIVE 3D GARMENT / CREWWW STUDY 01
+      </span>
+    </div>
+  );
 }

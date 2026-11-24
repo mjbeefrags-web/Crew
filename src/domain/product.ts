@@ -14,21 +14,21 @@ export type Product = {
   slug: string;
   name: string;
   category:
-    | 'tops'
-    | 't-shirts'
-    | 'hoodies'
-    | 'sweatshirts'
-    | 'shirts'
-    | 'jackets'
-    | 'trousers'
-    | 'shorts'
-    | 'denim'
-    | 'kids'
-    | 'accessories'
-    | 'shoes';
+    | "tops"
+    | "t-shirts"
+    | "hoodies"
+    | "sweatshirts"
+    | "shirts"
+    | "jackets"
+    | "trousers"
+    | "shorts"
+    | "denim"
+    | "kids"
+    | "accessories"
+    | "shoes";
   price: number;
   currency: string;
-  audience: 'adult' | 'kids' | 'unisex';
+  audience: "adult" | "kids" | "unisex";
   color: string;
   sizes: readonly string[];
   imageUrl: string;

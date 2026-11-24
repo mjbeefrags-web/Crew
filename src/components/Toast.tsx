@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 type ToastProps = {
   message: string;
@@ -17,7 +17,9 @@ export function Toast({ message, onClose }: ToastProps) {
   return (
     <div className="toast" role="status" aria-live="polite">
       <span>{message}</span>
-      <button type="button" aria-label="Dismiss notification" onClick={onClose}>×</button>
+      <button type="button" aria-label="Dismiss notification" onClick={onClose}>
+        ×
+      </button>
     </div>
   );
 }

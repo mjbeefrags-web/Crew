@@ -1,21 +1,25 @@
-import type { Product, ProductCollection } from './product';
+import type { Product, ProductCollection } from "./product";
 
 export interface CatalogService {
   listFeaturedProducts(): Promise<readonly Product[]>;
   listCollections(): Promise<readonly ProductCollection[]>;
   getProduct(slug: string): Promise<Product | null>;
   listProducts(query?: ProductQuery): Promise<ProductPage>;
-  getRelatedProducts(productId: string, limit?: number): Promise<readonly Product[]>;
+  getRelatedProducts(
+    productId: string,
+    limit?: number,
+  ): Promise<readonly Product[]>;
   suggestProducts(term: string, limit?: number): Promise<readonly Product[]>;
 }
 
-export type ProductSort = 'featured' | 'newest' | 'popular' | 'price-asc' | 'price-desc' | 'name';
+export type ProductSort =
+  "featured" | "newest" | "popular" | "price-asc" | "price-desc" | "name";
 
 export type ProductQuery = {
   term?: string;
-  category?: Product['category'];
-  categories?: readonly Product['category'][];
-  audience?: Product['audience'];
+  category?: Product["category"];
+  categories?: readonly Product["category"][];
+  audience?: Product["audience"];
   collection?: string;
   size?: string;
   color?: string;

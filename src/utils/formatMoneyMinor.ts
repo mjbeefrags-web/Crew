@@ -1,9 +1,13 @@
 /** Formats integer minor units without floating-point drift in the stored value. */
-export function formatMoneyMinor(minor: number, currency = 'USD', fractionDigits = 0): string {
+export function formatMoneyMinor(
+  minor: number,
+  currency = "USD",
+  fractionDigits = 0,
+): string {
   const safe = Number.isFinite(minor) ? Math.round(minor) : 0;
   try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
       currency,
       minimumFractionDigits: fractionDigits,
       maximumFractionDigits: fractionDigits,

@@ -14,12 +14,14 @@ export type EditorialStory = {
   eyebrow: string;
   description: string;
   image: string;
-  type: 'lookbook' | 'drop';
+  type: "lookbook" | "drop";
 };
 
 export interface ContentService {
   findStores(term?: string): Promise<readonly StorePreview[]>;
   getStore(slug: string): Promise<StorePreview | null>;
-  listStories(type?: EditorialStory['type']): Promise<readonly EditorialStory[]>;
+  listStories(
+    type?: EditorialStory["type"],
+  ): Promise<readonly EditorialStory[]>;
   getStory(slug: string): Promise<EditorialStory | null>;
 }

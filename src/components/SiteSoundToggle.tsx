@@ -1,6 +1,11 @@
-import { useEffect, useState } from 'react';
-import { isSoundEnabled, playSound, setSoundEnabled, stopAmbience } from '../lib/sound';
-import { trackEvent } from '../lib/insights';
+import { useEffect, useState } from "react";
+import {
+  isSoundEnabled,
+  playSound,
+  setSoundEnabled,
+  stopAmbience,
+} from "../lib/sound";
+import { trackEvent } from "../lib/insights";
 
 /**
  * Opt-in site-wide blips. The drop chamber already sounds its own controls,
@@ -13,26 +18,37 @@ export function SiteSoundToggle() {
     if (!enabled) return undefined;
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as HTMLElement | null;
-      if (!target || target.closest('[data-sound-toggle]') || target.closest('.drop-experience')) return;
-      if (target.closest('button, a, input, select')) playSound('click');
+      if (
+        !target ||
+        target.closest("[data-sound-toggle]") ||
+        target.closest(".drop-experience")
+      )
+        return;
+      if (target.closest("button, a, input, select")) playSound("click");
     };
-    document.addEventListener('pointerdown', onPointerDown);
-    return () => document.removeEventListener('pointerdown', onPointerDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [enabled]);
 
   const toggle = () => {
     const next = !enabled;
     setEnabled(next);
     setSoundEnabled(next);
-    if (next) { playSound('select'); trackEvent('sound_opt_in'); }
-    else stopAmbience();
+    if (next) {
+      playSound("select");
+      trackEvent("sound_opt_in");
+    } else stopAmbience();
   };
 
-  return <button
-    type="button"
-    data-sound-toggle
-    aria-label="Sound toggle"
-    aria-pressed={enabled}
-    onClick={toggle}
-  >{enabled ? 'SOUND ON' : 'SOUND OFF'}</button>;
+  return (
+    <button
+      type="button"
+      data-sound-toggle
+      aria-label="Sound toggle"
+      aria-pressed={enabled}
+      onClick={toggle}
+    >
+      {enabled ? "SOUND ON" : "SOUND OFF"}
+    </button>
+  );
 }

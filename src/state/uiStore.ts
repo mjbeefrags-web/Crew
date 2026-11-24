@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 type UiState = {
   notice: string;
@@ -7,7 +7,7 @@ type UiState = {
 };
 
 export const useUiStore = create<UiState>((set) => ({
-  notice: '',
+  notice: "",
   showNotice: (notice) => set({ notice }),
-  clearNotice: () => set({ notice: '' }),
+  clearNotice: () => set({ notice: "" }),
 }));

@@ -1,6 +1,6 @@
 /** Shared admin domain model. All money values are integer minor units. */
 
-export type AdminDataSource = 'api' | 'demo';
+export type AdminDataSource = "api" | "demo";
 export type MetricRange = 7 | 30 | 90;
 
 export type AdminOrderItem = {
@@ -69,15 +69,15 @@ export type AdminCustomer = {
 };
 
 export type AdminEventType =
-  | 'product_view'
-  | 'add_to_bag'
-  | 'drop_view'
-  | 'drop_colorway'
-  | 'drop_add'
-  | 'world_destination'
-  | 'search'
-  | 'fit_check'
-  | 'sound_opt_in';
+  | "product_view"
+  | "add_to_bag"
+  | "drop_view"
+  | "drop_colorway"
+  | "drop_add"
+  | "world_destination"
+  | "search"
+  | "fit_check"
+  | "sound_opt_in";
 
 export type AdminEvent = {
   id: string;
@@ -91,7 +91,12 @@ export type AdminEvent = {
   query?: string;
 };
 
-export type AdminCart = { id: string; createdAt: string; itemCount: number; valueMinor: number };
+export type AdminCart = {
+  id: string;
+  createdAt: string;
+  itemCount: number;
+  valueMinor: number;
+};
 
 export type AdminData = {
   source: AdminDataSource;
@@ -124,7 +129,11 @@ export type BreakdownRow = {
   color?: string;
 };
 
-export type AdminInsight = { tone: 'good' | 'watch' | 'action'; title: string; body: string };
+export type AdminInsight = {
+  tone: "good" | "watch" | "action";
+  title: string;
+  body: string;
+};
 
 export type AdminMetrics = {
   source: AdminDataSource;
@@ -158,6 +167,11 @@ export type AdminMetrics = {
   inventoryByCollection: BreakdownRow[];
   recentOrders: AdminOrder[];
   lowStock: AdminVariant[];
-  topCustomers: { email: string; orders: number; revenueMinor: number; lastOrderAt: string }[];
+  topCustomers: {
+    email: string;
+    orders: number;
+    revenueMinor: number;
+    lastOrderAt: string;
+  }[];
   insights: AdminInsight[];
 };
