@@ -2,7 +2,7 @@
 
 ## Current application
 
-Vite + React + strict TypeScript app at the repository root. React Router renders the Crewww storefront at `/`, the earlier foundation concept at `/concept`, the component/design preview at `/design-system`, and a designed not-found route. `SiteLayout` owns global chrome; `ShowroomPage` composes the catalog and inspection interaction; `HoodieViewer` is dynamically imported and owns its Three.js resources. TanStack Query and `CatalogService` remain available for the mock product boundary. Mock records live in `src/data/mock/`.
+Vite + React + strict TypeScript app at the repository root. React Router renders the Crewww storefront at `/` (or `VITE_INITIAL_ROUTE` when set, e.g. Docker opens `/drops/psychedelic-minds`), the earlier foundation concept at `/concept`, the component/design preview at `/design-system`, and a designed not-found route. `SiteLayout` owns global chrome; `ShowroomPage` composes the catalog and inspection interaction; `HoodieViewer` is dynamically imported and owns its Three.js resources. `ExperienceLayer` is the site-wide scroll/pointer engine and `DropObjectStage` is the scroll-driven object stage on `/drops/psychedelic-minds`. TanStack Query and `CatalogService` remain available for the mock product boundary. Mock records live in `src/data/mock/`.
 
 `main.py` is outside this application and was not edited in this milestone.
 

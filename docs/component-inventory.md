@@ -20,7 +20,9 @@ Still genuinely out of scope: real payments, email delivery, production product 
 - **BrandMark:** Crewww wordmark with circle-C signet.
 - **ShowroomPage:** homepage hero, hoodie catalog, local search/filter/sort, wishlist, detail studio, size/color/quantity selectors and persisted demo bag.
 - **CrewwwWorld:** dynamic Three.js fashion-district scene with storefronts, locally textured campaign displays, bounded pointer/scroll camera movement, raycast hotspots and matching accessible collection links.
-- **HoodieViewer:** dynamically imported Three.js procedural garment prototype with drag and button rotation, reset, mock color updates, WebGL fallback and accessible product reference link.
+- **HoodieViewer:** dynamically imported Three.js procedural garment prototype with drag, scroll-driven rotation, button rotation, reset, mock color updates, WebGL fallback and accessible product reference link.
+- **ExperienceLayer:** site-wide scroll/pointer engine with route curtain, chapter HUD, tilt and hover labels.
+- **DropObjectStage:** sticky scroll object with cycle dots, dossier tabs and accessible loadout/equip controls.
 - **Button**, **Toast:** shared action and notice primitives.
 - **FoundationPage:** earlier concept route at `/concept` using the mock catalog service.
 - **DesignSystemPage:** interactive token/type/button/form/product/system-state specimen at `/design-system`.

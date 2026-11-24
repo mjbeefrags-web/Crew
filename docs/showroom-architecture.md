@@ -12,6 +12,8 @@ flowchart TD
   Showroom --> Catalog[src/data/mock/catalog.ts\n8 typed hoodie demo records]
   Showroom --> World[src/scenes/CrewwwWorld.tsx\nThree.js fashion district and raycast targets]
   Showroom --> Viewer[src/components/HoodieViewer.tsx\nThree.js procedural hoodie]
+  Showroom --> Experience[src/components/ExperienceLayer.tsx\nroute curtain, chapter HUD, pointer tilt]
+  Drops --> ObjectStage[src/components/DropObjectStage.tsx\nsticky scroll object + dossier tabs]
   Showroom --> Images[public/images/crewww/\nlocal hoodie references]
   Showroom --> Storage[localStorage\nWishlist and demo bag]
   Showroom --> UI[Zustand\nshared notices]
@@ -38,7 +40,10 @@ This is an illustrative interactive 3D prototype. It is not a scan or production
 - The bag supports persistence, distinct variant lines and removal; product availability is demo-only.
 - Inspection studio and bag presentation are viewport overlays with narrow-screen layouts; reduced-motion preferences suppress their entry/exit animation.
 - `playwright.config.ts` starts Vite on a strict fixed port and only reuses a server when `PW_REUSE_SERVER=1` is set. This prevents an unhealthy orphan listener from being mistaken for the test server.
-- Browser screenshots are recorded at 360, 390, 768, 1024 and 1440 CSS pixels in `docs/visual-checks/crewww-home-*.png`.
+- Global experience layer is `src/components/ExperienceLayer.tsx`: route-transition curtain, chapter HUD, pointer tilt, and scroll variables.
+- `src/components/DropObjectStage.tsx` is the drop page’s sticky scroll object. It turns the included Three.js hoodie as the page scrolls, moves a dossier from concept to artwork to loadout, and exposes the parent page’s selected colourway/size/equip actions.
+- Browser screenshots are recorded in `docs/visual-checks/` (for example `home-00.jpeg`, `drops-00.jpeg`, `drop-minds-00.jpeg`, `shop-00.jpeg`; legacy captures also remain as `crewww-home-*.png`). Key captures are at 360, 390, 768, 1024 and 1440 CSS pixels, including `crewww-home-*.png` and `psychedelic-room-*.png`.
+- The object section is `data-chapter="THE OBJECT"`; use `VITE_INITIAL_ROUTE=/drops/psychedelic-minds` in Docker to start there.
 
 ## Remaining scope
 

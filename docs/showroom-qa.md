@@ -41,13 +41,7 @@ The 3D code uses low-power renderer hints, caps device pixel ratio at 1.25 for t
 
 ### Screenshots
 
-All captures below were generated from the running Playwright Chromium application. The five matrix screenshots are full-page captures; interactive state captures show the browser viewport.
-
-- Responsive full page: [360 px](./visual-checks/crewww-home-360.png), [390 px](./visual-checks/crewww-home-390.png), [768 px](./visual-checks/crewww-home-768.png), [1024 px](./visual-checks/crewww-home-1024.png), [1440 px](./visual-checks/crewww-home-1440.png).
-- Desktop campaign hero: [1440 px](./visual-checks/m2.1-hero-1440.png).
-- Desktop catalog section: [1440 px](./visual-checks/m2.1-catalog-1440.png).
-- Desktop interactive product inspection / procedural hoodie: [1440 px](./visual-checks/m2.1-studio-1440.png).
-- Mobile shopping bag drawer: [390 px](./visual-checks/m2.1-bag-390.png).
+All captures below were generated from the running browser app and stored under `docs/visual-checks/`. Current captures include the showroom, drops, drop room and shop; the current viewport-regression set is 360/390/768/1024/1440, and key interactive/progress states are captured in `drop-minds-00.jpeg` and `psychedelic-room-*.png`. See [visual-checks.md](./visual-checks.md) for the complete current capture index.
 
 ## Remaining issues and limits
 

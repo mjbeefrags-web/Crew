@@ -55,6 +55,10 @@ the Web Audio API. Audio is opt-in: the header's `Sound toggle` adds blips to si
 and the chamber's `SOUND OFF` / `SOUND ON` adds the portal sweep and room hum. The preference is
 shared between them; nothing autoplays, and no audio files are shipped.
 
+## Object study / dossier
+
+`DropObjectStage` is a sticky scroll chapter after the main drop room. Scrolling turns the hoodie on the page, moves the HUD signal, and cycles the dossier from CONCEPT → ARTWORK → GARMENT → WORLD. Above the object are the previously available loadout and equip controls, so the page remains a working store.
+
 ## Shareable state
 
 The URL is the source of truth for the experience. `/drops/psychedelic-minds` reads `piece`,
@@ -71,9 +75,12 @@ variant-level SKU/stock. Stock urgency is only shown when a variant supplies a r
 
 - The 3D route, the world, and the standard product viewer are separate lazy chunks, so the
   initial storefront does not download Three.js twice.
+- `DropObjectStage` is lazy, and its `HoodieViewer` is lazy again, so the object study does not
+  block the initial drop page.
 - `createStage()` caps pixel ratio and frame rate, pauses offscreen, respects reduced motion,
   and recovers from WebGL context loss.
-- Without WebGL the chamber shows the real artwork plate instead of a blank canvas.
-- The canvas is focusable and labelled; every control has an accessible name and state.
+- Without WebGL the object stage shows the supplied artwork plate as a fallback image.
+- The canvas is focusable and labelled; every dossier tab, swatch and control has an accessible
+  name and state.
 - HUD pins are fixed HUD elements rather than tracked 3D projections, keeping them stable for
   pointer, keyboard, and assistive-tech users while the object spins.
