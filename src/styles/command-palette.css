@@ -6,7 +6,12 @@
   display: grid;
   place-items: start center;
   padding-top: 12vh;
-  background: radial-gradient(ellipse at 50% 18%, #30213c 0%, #1a1511 45%, #100e0c 100%);
+  background: radial-gradient(
+    ellipse at 50% 18%,
+    #30213c 0%,
+    #1a1511 45%,
+    #100e0c 100%
+  );
   backdrop-filter: blur(6px);
 }
 .command-palette {
@@ -29,10 +34,14 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   outline: none;
-  transition: border-color .15s ease;
+  transition: border-color 0.15s ease;
 }
-.command-palette-input:focus { border-color: var(--lichen); }
-.command-palette-input::placeholder { color: var(--dim); }
+.command-palette-input:focus {
+  border-color: var(--lichen);
+}
+.command-palette-input::placeholder {
+  color: var(--dim);
+}
 .command-palette-list {
   list-style: none;
   margin: 0;
@@ -66,10 +75,17 @@
 .command-palette-hint {
   color: var(--dim);
   font: 9px var(--mono);
-  letter-spacing: .12em;
+  letter-spacing: 0.12em;
 }
 @media (prefers-reduced-motion: reduce) {
-  .command-palette-backdrop { animation: none; transition: none; }
-  .command-palette-input { transition: none; }
-  .command-palette-list li button { transition: none; }
+  .command-palette-backdrop {
+    animation: none;
+    transition: none;
+  }
+  .command-palette-input {
+    transition: none;
+  }
+  .command-palette-list li button {
+    transition: none;
+  }
 }

@@ -64,7 +64,8 @@ const shopColumns = [
 function worldPaletteStyle(): CSSProperties {
   // World palette from the active drop object (Phase 4.1); defaults otherwise.
   const node = document.querySelector<HTMLElement>(".drop-object");
-  const a = node?.style.getPropertyValue("--world-a")?.trim() || "var(--lichen)";
+  const a =
+    node?.style.getPropertyValue("--world-a")?.trim() || "var(--lichen)";
   const b = node?.style.getPropertyValue("--world-b")?.trim() || "#5e3d4f";
   const c = node?.style.getPropertyValue("--world-c")?.trim() || "#115054";
   return {
@@ -90,7 +91,10 @@ export function SiteLayout() {
     prevBagCount.current = bagCount;
     if (bagCount > had && had !== 0) {
       bagLinkRef.current?.setAttribute("data-bag-pulse", "true");
-      window.setTimeout(() => bagLinkRef.current?.removeAttribute("data-bag-pulse"), 600);
+      window.setTimeout(
+        () => bagLinkRef.current?.removeAttribute("data-bag-pulse"),
+        600,
+      );
     }
   }, [bagCount]);
   const notice = useUiStore((state) => state.notice);
@@ -189,8 +193,8 @@ export function SiteLayout() {
       drawer
         ? Array.from(
             drawer.querySelectorAll<HTMLElement>(
-              "button, a, input, select, [tabindex]:not([tabindex='-1'])"
-            )
+              "button, a, input, select, [tabindex]:not([tabindex='-1'])",
+            ),
           )
         : [];
     let enter = true;
@@ -325,9 +329,26 @@ export function SiteLayout() {
           <button type="button" onClick={openShop}>
             THE EDIT
           </button>
-          <NavLink to="/new-arrivals" aria-current={location.pathname === "/new-arrivals" ? "page" : undefined}>NEW ARRIVALS</NavLink>
-          <NavLink to="/kids" aria-current={location.pathname === "/kids" ? "page" : undefined}>KIDS</NavLink>
-          <NavLink to="/denim" aria-current={location.pathname === "/denim" ? "page" : undefined}>DENIM</NavLink>
+          <NavLink
+            to="/new-arrivals"
+            aria-current={
+              location.pathname === "/new-arrivals" ? "page" : undefined
+            }
+          >
+            NEW ARRIVALS
+          </NavLink>
+          <NavLink
+            to="/kids"
+            aria-current={location.pathname === "/kids" ? "page" : undefined}
+          >
+            KIDS
+          </NavLink>
+          <NavLink
+            to="/denim"
+            aria-current={location.pathname === "/denim" ? "page" : undefined}
+          >
+            DENIM
+          </NavLink>
           <button
             type="button"
             aria-expanded={activeMenu === "shop"}
@@ -338,11 +359,30 @@ export function SiteLayout() {
           >
             CLOTHES <span aria-hidden="true">⌄</span>
           </button>
-          <NavLink to="/drops" aria-current={location.pathname === "/drops" ? "page" : undefined}>DROPS</NavLink>
-          <NavLink className="desktop-trip-link" to="/drops/psychedelic-minds" aria-current={location.pathname === "/drops/psychedelic-minds" ? "page" : undefined}>
+          <NavLink
+            to="/drops"
+            aria-current={location.pathname === "/drops" ? "page" : undefined}
+          >
+            DROPS
+          </NavLink>
+          <NavLink
+            className="desktop-trip-link"
+            to="/drops/psychedelic-minds"
+            aria-current={
+              location.pathname === "/drops/psychedelic-minds"
+                ? "page"
+                : undefined
+            }
+          >
             PSYCHEDELIC
           </NavLink>
-          <NavLink className="desktop-story-link" to="/lookbook" aria-current={location.pathname === "/lookbook" ? "page" : undefined}>
+          <NavLink
+            className="desktop-story-link"
+            to="/lookbook"
+            aria-current={
+              location.pathname === "/lookbook" ? "page" : undefined
+            }
+          >
             STORIES
           </NavLink>
         </nav>
@@ -495,7 +535,9 @@ export function SiteLayout() {
                     key={path}
                     to={path}
                     onClick={() => setMenuOpen(false)}
-                    aria-current={location.pathname === path ? "page" : undefined}
+                    aria-current={
+                      location.pathname === path ? "page" : undefined
+                    }
                   >
                     {label}
                     <span>↗</span>

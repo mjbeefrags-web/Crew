@@ -8,7 +8,7 @@ type CommandItem = { key: string; label: string; href: string };
 function readHistory(): string[] {
   try {
     const raw = localStorage.getItem("crewww:search-history");
-    return raw ? JSON.parse(raw) as string[] : [];
+    return raw ? (JSON.parse(raw) as string[]) : [];
   } catch {
     return [];
   }
@@ -18,7 +18,10 @@ function writeHistory(raw: string) {
   const term = raw.trim();
   if (!term) return;
   try {
-    const next = [term, ...readHistory().filter((t) => t.toLowerCase() !== term.toLowerCase())].slice(0, 6);
+    const next = [
+      term,
+      ...readHistory().filter((t) => t.toLowerCase() !== term.toLowerCase()),
+    ].slice(0, 6);
     localStorage.setItem("crewww:search-history", JSON.stringify(next));
   } catch {
     /* localStorage unavailable; history is best-effort. */
@@ -52,7 +55,10 @@ export function CommandPalette() {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         isOpen ? close() : open();
-      } else if (event.key === "/" && document.activeElement?.tagName !== "INPUT") {
+      } else if (
+        event.key === "/" &&
+        document.activeElement?.tagName !== "INPUT"
+      ) {
         const target = event.target as HTMLElement | null;
         if (!target?.closest("input, textarea, select, button, a")) {
           event.preventDefault();
@@ -69,33 +75,53 @@ export function CommandPalette() {
     const query = term.trim().toLowerCase();
     setCursor(0);
     if (!query) {
-      catalogService.listFeaturedProducts()
+      catalogService
+        .listFeaturedProducts()
         .then((products) => {
           if (cancelled) return;
-          setFeatured(products.slice(0, 8).map((product) => ({
-            key: `product-${product.slug}`,
-            label: product.name,
-            href: `/products/${product.slug}`,
-          })));
+          setFeatured(
+            products.slice(0, 8).map((product) => ({
+              key: `product-${product.slug}`,
+              label: product.name,
+              href: `/products/${product.slug}`,
+            })),
+          );
         })
         .catch(() => undefined);
-      return () => { cancelled = true; };
+      return () => {
+        cancelled = true;
+      };
     }
     // Debounce search
     const id = window.setTimeout(() => {
-      catalogService.suggestProducts(query, 8)
+      catalogService
+        .suggestProducts(query, 8)
         .then((products) => {
           if (cancelled) return;
-          setFeatured(products.map((product) => ({ key: `product-${product.slug}`, label: product.name, href: `/products/${product.slug}` })));
+          setFeatured(
+            products.map((product) => ({
+              key: `product-${product.slug}`,
+              label: product.name,
+              href: `/products/${product.slug}`,
+            })),
+          );
         })
         .catch(() => undefined);
     }, 120);
-    return () => { cancelled = true; window.clearTimeout(id); };
+    return () => {
+      cancelled = true;
+      window.clearTimeout(id);
+    };
   }, [term]);
 
   const recent: CommandItem[] = useMemo(
-    () => history.slice(0, 6).map((path) => ({ key: `recent-${path}`, label: path.replace(/^\//, ""), href: path })),
-    [history]
+    () =>
+      history.slice(0, 6).map((path) => ({
+        key: `recent-${path}`,
+        label: path.replace(/^\//, ""),
+        href: path,
+      })),
+    [history],
   );
   const results = featured;
 
@@ -114,7 +140,9 @@ export function CommandPalette() {
       role="dialog"
       aria-modal="true"
       aria-label="Command palette"
-      onClick={(event) => { if (event.target === event.currentTarget) close(); }}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) close();
+      }}
     >
       <div className="command-palette">
         <input
@@ -129,7 +157,10 @@ export function CommandPalette() {
           aria-controls="command-palette-list"
           onChange={(event) => setTerm(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === "Escape") { close(); return; }
+            if (event.key === "Escape") {
+              close();
+              return;
+            }
             if (event.key === "ArrowDown") {
               event.preventDefault();
               setCursor((c) => Math.min(results.length - 1, c + 1));
@@ -153,19 +184,32 @@ export function CommandPalette() {
         >
           {results.length === 0 && (
             <li className="command-palette-empty">
-              {term ? "No results — try a different term." : history.length ? "Recent searches:" : "Try \"Hoodie\" or a colourway name."}
+              {term
+                ? "No results — try a different term."
+                : history.length
+                  ? "Recent searches:"
+                  : 'Try "Hoodie" or a colourway name.'}
             </li>
           )}
-          {!term && recent.map((item, index) => (
-            <li key={item.href}>
-              <button type="button" className={index === cursor ? "is-active" : ""} onClick={() => activate(item)}>
-                ⌀ {item.label}
-              </button>
-            </li>
-          ))}
+          {!term &&
+            recent.map((item, index) => (
+              <li key={item.href}>
+                <button
+                  type="button"
+                  className={index === cursor ? "is-active" : ""}
+                  onClick={() => activate(item)}
+                >
+                  ⌀ {item.label}
+                </button>
+              </li>
+            ))}
           {results.map((item, index) => (
             <li key={item.href}>
-              <button type="button" className={index === cursor ? "is-active" : ""} onClick={() => activate(item)}>
+              <button
+                type="button"
+                className={index === cursor ? "is-active" : ""}
+                onClick={() => activate(item)}
+              >
                 {item.label}
               </button>
             </li>
