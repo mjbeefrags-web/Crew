@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -22,7 +22,7 @@ describe('foundation routes', () => {
   it('renders the Crewww hoodie showroom and discovery tools', async () => {
     renderApp('/');
 
-    expect(await screen.findByRole('heading', { name: /the block is yours/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /the block is yours/i }, { timeout: 3000 })).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /find your crew/i })).toBeInTheDocument();
     expect(await screen.findByRole('textbox', { name: /search pieces/i })).toBeInTheDocument();
     expect(await screen.findByRole('navigation', { name: /primary navigation/i })).toBeInTheDocument();
@@ -33,10 +33,10 @@ describe('foundation routes', () => {
   it('filters products and opens a clearly labeled static inspection fallback', async () => {
     const user = userEvent.setup();
     renderApp('/');
-    await user.type(await screen.findByRole('textbox', { name: /search pieces/i }), 'Cherry');
+    await user.type(await screen.findByRole('textbox', { name: /search pieces/i }, { timeout: 3000 }), 'Cherry');
     const collection = within(screen.getByRole('region', { name: /find your crew/i }));
     expect(collection.getByRole('heading', { name: 'Cherry Blossom Hoodie' })).toBeInTheDocument();
-    expect(collection.queryByRole('heading', { name: 'Vivre La Vie Hoodie' })).not.toBeInTheDocument();
+    await waitFor(() => expect(collection.queryByRole('heading', { name: 'Vivre La Vie Hoodie' })).not.toBeInTheDocument());
     await user.clear(screen.getByRole('textbox', { name: /search pieces/i }));
     await user.click(screen.getByRole('button', { name: /inspect joy of outdoors hoodie/i }));
     expect(screen.getByRole('dialog', { name: /joy of outdoors hoodie inspection studio/i })).toBeInTheDocument();

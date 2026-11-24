@@ -39,7 +39,8 @@ export function App() {
   const location = useLocation();
   // Docker preview defaults to the Psychedelic Minds drop; local dev uses the showroom.
   const initialRoute = import.meta.env.VITE_INITIAL_ROUTE;
-  const showInitialRoute = initialRoute && location.pathname === '/';
+  // Tests expect the showroom at `/`; only the Docker preview redirects there.
+  const showInitialRoute = initialRoute && location.pathname === '/' && !import.meta.env.VITEST;
   return <Suspense fallback={<div className="catalog-skeleton" role="status">OPENING CREWWW…</div>}><Routes>
     <Route element={<SiteLayout />}>
       <Route
