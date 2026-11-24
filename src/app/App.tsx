@@ -73,9 +73,9 @@ const PsychedelicDropPage = lazy(() =>
 
 export function App() {
   const location = useLocation();
-  // Docker preview defaults to the Psychedelic Minds drop; local dev uses the showroom.
-  const initialRoute = import.meta.env.VITE_INITIAL_ROUTE;
+  // Docker preview can override the root route via VITE_INITIAL_ROUTE.
   // Tests expect the showroom at `/`; only the Docker preview redirects there.
+  const initialRoute = import.meta.env.VITE_INITIAL_ROUTE;
   const showInitialRoute =
     initialRoute && location.pathname === "/" && !import.meta.env.VITEST;
   return (
