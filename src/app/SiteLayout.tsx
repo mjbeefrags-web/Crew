@@ -231,10 +231,31 @@ export function SiteLayout() {
         requestAnimationFrame(() => nodes[0]?.focus());
       }
     };
+    // Phase 7.3: swipe-left closes the drawer on touch devices.
+    let startX = 0;
+    const onTouchStart = (event: TouchEvent) => {
+      if (event.touches.length) startX = event.touches[0].clientX;
+    };
+    const onTouchMove = (event: TouchEvent) => {
+      if (event.touches.length) startX = event.touches[0].clientX;
+    };
+    const onTouchEnd = (event: TouchEvent) => {
+      const touch = event.changedTouches?.[0];
+      if (touch && startX - touch.clientX > 60) {
+        setMenuOpen(false);
+        setActiveMenu(null);
+      }
+    };
     window.addEventListener("keydown", onKeyDown);
+    drawer?.addEventListener("touchstart", onTouchStart, { passive: true });
+    drawer?.addEventListener("touchmove", onTouchMove, { passive: true });
+    drawer?.addEventListener("touchend", onTouchEnd);
     if (drawer) firstFocusable();
     return () => {
       window.removeEventListener("keydown", onKeyDown);
+      drawer?.removeEventListener("touchstart", onTouchStart);
+      drawer?.removeEventListener("touchmove", onTouchMove);
+      drawer?.removeEventListener("touchend", onTouchEnd);
     };
   }, [menuOpen]);
 
@@ -425,7 +446,7 @@ export function SiteLayout() {
           }}
         >
           <nav
-            className="mobile-navigation"
+            className={`mobile-navigation${menuOpen ? " is-open" : ""}`}
             id="mobile-navigation"
             aria-label="Mobile navigation"
             onClick={(event) => event.stopPropagation()}
