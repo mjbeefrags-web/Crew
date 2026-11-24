@@ -4,6 +4,20 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    // Isolate the heavy Three.js runtime so the storefront entry only loads
+    // it when a 3D route needs it (and the base bundle drops sharply).
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('/three/build/')) return 'three';
+          if (id.includes('three')) return 'three';
+        },
+      },
+    },
+    // Three.js is deliberately loaded as an on-demand chunk; allow its size.
+    chunkSizeWarningLimit: 700,
+  },
   test: {
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     environment: 'jsdom',

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
+import { Color, Mesh, OrthographicCamera, PlaneGeometry, Scene, ShaderMaterial, Vector2 } from 'three';
 import { createStage } from './lib/stage';
 
 const vertexShader = /* glsl */ `
@@ -124,24 +124,24 @@ export function PsychedelicField({ mood, energy = 1, accent }: Props) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
-    const scene = new THREE.Scene();
-    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    const geometry = new THREE.PlaneGeometry(2, 2);
-    const material = new THREE.ShaderMaterial({
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const geometry = new PlaneGeometry(2, 2);
+    const material = new ShaderMaterial({
       vertexShader, fragmentShader,
       uniforms: {
         uTime: { value: 0 },
         uEnergy: { value: energyRef.current },
-        uPointer: { value: new THREE.Vector2() },
-        uColorA: { value: new THREE.Color(moodRef.current.a) },
-        uColorB: { value: new THREE.Color(moodRef.current.b) },
-        uColorC: { value: new THREE.Color(moodRef.current.c) },
-        uAccent: { value: new THREE.Color(accentRef.current) },
+        uPointer: { value: new Vector2() },
+        uColorA: { value: new Color(moodRef.current.a) },
+        uColorB: { value: new Color(moodRef.current.b) },
+        uColorC: { value: new Color(moodRef.current.c) },
+        uAccent: { value: new Color(accentRef.current) },
       },
       depthTest: false,
       depthWrite: false,
     });
-    scene.add(new THREE.Mesh(geometry, material));
+    scene.add(new Mesh(geometry, material));
 
     const stage = createStage(canvas, {
       scene, camera, fps: 60, maxPixelRatio: 1.5, antialias: false,
@@ -152,11 +152,11 @@ export function PsychedelicField({ mood, energy = 1, accent }: Props) {
         const smoothing = 1 - Math.exp(-delta * 3);
         u.uTime.value = reduced ? 0 : elapsed;
         u.uEnergy.value += (energyRef.current - u.uEnergy.value) * smoothing;
-        (u.uPointer.value as THREE.Vector2).lerp(new THREE.Vector2(pointerRef.current.x, pointerRef.current.y), 1 - Math.exp(-delta * 4));
-        (u.uColorA.value as THREE.Color).lerp(new THREE.Color(moodRef.current.a), smoothing);
-        (u.uColorB.value as THREE.Color).lerp(new THREE.Color(moodRef.current.b), smoothing);
-        (u.uColorC.value as THREE.Color).lerp(new THREE.Color(moodRef.current.c), smoothing);
-        (u.uAccent.value as THREE.Color).lerp(new THREE.Color(accentRef.current), smoothing);
+        (u.uPointer.value as Vector2).lerp(new Vector2(pointerRef.current.x, pointerRef.current.y), 1 - Math.exp(-delta * 4));
+        (u.uColorA.value as Color).lerp(new Color(moodRef.current.a), smoothing);
+        (u.uColorB.value as Color).lerp(new Color(moodRef.current.b), smoothing);
+        (u.uColorC.value as Color).lerp(new Color(moodRef.current.c), smoothing);
+        (u.uAccent.value as Color).lerp(new Color(accentRef.current), smoothing);
       },
     });
     if (!stage) { setUnsupported(true); return undefined; }

@@ -1,20 +1,21 @@
-import * as THREE from 'three';
+import { ACESFilmicToneMapping, Camera, SRGBColorSpace, Scene, WebGLRenderer } from 'three';
+import type { ToneMapping } from 'three';
 
 export type StageOptions = {
-  scene: THREE.Scene;
-  camera: THREE.Camera;
+  scene: Scene;
+  camera: Camera;
   maxPixelRatio?: number;
   fps?: number;
   alpha?: boolean;
   antialias?: boolean;
-  toneMapping?: THREE.ToneMapping;
+  toneMapping?: ToneMapping;
   visibilityTarget?: HTMLElement;
   onFrame?: (delta: number, elapsed: number) => void;
   onResize?: (width: number, height: number) => void;
 };
 
 export type Stage = {
-  renderer: THREE.WebGLRenderer;
+  renderer: WebGLRenderer;
   requestRender: () => void;
   setMotionEnabled: (enabled: boolean) => void;
   resize: () => void;
@@ -31,9 +32,9 @@ export type Stage = {
 export function createStage(canvas: HTMLCanvasElement, options: StageOptions): Stage | null {
   if (!window.WebGLRenderingContext && !window.WebGL2RenderingContext) return null;
 
-  let renderer: THREE.WebGLRenderer;
+  let renderer: WebGLRenderer;
   try {
-    renderer = new THREE.WebGLRenderer({
+    renderer = new WebGLRenderer({
       canvas,
       alpha: options.alpha ?? false,
       antialias: options.antialias ?? true,
@@ -43,8 +44,8 @@ export function createStage(canvas: HTMLCanvasElement, options: StageOptions): S
     return null;
   }
 
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = options.toneMapping ?? THREE.ACESFilmicToneMapping;
+  renderer.outputColorSpace = SRGBColorSpace;
+  renderer.toneMapping = options.toneMapping ?? ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, options.maxPixelRatio ?? 1.5));
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
+import { ACESFilmicToneMapping, AdditiveBlending, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CatmullRomCurve3, CircleGeometry, Color, CylinderGeometry, DirectionalLight, DoubleSide, Euler, ExtrudeGeometry, Fog, Group, HemisphereLight, MathUtils, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, PointLight, Points, PointsMaterial, Raycaster, SRGBColorSpace, Scene, Shape, SphereGeometry, TextureLoader, TorusGeometry, Vector2, Vector3 } from 'three';
 import { createStage } from './lib/stage';
 import { drops } from '../data/drops';
 import { psychedelicPieces } from '../data/psychedelic';
@@ -45,7 +45,7 @@ function makeSignTexture(name: string, accent = '#c9ef68') {
   context.fillText(`CREWWW  /  ${name}`, 512, 116, 940);
   context.fillStyle = '#e7e4d8'; context.font = '400 20px monospace';
   context.fillText('DISTRICT 02 · OPEN PORTAL', 512, 194, 900);
-  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; return texture;
+  const texture = new CanvasTexture(canvas); texture.colorSpace = SRGBColorSpace; return texture;
 }
 
 function makeGlowTexture() {
@@ -57,7 +57,7 @@ function makeGlowTexture() {
   gradient.addColorStop(0.35, 'rgba(255,255,255,.34)');
   gradient.addColorStop(1, 'rgba(255,255,255,0)');
   context.fillStyle = gradient; context.fillRect(0, 0, 128, 128);
-  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; return texture;
+  const texture = new CanvasTexture(canvas); texture.colorSpace = SRGBColorSpace; return texture;
 }
 
 function makePortalTexture(glyph: string) {
@@ -76,7 +76,7 @@ function makePortalTexture(glyph: string) {
   context.fillStyle = '#c9ef68'; context.textAlign = 'center'; context.textBaseline = 'middle';
   context.font = '220px Georgia, serif';
   context.fillText(glyph, 256, 266);
-  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; return texture;
+  const texture = new CanvasTexture(canvas); texture.colorSpace = SRGBColorSpace; return texture;
 }
 
 function makeParticleTexture() {
@@ -88,25 +88,25 @@ function makeParticleTexture() {
   gradient.addColorStop(0.4, 'rgba(201,239,104,.55)');
   gradient.addColorStop(1, 'rgba(201,239,104,0)');
   context.fillStyle = gradient; context.fillRect(0, 0, 64, 64);
-  return new THREE.CanvasTexture(canvas);
+  return new CanvasTexture(canvas);
 }
 
 function makeWorldGarment(color: string) {
-  const garment = new THREE.Group();
-  const silhouette = new THREE.Shape();
+  const garment = new Group();
+  const silhouette = new Shape();
   silhouette.moveTo(-0.52, -0.78); silhouette.lineTo(0.52, -0.78); silhouette.lineTo(0.55, 0.5);
   silhouette.lineTo(0.79, 0.7); silhouette.lineTo(1.2, -0.35); silhouette.quadraticCurveTo(1.36, -0.5, 1.48, -0.34);
   silhouette.lineTo(1.17, 0.83); silhouette.quadraticCurveTo(1.02, 1.02, 0.8, 0.98); silhouette.lineTo(0.55, 0.82);
   silhouette.lineTo(0.4, 1.22); silhouette.quadraticCurveTo(0, 1.5, -0.4, 1.22); silhouette.lineTo(-0.55, 0.82);
   silhouette.lineTo(-0.8, 0.98); silhouette.quadraticCurveTo(-1.02, 1.02, -1.17, 0.83); silhouette.lineTo(-1.48, -0.34);
   silhouette.quadraticCurveTo(-1.36, -0.5, -1.2, -0.35); silhouette.lineTo(-0.79, 0.7); silhouette.lineTo(-0.55, 0.5); silhouette.closePath();
-  const body = new THREE.Mesh(new THREE.ExtrudeGeometry(silhouette, { depth: 0.12, bevelEnabled: true, bevelSegments: 2, bevelSize: 0.025, bevelThickness: 0.025 }), new THREE.MeshStandardMaterial({ color, roughness: 0.9 }));
+  const body = new Mesh(new ExtrudeGeometry(silhouette, { depth: 0.12, bevelEnabled: true, bevelSegments: 2, bevelSize: 0.025, bevelThickness: 0.025 }), new MeshStandardMaterial({ color, roughness: 0.9 }));
   body.position.z = -0.06; garment.add(body);
-  const hood = new THREE.Mesh(new THREE.SphereGeometry(0.42, 14, 10), new THREE.MeshStandardMaterial({ color: new THREE.Color(color).multiplyScalar(0.82), roughness: 0.92 }));
+  const hood = new Mesh(new SphereGeometry(0.42, 14, 10), new MeshStandardMaterial({ color: new Color(color).multiplyScalar(0.82), roughness: 0.92 }));
   hood.scale.set(0.88, 0.58, 0.28); hood.position.set(0, 1.12, -0.08); garment.add(hood);
   const graphic = makeSignTexture('CREWWW');
   if (graphic) {
-    const mark = new THREE.Mesh(new THREE.PlaneGeometry(0.66, 0.22), new THREE.MeshBasicMaterial({ map: graphic, transparent: true, toneMapped: false }));
+    const mark = new Mesh(new PlaneGeometry(0.66, 0.22), new MeshBasicMaterial({ map: graphic, transparent: true, toneMapped: false }));
     mark.position.set(0, 0.32, 0.08); garment.add(mark);
   }
   return garment;
@@ -130,131 +130,131 @@ export function CrewwwWorld({ onDestination, mode = 'cinematic', moveInput, onNe
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#101711');
-    scene.fog = new THREE.Fog('#101711', 13, 36);
-    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 60);
+    const scene = new Scene();
+    scene.background = new Color('#101711');
+    scene.fog = new Fog('#101711', 13, 36);
+    const camera = new PerspectiveCamera(42, 1, 0.1, 60);
     camera.position.set(0, 3.1, 11.8);
-    const lookTarget = new THREE.Vector3(0, 1.1, -5.5);
+    const lookTarget = new Vector3(0, 1.1, -5.5);
     camera.lookAt(lookTarget);
-    const root = new THREE.Group(); scene.add(root);
+    const root = new Group(); scene.add(root);
 
     const disposables = new Set<{ dispose(): void }>();
     const track = <T extends { dispose(): void }>(item: T): T => { disposables.add(item); return item; };
 
-    scene.add(new THREE.HemisphereLight('#d9e7d4', '#1a1e19', 2.25));
-    const moon = new THREE.DirectionalLight('#c9d8c9', 3); moon.position.set(-5, 10, 8); scene.add(moon);
-    const streetGlow = new THREE.PointLight('#d6efae', 2.1, 25); streetGlow.position.set(0, 5, -5); scene.add(streetGlow);
-    const sweep = new THREE.PointLight('#e5ffb0', 1.5, 12); scene.add(sweep);
+    scene.add(new HemisphereLight('#d9e7d4', '#1a1e19', 2.25));
+    const moon = new DirectionalLight('#c9d8c9', 3); moon.position.set(-5, 10, 8); scene.add(moon);
+    const streetGlow = new PointLight('#d6efae', 2.1, 25); streetGlow.position.set(0, 5, -5); scene.add(streetGlow);
+    const sweep = new PointLight('#e5ffb0', 1.5, 12); scene.add(sweep);
 
-    const groundMaterial = track(new THREE.MeshStandardMaterial({ color: '#29302a', roughness: 0.94 }));
-    const roadMaterial = track(new THREE.MeshPhysicalMaterial({
+    const groundMaterial = track(new MeshStandardMaterial({ color: '#29302a', roughness: 0.94 }));
+    const roadMaterial = track(new MeshPhysicalMaterial({
       color: '#0d110f', roughness: 0.28, metalness: 0.24,
       clearcoat: 0.9, clearcoatRoughness: 0.19,
     }));
-    const curbMaterial = track(new THREE.MeshStandardMaterial({ color: '#66715d', roughness: 0.8 }));
-    const buildingMaterial = track(new THREE.MeshStandardMaterial({ color: '#2c372e', roughness: 0.86 }));
-    const trimMaterial = track(new THREE.MeshStandardMaterial({ color: '#6e8063', roughness: 0.66, metalness: 0.12 }));
-    const windowMaterial = track(new THREE.MeshStandardMaterial({ color: '#d5e7bc', emissive: '#78925d', emissiveIntensity: 1.25, roughness: 0.25 }));
-    const floorGeo = track(new THREE.PlaneGeometry(30, 44));
-    const roadGeo = track(new THREE.PlaneGeometry(8.8, 42));
-    const pavementGeo = track(new THREE.PlaneGeometry(1.1, 42));
-    const dashGeo = track(new THREE.BoxGeometry(0.09, 0.012, 1.15));
-    const floor = new THREE.Mesh(floorGeo, groundMaterial); floor.rotation.x = -Math.PI / 2; floor.position.set(0, -0.48, -8); root.add(floor);
-    const road = new THREE.Mesh(roadGeo, roadMaterial); road.rotation.x = -Math.PI / 2; road.position.set(0, -0.44, -8); root.add(road);
+    const curbMaterial = track(new MeshStandardMaterial({ color: '#66715d', roughness: 0.8 }));
+    const buildingMaterial = track(new MeshStandardMaterial({ color: '#2c372e', roughness: 0.86 }));
+    const trimMaterial = track(new MeshStandardMaterial({ color: '#6e8063', roughness: 0.66, metalness: 0.12 }));
+    const windowMaterial = track(new MeshStandardMaterial({ color: '#d5e7bc', emissive: '#78925d', emissiveIntensity: 1.25, roughness: 0.25 }));
+    const floorGeo = track(new PlaneGeometry(30, 44));
+    const roadGeo = track(new PlaneGeometry(8.8, 42));
+    const pavementGeo = track(new PlaneGeometry(1.1, 42));
+    const dashGeo = track(new BoxGeometry(0.09, 0.012, 1.15));
+    const floor = new Mesh(floorGeo, groundMaterial); floor.rotation.x = -Math.PI / 2; floor.position.set(0, -0.48, -8); root.add(floor);
+    const road = new Mesh(roadGeo, roadMaterial); road.rotation.x = -Math.PI / 2; road.position.set(0, -0.44, -8); root.add(road);
     for (const x of [-4.9, 4.9]) {
-      const pavement = new THREE.Mesh(pavementGeo, curbMaterial); pavement.rotation.x = -Math.PI / 2; pavement.position.set(x, -0.42, -8); root.add(pavement);
+      const pavement = new Mesh(pavementGeo, curbMaterial); pavement.rotation.x = -Math.PI / 2; pavement.position.set(x, -0.42, -8); root.add(pavement);
     }
     for (let z = 3; z > -26; z -= 4) {
-      const dash = new THREE.Mesh(dashGeo, trimMaterial); dash.position.set(0, -0.42, z); root.add(dash);
+      const dash = new Mesh(dashGeo, trimMaterial); dash.position.set(0, -0.42, z); root.add(dash);
     }
-    const centreLight = new THREE.Mesh(
-      track(new THREE.PlaneGeometry(0.12, 40)),
-      track(new THREE.MeshBasicMaterial({ color: '#c9ef68', transparent: true, opacity: 0.13, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false })),
+    const centreLight = new Mesh(
+      track(new PlaneGeometry(0.12, 40)),
+      track(new MeshBasicMaterial({ color: '#c9ef68', transparent: true, opacity: 0.13, blending: AdditiveBlending, depthWrite: false, toneMapped: false })),
     );
     centreLight.rotation.x = -Math.PI / 2; centreLight.position.set(0, -0.415, -8); root.add(centreLight);
     const glowTexture = makeGlowTexture();
     if (glowTexture) track(glowTexture);
-    const lightPools: THREE.Mesh[] = [];
+    const lightPools: Mesh[] = [];
     for (const z of [1, -6, -13, -20]) for (const x of [-3.15, 3.15]) {
-      const pool = new THREE.Mesh(
-        track(new THREE.PlaneGeometry(3.2, 3.2)),
-        track(new THREE.MeshBasicMaterial({
+      const pool = new Mesh(
+        track(new PlaneGeometry(3.2, 3.2)),
+        track(new MeshBasicMaterial({
           map: glowTexture ?? undefined, color: '#d9f0a5', transparent: true,
-          opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
+          opacity: 0.2, blending: AdditiveBlending, depthWrite: false, toneMapped: false,
         })),
       );
       pool.rotation.x = -Math.PI / 2; pool.position.set(x, -0.412, z); root.add(pool); lightPools.push(pool);
     }
 
-    const hotspots: THREE.Mesh[] = [];
-    const signs: THREE.Mesh[] = [];
-    const glows: { light: THREE.PointLight; base: number; phase: number }[] = [];
-    const loader = new THREE.TextureLoader();
-    const buildingGeo = track(new THREE.BoxGeometry(5.1, 5.8, 3.6));
-    const signGeo = track(new THREE.PlaneGeometry(3.75, 0.84));
-    const hotspotGeo = track(new THREE.BoxGeometry(3.6, 0.9, 0.2));
-    const frameGeo = track(new THREE.BoxGeometry(1.48, 2.24, 0.22));
-    const glassGeo = track(new THREE.PlaneGeometry(1.19, 1.92));
-    const posterGeo = track(new THREE.PlaneGeometry(0.92, 1.36));
-    const roofGeo = track(new THREE.BoxGeometry(5.35, 0.22, 3.85));
+    const hotspots: Mesh[] = [];
+    const signs: Mesh[] = [];
+    const glows: { light: PointLight; base: number; phase: number }[] = [];
+    const loader = new TextureLoader();
+    const buildingGeo = track(new BoxGeometry(5.1, 5.8, 3.6));
+    const signGeo = track(new PlaneGeometry(3.75, 0.84));
+    const hotspotGeo = track(new BoxGeometry(3.6, 0.9, 0.2));
+    const frameGeo = track(new BoxGeometry(1.48, 2.24, 0.22));
+    const glassGeo = track(new PlaneGeometry(1.19, 1.92));
+    const posterGeo = track(new PlaneGeometry(0.92, 1.36));
+    const roofGeo = track(new BoxGeometry(5.35, 0.22, 3.85));
 
     for (let i = 0; i < storefronts.length; i += 1) {
       const shop = storefronts[i];
-      const facade = new THREE.Group(); facade.position.set(shop.x, 0, shop.z); root.add(facade);
-      const building = new THREE.Mesh(buildingGeo, buildingMaterial); building.position.y = 2.35; facade.add(building);
+      const facade = new Group(); facade.position.set(shop.x, 0, shop.z); root.add(facade);
+      const building = new Mesh(buildingGeo, buildingMaterial); building.position.y = 2.35; facade.add(building);
       const signTexture = makeSignTexture(shop.world, shop.accent);
-      let signMesh: THREE.Mesh | null = null;
+      let signMesh: Mesh | null = null;
       if (signTexture) {
         track(signTexture);
-        const signMaterial = track(new THREE.MeshBasicMaterial({ map: signTexture, toneMapped: false }));
-        const sign = new THREE.Mesh(signGeo, signMaterial);
+        const signMaterial = track(new MeshBasicMaterial({ map: signTexture, toneMapped: false }));
+        const sign = new Mesh(signGeo, signMaterial);
         sign.position.set(0, 4.55, 1.84); facade.add(sign); signMesh = sign; signs.push(sign);
       }
-      const target = new THREE.Mesh(hotspotGeo, track(new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, colorWrite: false, depthWrite: false })));
+      const target = new Mesh(hotspotGeo, track(new MeshBasicMaterial({ transparent: true, opacity: 0, colorWrite: false, depthWrite: false })));
       target.position.set(0, 4.55, 1.91);
       target.userData.destination = shop.id;
       target.userData.sign = signMesh;
       facade.add(target); hotspots.push(target);
       for (const windowX of [-1.3, 1.3]) {
-        const frame = new THREE.Mesh(frameGeo, trimMaterial); frame.position.set(windowX, 1.72, 1.91); facade.add(frame);
-        const glass = new THREE.Mesh(glassGeo, windowMaterial); glass.position.set(windowX, 1.72, 2.04); facade.add(glass);
+        const frame = new Mesh(frameGeo, trimMaterial); frame.position.set(windowX, 1.72, 1.91); facade.add(frame);
+        const glass = new Mesh(glassGeo, windowMaterial); glass.position.set(windowX, 1.72, 2.04); facade.add(glass);
         const windowPoster = windowX < 0 ? shop.poster : shop.plate;
-        const poster = new THREE.Mesh(posterGeo, track(new THREE.MeshBasicMaterial({ color: '#e8eadb', toneMapped: false })));
+        const poster = new Mesh(posterGeo, track(new MeshBasicMaterial({ color: '#e8eadb', toneMapped: false })));
         poster.position.set(windowX, 1.72, 2.08); facade.add(poster);
         loader.load(windowPoster, (texture) => {
-          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.colorSpace = SRGBColorSpace;
           track(texture);
-          const previous = poster.material as THREE.MeshBasicMaterial;
-          poster.material = track(new THREE.MeshBasicMaterial({ map: texture, toneMapped: false }));
+          const previous = poster.material as MeshBasicMaterial;
+          poster.material = track(new MeshBasicMaterial({ map: texture, toneMapped: false }));
           previous.dispose(); disposables.delete(previous);
           stage?.requestRender();
         });
       }
-      const anglePanel = new THREE.Mesh(posterGeo, track(new THREE.MeshBasicMaterial({ color: '#e8eadb', toneMapped: false })));
+      const anglePanel = new Mesh(posterGeo, track(new MeshBasicMaterial({ color: '#e8eadb', toneMapped: false })));
       anglePanel.scale.set(0.42, 0.3, 1);
       anglePanel.position.set(0, 3.35, 2.08);
       facade.add(anglePanel);
       loader.load(shop.angle, (texture) => {
-        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.colorSpace = SRGBColorSpace;
         track(texture);
-        const previous = anglePanel.material as THREE.MeshBasicMaterial;
-        anglePanel.material = track(new THREE.MeshBasicMaterial({ map: texture, toneMapped: false }));
+        const previous = anglePanel.material as MeshBasicMaterial;
+        anglePanel.material = track(new MeshBasicMaterial({ map: texture, toneMapped: false }));
         previous.dispose(); disposables.delete(previous);
         stage?.requestRender();
       });
-      const roof = new THREE.Mesh(roofGeo, trimMaterial); roof.position.y = 5.29; facade.add(roof);
-      const glow = new THREE.PointLight(shop.accent, 2, 10);
+      const roof = new Mesh(roofGeo, trimMaterial); roof.position.y = 5.29; facade.add(roof);
+      const glow = new PointLight(shop.accent, 2, 10);
       glow.position.set(shop.x > 0 ? -1 : 1, 2.5, 2.7); facade.add(glow);
       glows.push({ light: glow, base: 2, phase: i * 1.7 });
     }
 
     // The concept plates become roadside lightboxes: the artwork is world
     // architecture here, not a thumbnail hidden inside a product card.
-    const artBoards: { group: THREE.Group; baseY: number; baseRotation: number; phase: number }[] = [];
-    const artFrameGeo = track(new THREE.BoxGeometry(1.78, 2.38, 0.1));
-    const artPlaneGeo = track(new THREE.PlaneGeometry(1.64, 2.24));
-    const artGlowGeo = track(new THREE.PlaneGeometry(3.2, 3.8));
+    const artBoards: { group: Group; baseY: number; baseRotation: number; phase: number }[] = [];
+    const artFrameGeo = track(new BoxGeometry(1.78, 2.38, 0.1));
+    const artPlaneGeo = track(new PlaneGeometry(1.64, 2.24));
+    const artGlowGeo = track(new PlaneGeometry(3.2, 3.8));
     const boardPositions = [
       [-3.3, 2.85, -3.4, 0.18], [3.3, 3.05, -6.4, -0.18],
       [-3.2, 2.75, -10.3, 0.14], [3.2, 2.95, -14.2, -0.14],
@@ -262,40 +262,40 @@ export function CrewwwWorld({ onDestination, mode = 'cinematic', moveInput, onNe
     ] as const;
     drops.forEach((drop, index) => {
       const [x, y, z, rotation] = boardPositions[index];
-      const group = new THREE.Group(); group.position.set(x, y, z); group.rotation.y = rotation; root.add(group);
-      const frame = new THREE.Mesh(artFrameGeo, track(new THREE.MeshStandardMaterial({ color: '#171a16', roughness: 0.34, metalness: 0.58 })));
+      const group = new Group(); group.position.set(x, y, z); group.rotation.y = rotation; root.add(group);
+      const frame = new Mesh(artFrameGeo, track(new MeshStandardMaterial({ color: '#171a16', roughness: 0.34, metalness: 0.58 })));
       group.add(frame);
-      const aura = new THREE.Mesh(artGlowGeo, track(new THREE.MeshBasicMaterial({
+      const aura = new Mesh(artGlowGeo, track(new MeshBasicMaterial({
         map: glowTexture ?? undefined, color: psychedelicPieces[index].accent, transparent: true,
-        opacity: 0.24, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
+        opacity: 0.24, blending: AdditiveBlending, depthWrite: false, toneMapped: false,
       })));
       aura.position.z = -0.1; group.add(aura);
-      const boardMaterial = track(new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.94, side: THREE.DoubleSide, toneMapped: false }));
-      const board = new THREE.Mesh(artPlaneGeo, boardMaterial); board.position.z = 0.055; group.add(board);
+      const boardMaterial = track(new MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.94, side: DoubleSide, toneMapped: false }));
+      const board = new Mesh(artPlaneGeo, boardMaterial); board.position.z = 0.055; group.add(board);
       loader.load(drop.plate, (texture) => {
-        texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = 4; track(texture);
+        texture.colorSpace = SRGBColorSpace; texture.anisotropy = 4; track(texture);
         boardMaterial.map = texture; boardMaterial.needsUpdate = true; stage?.requestRender();
       });
       artBoards.push({ group, baseY: y, baseRotation: rotation, phase: index * 1.35 });
     });
 
-    const lampPoleGeo = track(new THREE.CylinderGeometry(0.045, 0.075, 4.1, 8));
-    const bulbGeo = track(new THREE.SphereGeometry(0.16, 12, 10));
-    const bulbMaterial = track(new THREE.MeshBasicMaterial({ color: '#d9f0a5', toneMapped: false }));
+    const lampPoleGeo = track(new CylinderGeometry(0.045, 0.075, 4.1, 8));
+    const bulbGeo = track(new SphereGeometry(0.16, 12, 10));
+    const bulbMaterial = track(new MeshBasicMaterial({ color: '#d9f0a5', toneMapped: false }));
     for (const z of [1, -6, -13]) for (const x of [-3.15, 3.15]) {
-      const pole = new THREE.Mesh(lampPoleGeo, trimMaterial); pole.position.set(x, 1.55, z); root.add(pole);
-      const bulb = new THREE.Mesh(bulbGeo, bulbMaterial); bulb.position.set(x, 3.7, z); root.add(bulb);
+      const pole = new Mesh(lampPoleGeo, trimMaterial); pole.position.set(x, 1.55, z); root.add(pole);
+      const bulb = new Mesh(bulbGeo, bulbMaterial); bulb.position.set(x, 3.7, z); root.add(bulb);
     }
-    const trunkGeo = track(new THREE.CylinderGeometry(0.17, 0.23, 1.6, 8));
-    const crownGeo = track(new THREE.SphereGeometry(0.9, 12, 10));
-    const crownMaterial = track(new THREE.MeshStandardMaterial({ color: '#334b38', roughness: 1 }));
+    const trunkGeo = track(new CylinderGeometry(0.17, 0.23, 1.6, 8));
+    const crownGeo = track(new SphereGeometry(0.9, 12, 10));
+    const crownMaterial = track(new MeshStandardMaterial({ color: '#334b38', roughness: 1 }));
     for (const [x, z] of [[-8.5, -4], [8.5, -5], [-8.4, -13], [8.3, -14]]) {
-      const trunk = new THREE.Mesh(trunkGeo, buildingMaterial); trunk.position.set(x, 0.25, z); root.add(trunk);
-      const crown = new THREE.Mesh(crownGeo, crownMaterial); crown.position.set(x, 1.45, z); root.add(crown);
+      const trunk = new Mesh(trunkGeo, buildingMaterial); trunk.position.set(x, 0.25, z); root.add(trunk);
+      const crown = new Mesh(crownGeo, crownMaterial); crown.position.set(x, 1.45, z); root.add(crown);
     }
     const displayHoodie = makeWorldGarment('#53674e');
     displayHoodie.traverse((object) => {
-      if (object instanceof THREE.Mesh) {
+      if (object instanceof Mesh) {
         disposables.add(object.geometry);
         const materials = Array.isArray(object.material) ? object.material : [object.material];
         materials.forEach((material) => disposables.add(material));
@@ -304,11 +304,11 @@ export function CrewwwWorld({ onDestination, mode = 'cinematic', moveInput, onNe
     displayHoodie.scale.setScalar(0.52); displayHoodie.position.set(0.15, 1.1, -4.5); displayHoodie.rotation.y = -0.12; root.add(displayHoodie);
 
     // Later chapters of the scroll journey reveal floating garments and a portal.
-    const floaters: { group: THREE.Group; baseY: number; phase: number }[] = [];
+    const floaters: { group: Group; baseY: number; phase: number }[] = [];
     for (const [x, y, z, scale] of [[-2.5, 2.5, -8.5, 0.36], [2.7, 3.1, -12.5, 0.32], [-1.9, 3.4, -16.5, 0.38]] as const) {
       const garment = makeWorldGarment('#8aa171');
       garment.traverse((object) => {
-        if (object instanceof THREE.Mesh) {
+        if (object instanceof Mesh) {
           disposables.add(object.geometry);
           const materials = Array.isArray(object.material) ? object.material : [object.material];
           materials.forEach((material) => disposables.add(material));
@@ -317,24 +317,24 @@ export function CrewwwWorld({ onDestination, mode = 'cinematic', moveInput, onNe
       garment.position.set(x, y, z); garment.scale.setScalar(scale); root.add(garment);
       floaters.push({ group: garment, baseY: y, phase: z });
     }
-    const portalMaterial = track(new THREE.MeshStandardMaterial({ color: '#c9ef68', emissive: '#c9ef68', emissiveIntensity: 1.5, roughness: 0.4 }));
-    const portal = new THREE.Mesh(track(new THREE.TorusGeometry(1.55, 0.07, 10, 48)), portalMaterial);
+    const portalMaterial = track(new MeshStandardMaterial({ color: '#c9ef68', emissive: '#c9ef68', emissiveIntensity: 1.5, roughness: 0.4 }));
+    const portal = new Mesh(track(new TorusGeometry(1.55, 0.07, 10, 48)), portalMaterial);
     portal.position.set(0, 2.3, -20.5); root.add(portal);
     const portalTexture = makePortalTexture('✦');
     if (portalTexture) track(portalTexture);
-    const portalDisc = new THREE.Mesh(
-      track(new THREE.CircleGeometry(1.47, 48)),
-      track(new THREE.MeshBasicMaterial({
+    const portalDisc = new Mesh(
+      track(new CircleGeometry(1.47, 48)),
+      track(new MeshBasicMaterial({
         map: portalTexture ?? undefined, color: '#ffffff', transparent: true,
-        opacity: 0.92, side: THREE.DoubleSide, toneMapped: false,
+        opacity: 0.92, side: DoubleSide, toneMapped: false,
       })),
     );
     portalDisc.position.set(0, 2.3, -20.56); root.add(portalDisc);
-    const portalLight = new THREE.PointLight('#c9ef68', 2.4, 15); portalLight.position.set(0, 2.3, -19.8); root.add(portalLight);
+    const portalLight = new PointLight('#c9ef68', 2.4, 15); portalLight.position.set(0, 2.3, -19.8); root.add(portalLight);
     const farSignTexture = makeSignTexture('THE EDIT');
     if (farSignTexture) {
       track(farSignTexture);
-      const farSign = new THREE.Mesh(signGeo, track(new THREE.MeshBasicMaterial({ map: farSignTexture, toneMapped: false })));
+      const farSign = new Mesh(signGeo, track(new MeshBasicMaterial({ map: farSignTexture, toneMapped: false })));
       farSign.position.set(0, 4.5, -20.3); root.add(farSign);
     }
 
@@ -347,32 +347,32 @@ export function CrewwwWorld({ onDestination, mode = 'cinematic', moveInput, onNe
       particlePositions[i * 3 + 2] = 8 - Math.random() * 34;
       particleSpeeds[i] = 0.06 + Math.random() * 0.16;
     }
-    const particleGeo = track(new THREE.BufferGeometry());
-    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    const particleGeo = track(new BufferGeometry());
+    particleGeo.setAttribute('position', new BufferAttribute(particlePositions, 3));
     const particleTexture = makeParticleTexture();
     if (particleTexture) track(particleTexture);
-    const particleMaterial = track(new THREE.PointsMaterial({
+    const particleMaterial = track(new PointsMaterial({
       color: '#c9ef68', size: 0.13, map: particleTexture ?? undefined, transparent: true,
-      opacity: 0.52, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true,
+      opacity: 0.52, depthWrite: false, blending: AdditiveBlending, sizeAttenuation: true,
     }));
-    root.add(new THREE.Points(particleGeo, particleMaterial));
+    root.add(new Points(particleGeo, particleMaterial));
 
-    const journey = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0, 3.1, 11.8), new THREE.Vector3(-1.1, 2.8, 7.2),
-      new THREE.Vector3(1.1, 2.35, 2.6), new THREE.Vector3(-0.7, 2.1, -2.2),
-      new THREE.Vector3(0.6, 2.05, -6.4), new THREE.Vector3(-0.6, 2.15, -11),
-      new THREE.Vector3(0.4, 2.35, -15.4), new THREE.Vector3(0, 2.6, -18.2),
+    const journey = new CatmullRomCurve3([
+      new Vector3(0, 3.1, 11.8), new Vector3(-1.1, 2.8, 7.2),
+      new Vector3(1.1, 2.35, 2.6), new Vector3(-0.7, 2.1, -2.2),
+      new Vector3(0.6, 2.05, -6.4), new Vector3(-0.6, 2.15, -11),
+      new Vector3(0.4, 2.35, -15.4), new Vector3(0, 2.6, -18.2),
     ]);
-    const lookJourney = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0, 1.1, -5.5), new THREE.Vector3(-2.6, 1.7, -4.5),
-      new THREE.Vector3(2.7, 2.1, -7), new THREE.Vector3(-1.8, 2.2, -10),
-      new THREE.Vector3(1.6, 2.4, -13), new THREE.Vector3(-1.2, 2.5, -16),
-      new THREE.Vector3(0, 2.5, -19), new THREE.Vector3(0, 2.3, -21),
+    const lookJourney = new CatmullRomCurve3([
+      new Vector3(0, 1.1, -5.5), new Vector3(-2.6, 1.7, -4.5),
+      new Vector3(2.7, 2.1, -7), new Vector3(-1.8, 2.2, -10),
+      new Vector3(1.6, 2.4, -13), new Vector3(-1.2, 2.5, -16),
+      new Vector3(0, 2.5, -19), new Vector3(0, 2.3, -21),
     ]);
 
-    const raycaster = new THREE.Raycaster();
-    const pointer = new THREE.Vector2();
-    const walkPosition = new THREE.Vector3(0, 0, 6.5);
+    const raycaster = new Raycaster();
+    const pointer = new Vector2();
+    const walkPosition = new Vector3(0, 0, 6.5);
     const keys = new Set<string>();
     let yaw = 0;
     let pitch = -0.05;
@@ -393,7 +393,7 @@ export function CrewwwWorld({ onDestination, mode = 'cinematic', moveInput, onNe
       scene, camera,
       maxPixelRatio: 1.35,
       fps: 45,
-      toneMapping: THREE.ACESFilmicToneMapping,
+      toneMapping: ACESFilmicToneMapping,
       visibilityTarget: canvas.parentElement ?? undefined,
       onResize: (width) => {
         compactView = width < 680;
@@ -409,9 +409,9 @@ export function CrewwwWorld({ onDestination, mode = 'cinematic', moveInput, onNe
         smoothProgress += (scrollProgress - smoothProgress) * (1 - Math.exp(-delta * 4.5));
 
         if (modeRef.current === 'explore') {
-          const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+          const forward = new Vector3(0, 0, -1).applyEuler(new Euler(pitch, yaw, 0, 'YXZ'));
           forward.y = 0; forward.normalize();
-          const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+          const right = new Vector3(1, 0, 0).applyAxisAngle(new Vector3(0, 1, 0), yaw);
           const xInput = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0) + moveRef.current.x;
           const zInput = (keys.has('w') || keys.has('arrowup') ? 1 : 0) - (keys.has('s') || keys.has('arrowdown') ? 1 : 0) + moveRef.current.z;
           const movement = forward.multiplyScalar(zInput).add(right.multiplyScalar(xInput));
@@ -419,8 +419,8 @@ export function CrewwwWorld({ onDestination, mode = 'cinematic', moveInput, onNe
             movement.normalize().multiplyScalar(delta * (keys.has('shift') ? 5.4 : 3.2));
             walkPosition.add(movement);
           }
-          walkPosition.x = THREE.MathUtils.clamp(walkPosition.x, -3.35, 3.35);
-          walkPosition.z = THREE.MathUtils.clamp(walkPosition.z, -22, 7);
+          walkPosition.x = MathUtils.clamp(walkPosition.x, -3.35, 3.35);
+          walkPosition.z = MathUtils.clamp(walkPosition.z, -22, 7);
           camera.position.set(walkPosition.x, 1.68, walkPosition.z);
           camera.rotation.set(pitch, yaw, 0, 'YXZ');
 
@@ -432,10 +432,10 @@ export function CrewwwWorld({ onDestination, mode = 'cinematic', moveInput, onNe
           }
           if (closest !== nearby) { nearby = closest; nearRef.current?.(closest); }
         } else {
-          const position = journey.getPoint(THREE.MathUtils.clamp(smoothProgress, 0, 1));
-          const target = lookJourney.getPoint(THREE.MathUtils.clamp(smoothProgress, 0, 1));
+          const position = journey.getPoint(MathUtils.clamp(smoothProgress, 0, 1));
+          const target = lookJourney.getPoint(MathUtils.clamp(smoothProgress, 0, 1));
           const breathe = reduced ? 0 : Math.sin(elapsed * 0.45) * 0.09;
-          const nextPosition = new THREE.Vector3(position.x + breathe, position.y + breathe * 0.4, position.z);
+          const nextPosition = new Vector3(position.x + breathe, position.y + breathe * 0.4, position.z);
           if (firstFrame) {
             camera.position.copy(nextPosition);
             lookTarget.copy(target);
@@ -448,7 +448,7 @@ export function CrewwwWorld({ onDestination, mode = 'cinematic', moveInput, onNe
         }
 
         if (!reduced) {
-          const positions = particleGeo.getAttribute('position') as THREE.BufferAttribute;
+          const positions = particleGeo.getAttribute('position') as BufferAttribute;
           for (let i = 0; i < particleCount; i += 1) {
             let y = positions.getY(i) + delta * particleSpeeds[i];
             if (y > 7) y = -0.4;
@@ -471,7 +471,7 @@ export function CrewwwWorld({ onDestination, mode = 'cinematic', moveInput, onNe
             board.group.rotation.y = board.baseRotation + Math.sin(elapsed * 0.38 + board.phase) * 0.035;
           }
           lightPools.forEach((pool, index) => {
-            (pool.material as THREE.MeshBasicMaterial).opacity = 0.16 + Math.sin(elapsed * 1.7 + index * 0.8) * 0.055;
+            (pool.material as MeshBasicMaterial).opacity = 0.16 + Math.sin(elapsed * 1.7 + index * 0.8) * 0.055;
           });
           portalDisc.rotation.z -= delta * 0.035;
           portal.rotation.z += delta * 0.08;
@@ -486,14 +486,14 @@ export function CrewwwWorld({ onDestination, mode = 'cinematic', moveInput, onNe
       const bounds = canvas.getBoundingClientRect();
       pointer.set(((event.clientX - bounds.left) / bounds.width) * 2 - 1, -((event.clientY - bounds.top) / bounds.height) * 2 + 1);
       raycaster.setFromCamera(pointer, camera);
-      const target = raycaster.intersectObjects(hotspots, false)[0]?.object as THREE.Mesh | undefined;
+      const target = raycaster.intersectObjects(hotspots, false)[0]?.object as Mesh | undefined;
       return (target?.userData.destination as WorldDestinationId | undefined) ?? null;
     };
     const setHovered = (destination: WorldDestinationId | null) => {
       for (const target of hotspots) {
-        const sign = target.userData.sign as THREE.Mesh | null;
+        const sign = target.userData.sign as Mesh | null;
         if (!sign) continue;
-        (sign.material as THREE.MeshBasicMaterial).color.set(signs.indexOf(sign) >= 0 && target.userData.destination === destination ? '#ffffff' : '#c9ef68');
+        (sign.material as MeshBasicMaterial).color.set(signs.indexOf(sign) >= 0 && target.userData.destination === destination ? '#ffffff' : '#c9ef68');
       }
       canvas.style.cursor = destination ? 'pointer' : modeRef.current === 'explore' ? 'crosshair' : 'grab';
       stage.requestRender();
@@ -505,7 +505,7 @@ export function CrewwwWorld({ onDestination, mode = 'cinematic', moveInput, onNe
         if (Math.abs(event.clientX - pointerStartX) + Math.abs(event.clientY - pointerStartY) > 6) pointerMoved = true;
         if (modeRef.current === 'explore') {
           yaw -= dx * 0.0032;
-          pitch = THREE.MathUtils.clamp(pitch - dy * 0.0032, -0.75, 0.6);
+          pitch = MathUtils.clamp(pitch - dy * 0.0032, -0.75, 0.6);
           stage.requestRender();
         }
         pointerLastX = event.clientX; pointerLastY = event.clientY;
@@ -540,7 +540,7 @@ export function CrewwwWorld({ onDestination, mode = 'cinematic', moveInput, onNe
       // The hero is in normal flow: page top is the start of the journey,
       // and scrolling past the hero reaches the end.
       const heroTop = bounds.top + window.scrollY;
-      scrollProgress = THREE.MathUtils.clamp((window.scrollY - heroTop) / Math.max(1, bounds.height), 0, 1);
+      scrollProgress = MathUtils.clamp((window.scrollY - heroTop) / Math.max(1, bounds.height), 0, 1);
       stage.requestRender();
     };
     const onKeyDown = (event: KeyboardEvent) => {

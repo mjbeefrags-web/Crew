@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
+import { CanvasTexture, DirectionalLight, HemisphereLight, LineSegments, MathUtils, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, PointLight, SRGBColorSpace, Scene, TextureLoader, Vector3 } from 'three';
 import { crewMark } from '../data/drops';
 import { createStage } from '../scenes/lib/stage';
 import { createHoodieModel } from '../scenes/lib/garment';
@@ -28,16 +28,16 @@ export function HoodieViewer({ color, label, artworkUrl, scrollYaw = 0, fallback
     if (!canvas) return undefined;
     const width = Math.max(1, canvas.clientWidth);
     const height = Math.max(1, canvas.clientHeight);
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(32, width / height, 0.1, 30);
+    const scene = new Scene();
+    const camera = new PerspectiveCamera(32, width / height, 0.1, 30);
     const disposables = new Set<{ dispose(): void }>();
     const track = <T extends { dispose(): void }>(item: T): T => { disposables.add(item); return item; };
 
-    const target = new THREE.Vector3(0, 0.2, 0);
-    scene.add(new THREE.HemisphereLight('#ffffff', '#33303b', 2));
-    const key = new THREE.DirectionalLight('#fff6e6', 3.2); key.position.set(-3.5, 4.2, 5); scene.add(key);
-    const rim = new THREE.DirectionalLight('#d5d2ff', 2.2); rim.position.set(4, 1.5, -3); scene.add(rim);
-    const warm = new THREE.PointLight('#ffd79a', 18, 12); warm.position.set(2, -1, 3); scene.add(warm);
+    const target = new Vector3(0, 0.2, 0);
+    scene.add(new HemisphereLight('#ffffff', '#33303b', 2));
+    const key = new DirectionalLight('#fff6e6', 3.2); key.position.set(-3.5, 4.2, 5); scene.add(key);
+    const rim = new DirectionalLight('#d5d2ff', 2.2); rim.position.set(4, 1.5, -3); scene.add(rim);
+    const warm = new PointLight('#ffd79a', 18, 12); warm.position.set(2, -1, 3); scene.add(warm);
 
     const shadowSurface = document.createElement('canvas'); shadowSurface.width = shadowSurface.height = 128;
     const shadowContext = shadowSurface.getContext('2d');
@@ -47,40 +47,40 @@ export function HoodieViewer({ color, label, artworkUrl, scrollYaw = 0, fallback
       gradient.addColorStop(1, 'rgba(255,255,255,0)');
       shadowContext.fillStyle = gradient; shadowContext.fillRect(0, 0, 128, 128);
     }
-    const shadowTexture = track(new THREE.CanvasTexture(shadowSurface));
-    const shadowMaterial = track(new THREE.MeshBasicMaterial({
+    const shadowTexture = track(new CanvasTexture(shadowSurface));
+    const shadowMaterial = track(new MeshBasicMaterial({
       color: '#000000', transparent: true, opacity: 0.28, depthWrite: false, map: shadowTexture,
     }));
-    const shadow = new THREE.Mesh(track(new THREE.PlaneGeometry(3.2, 1.2)), shadowMaterial);
+    const shadow = new Mesh(track(new PlaneGeometry(3.2, 1.2)), shadowMaterial);
     shadow.rotation.x = -Math.PI / 2; shadow.position.y = -1.02; scene.add(shadow);
 
     const model = createHoodieModel(color);
     scene.add(model.group);
     model.group.traverse((object) => {
-      if (object instanceof THREE.Mesh || object instanceof THREE.LineSegments) {
+      if (object instanceof Mesh || object instanceof LineSegments) {
         track(object.geometry);
         const materials = Array.isArray(object.material) ? object.material : [object.material];
         materials.forEach((material) => disposables.add(material));
       }
     });
 
-    const loader = new THREE.TextureLoader();
+    const loader = new TextureLoader();
     if (artworkUrl) {
       loader.load(artworkUrl, (texture) => {
-        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.colorSpace = SRGBColorSpace;
         track(texture);
         if (model.backPrint) {
-          const material = model.backPrint.material as THREE.MeshBasicMaterial;
+          const material = model.backPrint.material as MeshBasicMaterial;
           material.map = texture; material.needsUpdate = true; model.backPrint.visible = true;
         }
         stage?.requestRender();
       });
     }
     loader.load(crewMark, (texture) => {
-      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.colorSpace = SRGBColorSpace;
       track(texture);
       if (model.chestMark) {
-        const material = model.chestMark.material as THREE.MeshBasicMaterial;
+        const material = model.chestMark.material as MeshBasicMaterial;
         material.map = texture; material.needsUpdate = true; model.chestMark.visible = true;
       }
       stage?.requestRender();
@@ -128,7 +128,7 @@ export function HoodieViewer({ color, label, artworkUrl, scrollYaw = 0, fallback
     };
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
-      targetZoom = THREE.MathUtils.clamp(targetZoom + event.deltaY * 0.005, 5.2, 10);
+      targetZoom = MathUtils.clamp(targetZoom + event.deltaY * 0.005, 5.2, 10);
     };
     const onTurn = (event: Event) => {
       const direction = (event as CustomEvent<number>).detail;
