@@ -1,0 +1,15 @@
+{
+  "name": "Crewww Storefront",
+  "short_name": "Crewww",
+  "description": "Crewww storefront — graphic fleece, drops and the Psychedelic Minds object world.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#111210",
+  "theme_color": "#111210",
+  "icons": [
+    { "src": "/images/brand/logo-01.webp", "sizes": "512x512", "type": "image/webp", "purpose": "any" },
+    { "src": "/images/brand/logo-02.webp", "sizes": "192x192", "type": "image/webp", "purpose": "any" },
+    { "src": "/images/brand/logo-main.jpg", "sizes": "1024x1024", "type": "image/jpeg", "purpose": "any maskable" }
+  ]
+}

@@ -19,21 +19,21 @@ function renderApp(path: string) {
 }
 
 describe('foundation routes', () => {
-  it('renders the Crewww hoodie showroom and discovery tools', () => {
+  it('renders the Crewww hoodie showroom and discovery tools', async () => {
     renderApp('/');
 
-    expect(screen.getByRole('heading', { name: /the block is yours/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /find your crew/i })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: /search pieces/i })).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: /primary navigation/i })).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: /explore crewww collections/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /skip to content/i })).toHaveAttribute('href', '#main-content');
+    expect(await screen.findByRole('heading', { name: /the block is yours/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /find your crew/i })).toBeInTheDocument();
+    expect(await screen.findByRole('textbox', { name: /search pieces/i })).toBeInTheDocument();
+    expect(await screen.findByRole('navigation', { name: /primary navigation/i })).toBeInTheDocument();
+    expect(await screen.findByRole('navigation', { name: /explore crewww collections/i })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /skip to content/i })).toHaveAttribute('href', '#main-content');
   });
 
   it('filters products and opens a clearly labeled static inspection fallback', async () => {
     const user = userEvent.setup();
     renderApp('/');
-    await user.type(screen.getByRole('textbox', { name: /search pieces/i }), 'Cherry');
+    await user.type(await screen.findByRole('textbox', { name: /search pieces/i }), 'Cherry');
     const collection = within(screen.getByRole('region', { name: /find your crew/i }));
     expect(collection.getByRole('heading', { name: 'Cherry Blossom Hoodie' })).toBeInTheDocument();
     expect(collection.queryByRole('heading', { name: 'Vivre La Vie Hoodie' })).not.toBeInTheDocument();

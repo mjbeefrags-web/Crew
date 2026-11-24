@@ -9,6 +9,7 @@ import { ShowroomPage } from '../pages/ShowroomPage';
 import { RequireAdmin } from './RequireAdmin';
 import { SiteLayout } from './SiteLayout';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+// (kept exported for route-level retries on other pages)
 
 const DropPage = lazy(() => import('../pages/DropsPage').then((module) => ({ default: module.DropPage })));
 const DropsIndexPage = lazy(() => import('../pages/DropsPage').then((module) => ({ default: module.DropsIndexPage })));
@@ -41,15 +42,11 @@ export function App() {
   // Docker preview defaults to the Psychedelic Minds drop; local dev uses the showroom.
   const initialRoute = import.meta.env.VITE_INITIAL_ROUTE;
   const showInitialRoute = initialRoute && location.pathname === '/';
-  return <ErrorBoundary><Suspense fallback={<div className="catalog-skeleton" role="status">OPENING CREWWW…</div>}><Routes>
+  return <Suspense fallback={<div className="catalog-skeleton" role="status">OPENING CREWWW…</div>}><Routes>
     <Route element={<SiteLayout />}>
       <Route
         index
-        element={
-          <ErrorBoundary key="home">
-            {showInitialRoute ? <Navigate to={initialRoute} replace /> : <ShowroomPage />}
-          </ErrorBoundary>
-        }
+        element={showInitialRoute ? <Navigate to={initialRoute} replace /> : <ShowroomPage />}
       />
       {catalogRoutes.map((route) => <Route key={route.path} path={route.path.slice(1)} element={<CatalogPage route={route} />} />)}
       <Route path="search" element={<SearchPage />} />
@@ -92,5 +89,5 @@ export function App() {
       <Route path="design-system" element={<DesignSystemPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Route>
-  </Routes></Suspense></ErrorBoundary>;
+  </Routes></Suspense>;
 }
