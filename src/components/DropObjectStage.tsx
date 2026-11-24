@@ -140,7 +140,7 @@ export function DropObjectStage({
   >
     <div className="drop-object-sticky">
       <div className="drop-object-backdrop" aria-hidden="true">
-        <img src={piece.artwork} alt="" loading="lazy" />
+        <img src={piece.artwork} alt="" width={957} height={452} loading="lazy" decoding="async" />
       </div>
 
       <div className="drop-object-hud" aria-hidden="true">
@@ -228,7 +228,7 @@ export function DropObjectStage({
         <div className="drop-object-reticle" aria-hidden="true"><i /><i /><i /><i /></div>
         <div className="drop-object-ring" aria-hidden="true"><i /><i /><i /></div>
         <div className="drop-object-artcard" aria-hidden="true">
-          <img src={piece.artwork} alt="" loading="lazy" />
+          <img src={piece.artwork} alt="" width={957} height={452} loading="lazy" decoding="async" />
           <span>{piece.world.name}</span>
         </div>
         <Suspense fallback={<img className="drop-object-poster" src={piece.photo ?? piece.artwork} alt={`${piece.name} garment preview`} />}>

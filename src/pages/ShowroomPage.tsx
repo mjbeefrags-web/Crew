@@ -322,6 +322,10 @@ export function ShowroomPage() {
             key={piece.id}
             src={piece.artwork}
             alt=""
+            width={957}
+            height={452}
+            loading={chapterArt[chapterIndex].id === piece.id ? 'eager' : 'lazy'}
+            decoding="async"
             className={chapterArt[chapterIndex].id === piece.id ? 'is-active' : ''}
             style={{ '--art-delay': `${index * -1.4}s` } as CSSProperties}
           />)}

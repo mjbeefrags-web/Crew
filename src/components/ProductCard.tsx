@@ -26,7 +26,7 @@ export function ProductCard({ product }: { product: Product }) {
     <div className="store-product-media" data-tilt data-parallax>
       <Link to={`/products/${product.slug}`} aria-label={`View ${product.name}`}>
         {product.imageUrl && !failed
-          ? <img src={product.imageUrl} alt={`${product.name} · ${product.color}`} loading="lazy" onError={() => setFailed(true)} />
+          ? <img src={product.imageUrl} alt={`${product.name} · ${product.color}`} loading="lazy" decoding="async" onError={() => setFailed(true)} />
           : <div className={`store-product-placeholder placeholder-${product.category}`} aria-hidden="true"><span>CREWWW</span><i>{product.category.toUpperCase()}</i></div>}
       </Link>
       {product.isPreviewData && <span className="preview-tag">SAMPLE</span>}

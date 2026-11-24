@@ -327,7 +327,7 @@ body:has(.showroom) { background:#111210; color:#f1f0e8; }
 .announcement { color:#f1f0e8; background:#233b32; }
 .brand-mark-inverse { color:#f1f0e8; }
 .site-footer { background:#0b0c0b; }
-.showroom { --night:#111210; --plum:#233b32; --mauve:#96b044; --lilac:#c9ef68; --cream:#f1f0e8; --dim:#a5a69b; --hairline:rgba(229,230,216,.15); color:var(--cream); background:var(--night); min-height:100vh; overflow:hidden; padding-bottom:0; }
+.showroom { --night:#111210; --plum:#233b32; --mauve:#96b044; --lilac:#c9ef68; --cream:#f1f0e8; --dim:#a5a69b; --hairline:rgba(229,230,216,.15); color:var(--cream); background:var(--night); min-height:100vh; overflow:hidden; padding-bottom:0; content-visibility: auto; contain-intrinsic-size: 900px 1700px; }
 .showroom button,.showroom input,.showroom select { color:inherit; }
 .showroom button { cursor:pointer; }
 .showroom-hero { position:relative; min-height:min(730px,calc(100svh - 104px)); display:grid; grid-template-columns:1.08fr .92fr; align-items:center; padding:70px 10vw 80px 11vw; overflow:hidden; background:radial-gradient(ellipse at 72% 49%,#3a2b41 0,#251e2a 33%,#111210 73%); }
