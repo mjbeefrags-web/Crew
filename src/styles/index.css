@@ -10083,3 +10083,69 @@ main,
 }
 
 .empty-catalog-hint { margin: 0 0 20px; color: var(--dim); font: 12px var(--mono); letter-spacing: .04em; }
+/* Phone view & experience polish */
+html { scroll-padding-top: 76px; }
+#collection, #newsletter, .drop-entry-banner, .home-arrivals, .home-bestsellers { scroll-margin-top: 90px; }
+.collection, .drop-entry-banner, .home-arrivals, .home-bestsellers, .home-lookbook, .home-brand-story { content-visibility: auto; contain-intrinsic-size: 1px 600px; }
+@media (max-width: 680px) {
+  .showroom-hero { min-height: 100svh; padding: 52px 20px 72px; }
+  .showroom-hero h1 { font-size: clamp(56px, 16vw, 88px); }
+  .showroom-lede { font-size: 12px; margin: 20px 0; }
+  .chapter-rail { gap: 10px; font-size: 7px; overflow-x: auto; padding-bottom: 4px; }
+  .chapter-rail span { white-space: nowrap; }
+  .chapter-rail-count { display: none; }
+  .world-destinations { gap: 8px; }
+  .world-destinations a { padding: 10px 12px; min-height: 44px; }
+  .world-mode-bar button { min-height: 44px; padding: 10px 14px; }
+  .journey-scroll-hint { font-size: 8px; bottom: 14px; }
+  .catalog-tools { position: sticky; top: 56px; z-index: 5; background: rgba(17,18,16,.92); backdrop-filter: blur(8px); padding: 12px 0; margin: 0 -21px 20px; padding-left: 21px; padding-right: 21px; }
+  .filter-panel { display: none; }
+  .filter-panel.is-mobile-open { display: grid; }
+  .filter-mobile-toggle { display: flex; width: 100%; justify-content: space-between; align-items: center; padding: 12px 0; border: 0; border-bottom: 1px solid var(--hairline); background: transparent; color: inherit; font: 9px var(--mono); letter-spacing: .12em; min-height: 44px; }
+  .product-grid { grid-template-columns: 1fr; gap: 28px 0; }
+  .product-tile, .product-tile.tile-1, .product-tile.tile-2, .product-tile.tile-4, .product-tile:nth-child(5n+1) { grid-column: span 1; }
+  .tile-image-button { min-height: 44px; }
+  .collection-heading h2 { font-size: 48px; }
+  .drop-entry-banner { padding: 28px 20px; min-height: 280px; }
+  .drop-entry-banner h2 { font-size: clamp(42px, 12vw, 64px); }
+  .command-palette { width: min(560px, 96vw); }
+  .command-palette-input { font-size: 16px; } /* prevents iOS zoom */
+}
+@media (min-width: 681px) { .filter-mobile-toggle { display: none; } }
+@media (prefers-reduced-motion: reduce) { .journey-scroll-hint i { animation: none !important; } }
+@media (max-width: 680px) {
+  .catalog-tools { top: 76px; }
+  .site-header[data-scrolled="true"] ~ main .catalog-tools { top: 56px; }
+  .world-destinations { display: none; }
+  .showroom-hero .hero-footnote { display: none; }
+  .world-mode-bar { top: 88px; right: 12px; }
+  .world-mode-bar span { display: none; }
+  .chapter-rail { bottom: 14px; left: 16px; right: 16px; gap: 8px; font-size: 7px; }
+  .journey-scroll-hint { bottom: 52px; }
+  .hero-cta, .chapter-secondary, .hero-trip-link { min-height: 44px; display: inline-flex; align-items: center; }
+  .showroom-hero-copy { width: min(440px, 92vw); }
+}
+.walk-hint { position: absolute; top: 128px; right: 20px; z-index: 8; padding: 14px 16px; border: 1px solid var(--store-line); background: rgba(17,18,16,.92); backdrop-filter: blur(8px); color: #f1f0e8; font: 10px var(--mono); letter-spacing: .08em; max-width: 260px; }
+.walk-hint b { display: block; margin-bottom: 6px; color: var(--lichen); font-size: 9px; letter-spacing: .14em; }
+@media (max-width: 680px) { .walk-hint { right: 12px; left: 12px; max-width: none; top: 132px; } }
+.catalog-search-kbd { border: 1px solid var(--store-line); background: transparent; color: var(--dim); font: 9px var(--mono); padding: 4px 8px; min-height: 28px; cursor: pointer; }
+.catalog-search-kbd:hover { color: var(--cream); border-color: var(--lichen); }
+@media (max-width: 680px) { .catalog-search-kbd { min-height: 44px; padding: 8px 12px; } }
+@media (hover: none) { .inspect-chip { opacity: 1; transform: translateY(0); } }
+.product-tile { position: relative; }
+.product-tile::before { content: attr(data-index); position: absolute; top: 10px; left: 10px; z-index: 2; font: 9px var(--mono); color: var(--lichen); letter-spacing: .1em; opacity: .8; }
+.tile-image-wrap::after { content: ""; position: absolute; left: 0; bottom: 0; width: 100%; height: 1px; background: var(--lichen); transform: scaleX(0); transform-origin: left; transition: transform .35s ease; }
+.tile-image-wrap:hover::after, .tile-image-wrap:focus-within::after { transform: scaleX(1); }
+@media (prefers-reduced-motion: reduce) { .tile-image-wrap::after { transition: none; } }
+/* Portal banner */
+.drop-entry-banner { position: relative; overflow: hidden; }
+.drop-entry-banner::before { content: ""; position: absolute; inset: 0; background: var(--banner-art) center/cover; opacity: .22; transition: transform .8s ease, opacity .4s ease; }
+.drop-entry-banner:hover::before { transform: scale(1.04); opacity: .3; }
+.drop-entry-banner > * { position: relative; z-index: 1; }
+.drop-entry-banner a { transition: box-shadow .3s ease, transform .2s ease; }
+.drop-entry-banner a:hover { box-shadow: 0 0 0 1px var(--banner-accent, var(--lichen)), 0 0 24px color-mix(in srgb, var(--banner-accent, var(--lichen)) 30%, transparent); transform: translateY(-2px); }
+@media (prefers-reduced-motion: reduce) { .drop-entry-banner::before, .drop-entry-banner a { transition: none; } }
+/* Desktop sticky catalog tools */
+@media (min-width: 681px) {
+  .catalog-tools { position: sticky; top: 76px; z-index: 5; background: rgba(17,18,16,.92); backdrop-filter: blur(8px); padding: 12px 0; margin-bottom: 20px; }
+}

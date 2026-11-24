@@ -1,9 +1,12 @@
-import { useState, type CSSProperties, type FormEvent } from "react";
+import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { catalogService, commerceService } from "../app/services";
 import { ProductCard } from "../components/ProductCard";
 import { API_MODE } from "../config/runtime";
+import type { Product } from "../domain/product";
+
+const RECENT_KEY = "crewww-recently-viewed";
 
 const discovery = [
   {
@@ -37,8 +40,33 @@ export function HomepageIntroSections() {
     queryKey: ["home-arrivals"],
     queryFn: () => catalogService.listProducts({ newOnly: true, pageSize: 4 }),
   });
+  const [recent, setRecent] = useState<Product[]>([]);
+  useEffect(() => {
+    try {
+      const ids = JSON.parse(window.localStorage.getItem(RECENT_KEY) ?? "[]") as string[];
+      if (!ids.length) return;
+      catalogService.listProducts({ pageSize: 24 }).then((page) => {
+        const byId = new Map(page.items.map((p) => [p.id, p]));
+        setRecent(ids.map((id) => byId.get(id)).filter(Boolean) as Product[]);
+      }).catch(() => undefined);
+    } catch { /* ignore */ }
+  }, []);
   return (
     <>
+      {recent.length > 0 && (
+        <section className="home-arrivals recently-viewed-home" data-reveal aria-labelledby="recently-viewed-title">
+          <div className="home-section-heading">
+            <div>
+              <p className="store-eyebrow">CONTINUE / WHERE YOU LEFT OFF</p>
+              <h2 id="recently-viewed-title">Recently <em>viewed.</em></h2>
+            </div>
+            <Link to="/shop" className="text-link">BACK TO THE EDIT ↗</Link>
+          </div>
+          <div className="store-product-grid home-product-rail">
+            {recent.slice(0, 4).map((product) => <ProductCard key={product.id} product={product} />)}
+          </div>
+        </section>
+      )}
       <section
         className="home-arrivals"
         data-reveal

@@ -22,7 +22,7 @@ import {
   HomepageStorySections,
 } from "./HomepageSections";
 import { formatCurrency } from "../utils/formatCurrency";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import type { WorldDestinationId, WorldMode } from "../scenes/CrewwwWorld";
 import { catalogService } from "../app/services";
@@ -69,17 +69,18 @@ export function ShowroomPage() {
     ? (catalogQuery.data ?? [])
     : featuredProducts;
   const location = useLocation();
-  const [category, setCategory] = useState("All pieces");
-  const [collection, setCollection] = useState("");
-  const [query, setQuery] = useState("");
-  const [sort, setSort] = useState("featured");
-  const [size, setSize] = useState("");
-  const [color, setColor] = useState("");
-  const [availableOnly, setAvailableOnly] = useState(false);
-  const [newOnly, setNewOnly] = useState(false);
-  const [bestOnly, setBestOnly] = useState(false);
-  const [minPrice, setMinPrice] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(250);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [category, setCategory] = useState(searchParams.get("category") || "All pieces");
+  const [collection, setCollection] = useState(searchParams.get("collection") || "");
+  const [query, setQuery] = useState(searchParams.get("q") || "");
+  const [sort, setSort] = useState(searchParams.get("sort") || "featured");
+  const [size, setSize] = useState(searchParams.get("size") || "");
+  const [color, setColor] = useState(searchParams.get("color") || "");
+  const [availableOnly, setAvailableOnly] = useState(searchParams.get("available") === "1");
+  const [newOnly, setNewOnly] = useState(searchParams.get("new") === "1");
+  const [bestOnly, setBestOnly] = useState(searchParams.get("best") === "1");
+  const [minPrice, setMinPrice] = useState(Number(searchParams.get("minPrice") || 0));
+  const [maxPrice, setMaxPrice] = useState(Number(searchParams.get("maxPrice") || 250));
   const wishlist = useCommerceStore((state) => state.wishlist);
   const cartLines = useCommerceStore((state) => state.cartLines);
   const addCartLine = useCommerceStore((state) => state.addCartLine);
@@ -87,6 +88,7 @@ export function ShowroomPage() {
   const toggleWishlistState = useCommerceStore((state) => state.toggleWishlist);
   const cartCount = cartLines.reduce((sum, line) => sum + line.quantity, 0);
   const [cartOpen, setCartOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const cartOpenerRef = useRef<HTMLElement | null>(null);
   const cartCloseRef = useRef<HTMLButtonElement | null>(null);
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
@@ -98,6 +100,19 @@ export function ShowroomPage() {
   const [details, setDetails] = useState("");
   const [toast, setToast] = useState("");
   const [worldMode, setWorldMode] = useState<WorldMode>("cinematic");
+  const [walkHint, setWalkHint] = useState(false);
+  useEffect(() => {
+    if (worldMode !== "explore") return;
+    try {
+      if (localStorage.getItem("crewww:walk-hint-seen")) return;
+    } catch { /* ignore */ }
+    setWalkHint(true);
+    const t = window.setTimeout(() => {
+      setWalkHint(false);
+      try { localStorage.setItem("crewww:walk-hint-seen", "1"); } catch { /* ignore */ }
+    }, 6000);
+    return () => window.clearTimeout(t);
+  }, [worldMode]);
   const [nearDestination, setNearDestination] =
     useState<WorldDestinationId | null>(null);
   const [moveInput, setMoveInput] = useState({ x: 0, z: 0 });
@@ -271,6 +286,28 @@ export function ShowroomPage() {
       0,
     );
   };
+
+  // Sync filters to URL (Tier 2.11) — shareable & back-button friendly.
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    const set = (k: string, v: string, def = "") => {
+      if (v && v !== def) next.set(k, v); else next.delete(k);
+    };
+    set("category", category, "All pieces");
+    set("collection", collection);
+    set("q", query);
+    set("sort", sort, "featured");
+    set("size", size);
+    set("color", color);
+    set("available", availableOnly ? "1" : "");
+    set("new", newOnly ? "1" : "");
+    set("best", bestOnly ? "1" : "");
+    set("minPrice", String(minPrice), "0");
+    set("maxPrice", String(maxPrice), "250");
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+  }, [category, collection, query, sort, size, color, availableOnly, newOnly, bestOnly, minPrice, maxPrice, searchParams, setSearchParams]);
 
   const openCart = (opener: HTMLElement) => {
     cartOpenerRef.current = opener;
@@ -501,6 +538,7 @@ export function ShowroomPage() {
               } as CSSProperties
             }
           >
+            <div className="hero-flicker" aria-hidden="true" />
             <div className="journey-artwall" aria-hidden="true">
               {psychedelicPieces.map((piece, index) => (
                 <img
@@ -675,6 +713,12 @@ export function ShowroomPage() {
               </button>
               {worldMode === "explore" && (
                 <span>WASD · DRAG TO LOOK · E TO ENTER</span>
+              )}
+              {walkHint && (
+                <div className="walk-hint" role="status" aria-live="polite">
+                  <b>EXPLORE MODE</b>
+                  <span>WASD / arrows to move · drag to look · E to enter a store</span>
+                </div>
               )}
             </div>
             <Suspense
@@ -861,6 +905,8 @@ export function ShowroomPage() {
 
       <ConceptWorlds />
 
+      <ColorwayMatrix />
+
       <HomepageIntroSections />
 
       <section
@@ -894,7 +940,7 @@ export function ShowroomPage() {
                 // Surface the command palette hint; actual filtering remains here.
               }}
             />
-            <kbd>⌘K</kbd>
+            <button type="button" className="catalog-search-kbd" onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))} aria-label="Open command palette">⌘K</button>
           </label>
           <label className="sort-control">
             SORT BY{" "}
@@ -911,7 +957,15 @@ export function ShowroomPage() {
           </label>
         </div>
         <div className="catalog-layout">
-          <aside className="filter-panel" aria-label="Product filters">
+          <button
+            type="button"
+            className="filter-mobile-toggle"
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen((o) => !o)}
+          >
+            FILTERS {filtersOpen ? "−" : "+"} <span>{products.length} PIECES</span>
+          </button>
+          <aside className={`filter-panel${filtersOpen ? " is-mobile-open" : ""}`} aria-label="Product filters">
             <div className="filter-title">
               <span>REFINE</span>
               <button type="button" onClick={clearFilters}>
@@ -1062,15 +1116,17 @@ export function ShowroomPage() {
                 {products.map((product, index) => (
                   <article
                     className={`product-tile tile-${index % 5}`}
+                    data-index={String(index + 1).padStart(2, "0")}
                     key={product.id}
                   >
-                    <div className="tile-image-wrap">
+                    <div className="tile-image-wrap" data-tilt>
                       <button
                         ref={(node) => {
                           cardRefs.current[product.id] = node;
                         }}
                         className="tile-image-button"
                         type="button"
+                        data-cursor="INSPECT"
                         aria-label={`Inspect ${product.name}`}
                         onClick={() => openStudio(product)}
                       >
@@ -1155,8 +1211,6 @@ export function ShowroomPage() {
         </p>
         <a href="#collection">BACK TO THE HOODIES ↑</a>
       </section>
-
-      <ColorwayMatrix />
 
       <HomepageStorySections />
 
