@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { catalogRoutes } from '../data/mock/storefront';
 import { CatalogPage } from '../features/catalog/CatalogPage';
 import { ProductPage } from '../features/catalog/ProductPage';
@@ -36,9 +36,13 @@ const SearchPage = lazy(() => import('../features/catalog/SearchPage').then((mod
 const PsychedelicDropPage = lazy(() => import('../pages/PsychedelicDropPage').then((module) => ({ default: module.PsychedelicDropPage })));
 
 export function App() {
+  const location = useLocation();
+  // Docker preview defaults to the Psychedelic Minds drop; local dev uses the showroom.
+  const initialRoute = import.meta.env.VITE_INITIAL_ROUTE;
+  const showInitialRoute = initialRoute && location.pathname === '/';
   return <Suspense fallback={<div className="catalog-skeleton" role="status">OPENING CREWWW…</div>}><Routes>
     <Route element={<SiteLayout />}>
-      <Route index element={<ShowroomPage />} />
+      <Route index element={showInitialRoute ? <Navigate to={initialRoute} replace /> : <ShowroomPage />} />
       {catalogRoutes.map((route) => <Route key={route.path} path={route.path.slice(1)} element={<CatalogPage route={route} />} />)}
       <Route path="search" element={<SearchPage />} />
       <Route path="products/:slug" element={<ProductPage />} />

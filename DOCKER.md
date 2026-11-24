@@ -14,6 +14,8 @@ docker compose down
 
 The first run builds the frontend and backend images, waits for PostgreSQL/Redis health, applies Alembic migrations, seeds the sample hoodie catalog, then starts the API and web services. The seed is idempotent. Routine `down` and `up` preserve named database and Redis volumes.
 
+Docker preview opens at `/drops/psychedelic-minds` by default through `VITE_INITIAL_ROUTE`; set it to another route when the default is not wanted.
+
 ## Services and readiness
 
 - `web`: Nginx SPA fallback, `/api/*` reverse proxy and `/healthz` health check. Published at `http://localhost:${WEB_PORT:-8080}`.
