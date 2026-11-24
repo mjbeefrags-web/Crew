@@ -8,8 +8,6 @@ import { NotFoundPage } from '../pages/NotFoundPage';
 import { ShowroomPage } from '../pages/ShowroomPage';
 import { RequireAdmin } from './RequireAdmin';
 import { SiteLayout } from './SiteLayout';
-import { ErrorBoundary } from '../components/ErrorBoundary';
-// (kept exported for route-level retries on other pages)
 
 const DropPage = lazy(() => import('../pages/DropsPage').then((module) => ({ default: module.DropPage })));
 const DropsIndexPage = lazy(() => import('../pages/DropsPage').then((module) => ({ default: module.DropsIndexPage })));
