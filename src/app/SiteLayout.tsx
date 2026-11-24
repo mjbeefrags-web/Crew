@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   Link,
   NavLink,
@@ -60,14 +60,38 @@ const shopColumns = [
   },
 ] as const;
 
+function worldPaletteStyle(): CSSProperties {
+  // World palette from the active drop object (Phase 4.1); defaults otherwise.
+  const node = document.querySelector<HTMLElement>(".drop-object");
+  const a = node?.style.getPropertyValue("--world-a")?.trim() || "var(--lichen)";
+  const b = node?.style.getPropertyValue("--world-b")?.trim() || "#5e3d4f";
+  const c = node?.style.getPropertyValue("--world-c")?.trim() || "#115054";
+  return {
+    "--world-a": a,
+    "--world-b": b,
+    "--world-c": c,
+    background: `linear-gradient(135deg, color-mix(in srgb, ${a} 22%, transparent), color-mix(in srgb, ${b} 15%, transparent), rgba(23, 25, 22, .85))`,
+  } as CSSProperties;
+}
+
 export function SiteLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<"shop" | "clothes" | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const drawerRef = useRef<HTMLDivElement | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
+  const bagLinkRef = useRef<HTMLAnchorElement | null>(null);
+  const prevBagCount = useRef(0);
   const bagLines = useCommerceStore((state) => state.cartLines);
   const bagCount = bagLines.reduce((total, line) => total + line.quantity, 0);
+  useEffect(() => {
+    const had = prevBagCount.current;
+    prevBagCount.current = bagCount;
+    if (bagCount > had && had !== 0) {
+      bagLinkRef.current?.setAttribute("data-bag-pulse", "true");
+      window.setTimeout(() => bagLinkRef.current?.removeAttribute("data-bag-pulse"), 600);
+    }
+  }, [bagCount]);
   const notice = useUiStore((state) => state.notice);
   const user = useAuthStore((state) => state.user);
   const clearNotice = useUiStore((state) => state.clearNotice);
@@ -326,7 +350,12 @@ export function SiteLayout() {
           >
             SAVED
           </Link>
-          <Link to="/cart" aria-label={`Shopping bag, ${bagCount} items`}>
+          <Link
+            ref={bagLinkRef}
+            to="/cart"
+            aria-label={`Shopping bag, ${bagCount} items`}
+            className="header-bag-link"
+          >
             BAG <span className="bag-count">{bagCount}</span>
           </Link>
         </nav>
@@ -336,6 +365,8 @@ export function SiteLayout() {
             id="mega-menu"
             role="menu"
             aria-label={`${activeMenu === "shop" ? "Shop" : "Clothes"} categories`}
+            data-world-a
+            style={worldPaletteStyle()}
             onMouseEnter={() => setActiveMenu(activeMenu)}
           >
             <div className="mega-menu-heading">

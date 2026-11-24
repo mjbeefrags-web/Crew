@@ -48,7 +48,26 @@ export function SiteSoundToggle() {
       aria-pressed={enabled}
       onClick={toggle}
     >
-      {enabled ? "SOUND ON" : "SOUND OFF"}
+      <svg
+        className={`sound-waveform${enabled ? " is-on" : ""}`}
+        width="18"
+        height="10"
+        viewBox="0 0 18 10"
+        fill="none"
+        aria-hidden="true"
+      >
+        {[1.5, 2.6, 1.8, 3.0, 2.3].map((height, index) => (
+          <rect
+            key={index}
+            x={1 + index * 4}
+            width="1.5"
+            height={height}
+            y={5 - height / 2}
+            rx={0.3}
+          />
+        ))}
+      </svg>
+      <span>{enabled ? "SOUND ON" : "SOUND OFF"}</span>
     </button>
   );
 }
