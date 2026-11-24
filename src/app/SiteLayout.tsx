@@ -64,6 +64,7 @@ export function SiteLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<"shop" | "clothes" | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const drawerRef = useRef<HTMLDivElement | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
   const bagLines = useCommerceStore((state) => state.cartLines);
   const bagCount = bagLines.reduce((total, line) => total + line.quantity, 0);
@@ -158,15 +159,58 @@ export function SiteLayout() {
 
   useEffect(() => {
     if (!menuOpen) return undefined;
+    const drawer = drawerRef.current;
+    const focusables = (): HTMLElement[] =>
+      drawer
+        ? Array.from(
+            drawer.querySelectorAll<HTMLElement>(
+              "button, a, input, select, [tabindex]:not([tabindex='-1'])"
+            )
+          )
+        : [];
+    let enter = true;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setMenuOpen(false);
         setActiveMenu(null);
         menuButtonRef.current?.focus();
+        return;
+      }
+      const nodes = focusables();
+      if (!nodes.length || !drawer) return;
+      if (event.key === "Tab") {
+        const active = document.activeElement as HTMLElement | null;
+        const inside = drawer.contains(active);
+        if (active && inside) {
+          const current = nodes.indexOf(active);
+          if (event.shiftKey) {
+            if (current <= 0) {
+              event.preventDefault();
+              nodes[nodes.length - 1]?.focus();
+            }
+          } else if (current >= nodes.length - 1) {
+            event.preventDefault();
+            nodes[0].focus();
+          }
+        } else {
+          // Tab from outside the drawer → pull focus in.
+          event.preventDefault();
+          nodes[0].focus();
+        }
+      }
+    };
+    const firstFocusable = () => {
+      const nodes = focusables();
+      if (nodes.length && enter) {
+        enter = false;
+        requestAnimationFrame(() => nodes[0]?.focus());
       }
     };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    if (drawer) firstFocusable();
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
   }, [menuOpen]);
 
   const openShop = () => {
@@ -234,22 +278,24 @@ export function SiteLayout() {
           <button type="button" onClick={openShop}>
             THE EDIT
           </button>
-          <NavLink to="/new-arrivals">NEW ARRIVALS</NavLink>
-          <NavLink to="/kids">KIDS</NavLink>
-          <NavLink to="/denim">DENIM</NavLink>
+          <NavLink to="/new-arrivals" aria-current={location.pathname === "/new-arrivals" ? "page" : undefined}>NEW ARRIVALS</NavLink>
+          <NavLink to="/kids" aria-current={location.pathname === "/kids" ? "page" : undefined}>KIDS</NavLink>
+          <NavLink to="/denim" aria-current={location.pathname === "/denim" ? "page" : undefined}>DENIM</NavLink>
           <button
             type="button"
             aria-expanded={activeMenu === "shop"}
+            aria-haspopup="menu"
+            aria-controls="mega-menu"
             onClick={() => setActiveMenu(activeMenu === "shop" ? null : "shop")}
             onMouseEnter={() => setActiveMenu("shop")}
           >
             CLOTHES <span aria-hidden="true">⌄</span>
           </button>
-          <NavLink to="/drops">DROPS</NavLink>
-          <NavLink className="desktop-trip-link" to="/drops/psychedelic-minds">
+          <NavLink to="/drops" aria-current={location.pathname === "/drops" ? "page" : undefined}>DROPS</NavLink>
+          <NavLink className="desktop-trip-link" to="/drops/psychedelic-minds" aria-current={location.pathname === "/drops/psychedelic-minds" ? "page" : undefined}>
             PSYCHEDELIC
           </NavLink>
-          <NavLink className="desktop-story-link" to="/lookbook">
+          <NavLink className="desktop-story-link" to="/lookbook" aria-current={location.pathname === "/lookbook" ? "page" : undefined}>
             STORIES
           </NavLink>
         </nav>
@@ -286,8 +332,9 @@ export function SiteLayout() {
         </nav>
         {activeMenu && (
           <div
-            className="mega-menu"
-            role="region"
+            className="mega-menu is-open"
+            id="mega-menu"
+            role="menu"
             aria-label={`${activeMenu === "shop" ? "Shop" : "Clothes"} categories`}
             onMouseEnter={() => setActiveMenu(activeMenu)}
           >
@@ -336,7 +383,13 @@ export function SiteLayout() {
       {menuOpen && (
         <div
           className="mobile-navigation-backdrop"
-          onClick={() => setMenuOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Mobile navigation"
+          ref={drawerRef}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setMenuOpen(false);
+          }}
         >
           <nav
             className="mobile-navigation"
@@ -384,7 +437,12 @@ export function SiteLayout() {
                   } as Record<string, string>
                 )[label];
                 return (
-                  <Link key={path} to={path} onClick={() => setMenuOpen(false)}>
+                  <Link
+                    key={path}
+                    to={path}
+                    onClick={() => setMenuOpen(false)}
+                    aria-current={location.pathname === path ? "page" : undefined}
+                  >
                     {label}
                     <span>↗</span>
                   </Link>
