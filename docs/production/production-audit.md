@@ -3,6 +3,8 @@
 **Audit date:** 2026-11-22 (Africa/Cairo)  
 **Scope:** repository, current frontend architecture, dependency/build/test setup, security surface, and production deployment readiness. This is a static/local audit. No deployment or external service activation was performed.
 
+> **Status addendum (2026-11-24):** this document is a point-in-time M5.1 snapshot, not the current state. The workspace now contains a FastAPI backend (`backend/`), API-backed catalog/commerce/auth adapters, role-gated admin routes (`/admin`, `/admin/system`), SQLite-backed local data, an admin metrics layer with charts, and new storefront features (drop chamber, fit assistant, recently viewed, keyboard-accessible search, URL-first filters, real SKU/variant stock, route SEO). The current gates are `npm run typecheck`, `npm test`, `npm run build`, `npx playwright test` and (in `backend/`) `.venv/Scripts/python.exe -m pytest tests -q`; all pass. Findings below remain useful as historical risk categories; the specific "no backend / no dashboard / failing suite" evidence is no longer current. Real payments, email delivery and production photography remain genuinely out of scope.
+
 ## Executive conclusion
 
 **Production readiness: not ready.** The repository is a React/Vite storefront prototype with mock data and browser-local demo state. It contains no API/backend, database, authentication service, payment/email integration, object storage, Docker deployment, migrations, or CI pipeline. The requested production infrastructure and secure system-status dashboard do not exist. The M5.1 brief says to stop after the audit for project-owner review; implementation of FastAPI, Docker, or the dashboard is therefore not included here.

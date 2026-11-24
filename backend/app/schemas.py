@@ -61,6 +61,17 @@ class SpecificationsOut(BaseModel):
     details: str = ""
 
 
+class ProductVariantOut(BaseModel):
+    id: str
+    sku: str
+    size: str
+    color: str
+    colorValue: str
+    price: float
+    salePrice: float | None = None
+    stockQuantity: int
+
+
 class ProductOut(BaseModel):
     id: str
     slug: str
@@ -85,6 +96,7 @@ class ProductOut(BaseModel):
     ageBand: str | None = None
     galleryUrls: list[str] = Field(default_factory=list)
     isPreviewData: bool = True
+    variants: list[ProductVariantOut] = Field(default_factory=list)
 
 
 class ProductPageOut(BaseModel):
@@ -172,6 +184,7 @@ class CartQuantityIn(BaseModel):
 class CartItemOut(BaseModel):
     id: UUID
     variant_id: UUID
+    sku: str
     product_id: UUID
     product_name: str
     image_url: str

@@ -9,6 +9,7 @@ function paramsFor(query: ProductQuery = {}): URLSearchParams {
   const params = new URLSearchParams();
   const values: Record<string, string | number | undefined> = {
     term: query.term, category: query.category, collection: query.collection, size: query.size, color: query.color,
+    fit: query.fit, wash: query.wash,
     min_price: query.minPrice,
     max_price: query.maxPrice,
     available: query.inStock ? 'true' : undefined, new_only: query.newOnly ? 'true' : undefined,

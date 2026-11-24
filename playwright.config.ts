@@ -5,6 +5,8 @@ const baseURL = process.env.PW_BASE_URL ?? 'http://127.0.0.1:4173';
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
+  // Each test spins up a real WebGL scene; more workers starve the GPU/CPU.
+  workers: 2,
   reporter: 'list',
   use: {
     baseURL,

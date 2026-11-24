@@ -1,18 +1,42 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { catalogRoutes } from '../data/mock/storefront';
 import { CatalogPage } from '../features/catalog/CatalogPage';
 import { ProductPage } from '../features/catalog/ProductPage';
-import { SearchPage } from '../features/catalog/SearchPage';
-import { AccountPage, AuthPage, CartPage, CheckoutPage, OrderConfirmationPage, WishlistPage } from '../pages/CommercePages';
-import { AboutPage, ContactPage, DenimFitsPage, EditorialDetailPage, FAQPage, LookbookIndexPage, PolicyPage, StoreFinderPage, SupportPage } from '../pages/ContentPages';
 import { DesignSystemPage } from '../pages/DesignSystemPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { ShowroomPage } from '../pages/ShowroomPage';
-import { AdminSystemPage } from '../pages/AdminSystemPage';
+import { RequireAdmin } from './RequireAdmin';
 import { SiteLayout } from './SiteLayout';
 
+const DropPage = lazy(() => import('../pages/DropsPage').then((module) => ({ default: module.DropPage })));
+const DropsIndexPage = lazy(() => import('../pages/DropsPage').then((module) => ({ default: module.DropsIndexPage })));
+const AdminDashboardPage = lazy(() => import('../pages/AdminDashboardPage').then((module) => ({ default: module.AdminDashboardPage })));
+
+// Secondary journeys are code-split so the first storefront paint stays light.
+const commerce = <T,>(load: (module: typeof import('../pages/CommercePages')) => T) => import('../pages/CommercePages').then((module) => ({ default: load(module) }));
+const content = <T,>(load: (module: typeof import('../pages/ContentPages')) => T) => import('../pages/ContentPages').then((module) => ({ default: load(module) }));
+const AccountPage = lazy(() => commerce((module) => module.AccountPage));
+const AuthPage = lazy(() => commerce((module) => module.AuthPage));
+const CartPage = lazy(() => commerce((module) => module.CartPage));
+const CheckoutPage = lazy(() => commerce((module) => module.CheckoutPage));
+const OrderConfirmationPage = lazy(() => commerce((module) => module.OrderConfirmationPage));
+const WishlistPage = lazy(() => commerce((module) => module.WishlistPage));
+const AboutPage = lazy(() => content((module) => module.AboutPage));
+const ContactPage = lazy(() => content((module) => module.ContactPage));
+const DenimFitsPage = lazy(() => content((module) => module.DenimFitsPage));
+const EditorialDetailPage = lazy(() => content((module) => module.EditorialDetailPage));
+const FAQPage = lazy(() => content((module) => module.FAQPage));
+const LookbookIndexPage = lazy(() => content((module) => module.LookbookIndexPage));
+const PolicyPage = lazy(() => content((module) => module.PolicyPage));
+const StoreFinderPage = lazy(() => content((module) => module.StoreFinderPage));
+const SupportPage = lazy(() => content((module) => module.SupportPage));
+const AdminSystemPage = lazy(() => import('../pages/AdminSystemPage').then((module) => ({ default: module.AdminSystemPage })));
+const SearchPage = lazy(() => import('../features/catalog/SearchPage').then((module) => ({ default: module.SearchPage })));
+const PsychedelicDropPage = lazy(() => import('../pages/PsychedelicDropPage').then((module) => ({ default: module.PsychedelicDropPage })));
+
 export function App() {
-  return <Routes>
+  return <Suspense fallback={<div className="catalog-skeleton" role="status">OPENING CREWWW…</div>}><Routes>
     <Route element={<SiteLayout />}>
       <Route index element={<ShowroomPage />} />
       {catalogRoutes.map((route) => <Route key={route.path} path={route.path.slice(1)} element={<CatalogPage route={route} />} />)}
@@ -20,8 +44,9 @@ export function App() {
       <Route path="products/:slug" element={<ProductPage />} />
       <Route path="denim/fits" element={<DenimFitsPage />} />
       <Route path="denim/fits/:fitSlug" element={<DenimFitsPage detail />} />
-      <Route path="drops" element={<LookbookIndexPage type="drop" />} />
-      <Route path="drops/:slug" element={<EditorialDetailPage type="drop" />} />
+      <Route path="drops" element={<DropsIndexPage />} />
+      <Route path="drops/psychedelic-minds" element={<PsychedelicDropPage />} />
+      <Route path="drops/:slug" element={<DropPage />} />
       <Route path="lookbook" element={<LookbookIndexPage />} />
       <Route path="lookbook/:slug" element={<EditorialDetailPage />} />
       <Route path="looks/:slug" element={<EditorialDetailPage shoppable />} />
@@ -47,10 +72,13 @@ export function App() {
       <Route path="account/addresses" element={<AccountPage section="addresses" />} />
       <Route path="account/orders" element={<AccountPage section="orders" />} />
       <Route path="account/orders/:orderId" element={<AccountPage section="order-detail" />} />
-      <Route path="admin/system" element={<AdminSystemPage />} />
+      <Route element={<RequireAdmin />}>
+        <Route path="admin" element={<AdminDashboardPage />} />
+        <Route path="admin/system" element={<AdminSystemPage />} />
+      </Route>
       <Route path="concept" element={<Navigate to="/about" replace />} />
       <Route path="design-system" element={<DesignSystemPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Route>
-  </Routes>;
+  </Routes></Suspense>;
 }

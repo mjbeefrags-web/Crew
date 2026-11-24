@@ -10,5 +10,7 @@ export default defineConfig({
     globals: true,
     setupFiles: './src/test/setup.ts',
     css: true,
+    // WebGL-heavy component tests starve under the default worker count.
+    maxWorkers: 4,
   },
 });

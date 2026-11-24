@@ -1,6 +1,6 @@
 # Full Fashion Storefront Page & Route Architecture
 
-This is the planned architecture, not a claim that the routes exist yet. M1.1 does not implement these pages.
+Originally authored as a planned architecture during M1.1. **Current status (2026-11-24): the route table below is implemented** in `src/app/App.tsx`, including the generated catalog routes, drops, commerce, account, support and utility pages. The owner console is also live at `/admin` (with `/admin/system` for API diagnostics). `/drops/psychedelic-minds` is a dedicated immersive room, separate from the classic `/drops/:slug` chamber; it is linked from the announcement strip, desktop/mobile navigation, homepage hero and drops index. Data honesty labels still apply: most catalog/content records are preview fixtures and checkout is a demo unless the app is running with `API_MODE` enabled.
 
 ## Global navigation hierarchy
 

@@ -15,6 +15,7 @@ from app.schemas import (
     ProductCreateIn,
     ProductOut,
     ProductPageOut,
+    ProductVariantOut,
     ProductUpdateIn,
 )
 
@@ -66,6 +67,19 @@ def product_payload(product: Product) -> ProductOut:
         ageBand=product.age_band,
         galleryUrls=image_urls,
         isPreviewData=product.status == "sample",
+        variants=[
+            ProductVariantOut(
+                id=str(variant.id),
+                sku=variant.sku,
+                size=variant.size,
+                color=variant.color,
+                colorValue=variant.color_value,
+                price=variant.price_minor / 100,
+                salePrice=variant.sale_price_minor / 100 if variant.sale_price_minor is not None else None,
+                stockQuantity=variant.stock_quantity,
+            )
+            for variant in variants
+        ],
     )
 
 
@@ -85,6 +99,8 @@ async def list_products(
     collection: str | None = None,
     size: str | None = None,
     color: str | None = None,
+    fit: str | None = None,
+    wash: str | None = None,
     min_price: float | None = Query(default=None, ge=0),
     max_price: float | None = Query(default=None, ge=0),
     available: bool | None = None,
@@ -110,6 +126,10 @@ async def list_products(
         filters.append(Product.variants.any(ProductVariant.size == size))
     if color:
         filters.append(Product.variants.any(func.lower(ProductVariant.color) == color.lower()))
+    if fit:
+        filters.append(func.lower(Product.fit) == fit.lower())
+    if wash:
+        filters.append(func.lower(Product.wash) == wash.lower())
     if min_price is not None:
         filters.append(Product.variants.any(ProductVariant.price_minor >= min_price * 100))
     if max_price is not None:

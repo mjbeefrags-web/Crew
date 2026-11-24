@@ -122,6 +122,7 @@ def cart_payload(cart: Cart, items: list[CartItem]) -> CartOut:
             {
                 "id": item.id,
                 "variant_id": variant.id,
+                "sku": variant.sku,
                 "product_id": product.id,
                 "product_name": product.name,
                 "image_url": product.image_url,

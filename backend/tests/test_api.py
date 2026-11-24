@@ -172,8 +172,29 @@ async def test_catalog_search_filter_sort_and_product_detail(client):
     assert product["id"] == str(product_id)
     assert product["price"] == 79.99
     assert product["available"] is True
-    assert (await client.get("/api/v1/products/test-hoodie")).status_code == 200
+    variant = product["variants"][0]
+    assert variant["sku"] == "test-hoodie-black-m"
+    assert variant["price"] == 79.99
+    assert variant["stockQuantity"] == 3
+    detail = await client.get("/api/v1/products/test-hoodie")
+    assert detail.status_code == 200
+    assert detail.json()["variants"][0]["sku"] == "test-hoodie-black-m"
     assert (await client.get("/api/v1/products/missing")).status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_fit_and_wash_filters_match_product_attributes(client):
+    await create_product(client)
+    sessions = client._transport.app.state.test_sessions
+    async with sessions() as session:
+        record = (await session.scalars(select(Product).where(Product.slug == "test-hoodie"))).one()
+        record.fit = "Relaxed"
+        record.wash = "Dark wash"
+        await session.commit()
+
+    assert (await client.get("/api/v1/products", params={"fit": "relaxed"})).json()["total"] == 1
+    assert (await client.get("/api/v1/products", params={"fit": "Slim"})).json()["total"] == 0
+    assert (await client.get("/api/v1/products", params={"wash": "dark wash"})).json()["total"] == 1
 
 
 @pytest.mark.asyncio
@@ -185,6 +206,7 @@ async def test_guest_cart_and_server_priced_transactional_checkout(client):
     )
     assert added.status_code == 200
     assert added.json()["subtotal_minor"] == 7999
+    assert added.json()["items"][0]["sku"] == "test-hoodie-black-m"
     assert client.cookies.get("crewww_cart")
     # Client input has no price field; price and totals are loaded from the database variant.
     checkout = await client.post(

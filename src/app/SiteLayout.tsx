@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { BrandMark } from '../components/BrandMark';
+import { SiteSoundToggle } from '../components/SiteSoundToggle';
 import { Toast } from '../components/Toast';
 import { useCommerceStore } from '../state/commerceStore';
 import { useUiStore } from '../state/uiStore';
+import { useAuthStore } from '../state/authStore';
 import { API_MODE } from '../config/runtime';
 import { apiCommerceService } from '../services/apiCommerceService';
 import { apiAuthService } from '../services/apiAuthService';
@@ -22,10 +24,12 @@ export function SiteLayout() {
   const bagLines = useCommerceStore((state) => state.cartLines);
   const bagCount = bagLines.reduce((total, line) => total + line.quantity, 0);
   const notice = useUiStore((state) => state.notice);
+  const user = useAuthStore((state) => state.user);
   const clearNotice = useUiStore((state) => state.clearNotice);
   const location = useLocation();
   const navigate = useNavigate();
   const isHome = location.pathname === '/';
+  const isTrip = location.pathname === '/drops/psychedelic-minds';
 
   useEffect(() => {
     if (!API_MODE) return;
@@ -54,6 +58,26 @@ export function SiteLayout() {
   }, [location.pathname, location.search]);
 
   useEffect(() => {
+    const nodes = () => document.querySelectorAll<HTMLElement>('[data-reveal]:not(.is-visible)');
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || typeof IntersectionObserver === 'undefined') {
+      nodes().forEach((node) => node.classList.add('is-visible'));
+      return undefined;
+    }
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -6% 0px' });
+    const watch = () => nodes().forEach((node) => observer.observe(node));
+    watch();
+    const mutations = new MutationObserver(watch);
+    mutations.observe(document.body, { childList: true, subtree: true });
+    return () => { observer.disconnect(); mutations.disconnect(); };
+  }, [location.pathname]);
+
+  useEffect(() => {
     if (!menuOpen) return undefined;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -76,7 +100,8 @@ export function SiteLayout() {
 
   return <>
     <a className="skip-link" href="#main-content">SKIP TO CONTENT</a>
-    <div className="announcement"><span>CREWWW / MAKE YOUR OWN FREQUENCY</span><i aria-hidden="true">·</i><span>DEVELOPMENT PREVIEW / COMMERCE DATA IS SAMPLE ONLY</span></div>
+    {!isTrip && <div className="ambient-layer" aria-hidden="true"><i /><i /><i /></div>}
+    <div className="announcement"><span>CREWWW / MAKE YOUR OWN FREQUENCY</span><i aria-hidden="true">·</i><Link className="announcement-trip" to="/drops/psychedelic-minds">PSYCHEDELIC MINDS / ENTER THE ROOM ↗</Link><i aria-hidden="true">·</i><span>DEVELOPMENT PREVIEW / COMMERCE DATA IS SAMPLE ONLY</span></div>
     <header className={`site-header${menuOpen ? ' has-open-menu' : ''}`} onMouseLeave={() => setActiveMenu(null)}>
       <button ref={menuButtonRef} className="menu-toggle" type="button" aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => { setMenuOpen((open) => !open); setActiveMenu(null); }}><span>{menuOpen ? 'CLOSE' : 'MENU'}</span><span className={`menu-glyph${menuOpen ? ' is-open' : ''}`} aria-hidden="true"><i /><i /></span></button>
       <nav className="primary-navigation desktop-navigation" aria-label="Primary navigation">
@@ -86,10 +111,13 @@ export function SiteLayout() {
         <NavLink to="/denim">DENIM</NavLink>
         <button type="button" aria-expanded={activeMenu === 'shop'} onClick={() => setActiveMenu(activeMenu === 'shop' ? null : 'shop')} onMouseEnter={() => setActiveMenu('shop')}>CLOTHES <span aria-hidden="true">⌄</span></button>
         <NavLink to="/drops">DROPS</NavLink>
+        <NavLink className="desktop-trip-link" to="/drops/psychedelic-minds">PSYCHEDELIC</NavLink>
         <NavLink className="desktop-story-link" to="/lookbook">STORIES</NavLink>
       </nav>
       <Link className="brand-link" to="/" aria-label="Crewww home"><BrandMark /></Link>
       <nav className="header-actions" aria-label="Shopping utilities">
+        <SiteSoundToggle />
+        {(!API_MODE || user?.role === 'admin') && <Link className="header-admin-link" to="/admin" aria-label="Owner console">{API_MODE ? 'ADMIN' : 'ADMIN DEMO'}</Link>}
         <Link to="/search" aria-label="Search Crewww">SEARCH</Link>
         <Link className="header-utility-account" to="/account">ACCOUNT</Link>
         <Link className="header-utility-wishlist" to="/wishlist" aria-label="Wishlist">SAVED</Link>
@@ -98,7 +126,7 @@ export function SiteLayout() {
       {activeMenu && <div className="mega-menu" role="region" aria-label={`${activeMenu === 'shop' ? 'Shop' : 'Clothes'} categories`} onMouseEnter={() => setActiveMenu(activeMenu)}>
         <div className="mega-menu-heading"><div><span>CREWWW / THE CITY EDIT</span><h2>Find your <em>next layer.</em></h2></div><button type="button" aria-label="Close categories" onClick={() => setActiveMenu(null)}>×</button></div>
         <div className="mega-menu-columns">{shopColumns.map((column) => <div key={column.label}><p>{column.label}</p>{column.links.map(([label, to]) => <Link key={to} to={to}>{label}<span>↗</span></Link>)}</div>)}
-          <Link className="mega-menu-image" to="/drops/first-run" style={{ backgroundImage: 'url(/images/editorial/drop-story.jpg)' }}><span>THE FIRST RUN</span><strong>See the campaign ↗</strong></Link>
+          <Link className="mega-menu-image" to="/drops/psychedelic-minds" style={{ backgroundImage: 'url(/images/drops/psychedelic-minds/print-plates/01-out-of-focus-dtg-back-print.webp)' }}><span>PSYCHEDELIC MINDS</span><strong>Enter the room ↗</strong></Link>
         </div>
       </div>}
     </header>
@@ -106,12 +134,12 @@ export function SiteLayout() {
       <nav className="mobile-navigation" id="mobile-navigation" aria-label="Mobile navigation" onClick={(event) => event.stopPropagation()}>
         <div className="mobile-navigation-top"><p>SHOP THE CREWWW WORLD</p><Link to="/search">SEARCH THE EDIT ↗</Link></div>
         <div className="mobile-navigation-links">
-          {['Shop all', 'New arrivals', 'Kids', 'Denim', 'Clothes', 'Drops', 'Best sellers', 'Accessories', 'Shoes', 'Lookbook', 'About', 'Find stores', 'Contact'].map((label) => {
-            const path = ({ 'Shop all': '/shop', 'New arrivals': '/new-arrivals', Kids: '/kids', Denim: '/denim', Clothes: '/clothes', Drops: '/drops', 'Best sellers': '/best-sellers', Accessories: '/accessories', Shoes: '/shoes', Lookbook: '/lookbook', About: '/about', 'Find stores': '/find-stores', Contact: '/contact' } as Record<string, string>)[label];
+          {['Psychedelic drop', 'Shop all', 'New arrivals', 'Kids', 'Denim', 'Clothes', 'Drops', 'Best sellers', 'Accessories', 'Shoes', 'Lookbook', 'About', 'Find stores', 'Contact'].map((label) => {
+            const path = ({ 'Psychedelic drop': '/drops/psychedelic-minds', 'Shop all': '/shop', 'New arrivals': '/new-arrivals', Kids: '/kids', Denim: '/denim', Clothes: '/clothes', Drops: '/drops', 'Best sellers': '/best-sellers', Accessories: '/accessories', Shoes: '/shoes', Lookbook: '/lookbook', About: '/about', 'Find stores': '/find-stores', Contact: '/contact' } as Record<string, string>)[label];
             return <Link key={path} to={path} onClick={() => setMenuOpen(false)}>{label}<span>↗</span></Link>;
           })}
         </div>
-        <div className="mobile-navigation-bottom"><Link to="/account">ACCOUNT</Link><Link to="/wishlist">SAVED PIECES</Link><Link to="/cart">SHOPPING BAG · {bagCount}</Link></div>
+        <div className="mobile-navigation-bottom"><Link to="/account">ACCOUNT</Link><Link to="/wishlist">SAVED PIECES</Link><Link to="/cart">SHOPPING BAG · {bagCount}</Link>{(!API_MODE || user?.role === 'admin') && <Link to="/admin">{API_MODE ? 'ADMIN' : 'ADMIN DEMO'}</Link>}</div>
       </nav>
     </div>}
     <main id="main-content"><Outlet /></main>
@@ -121,7 +149,7 @@ export function SiteLayout() {
         <div><span>SHOP</span><Link to="/shop">All pieces</Link><Link to="/new-arrivals">New arrivals</Link><Link to="/kids">Kids</Link><Link to="/denim">Denim</Link><Link to="/drops">Drops</Link><Link to="/best-sellers">Best sellers</Link></div>
         <div><span>THE WORLD</span><Link to="/lookbook">Lookbook</Link><Link to="/about">Our story</Link><Link to="/find-stores">Find stores</Link><Link to="/contact">Contact</Link></div>
         <div><span>HELP / PREVIEW</span><Link to="/support">Support</Link><Link to="/faq">FAQ</Link><Link to="/shipping">Shipping</Link><Link to="/returns">Returns</Link><Link to="/policies/privacy">Privacy</Link><Link to="/policies/terms">Terms</Link></div>
-        <div><span>YOUR CREWWW</span><Link to="/account">Account</Link><Link to="/account/orders">Orders</Link><Link to="/wishlist">Wishlist</Link><Link to="/cart">Bag</Link></div>
+        <div><span>YOUR CREWWW</span><Link to="/account">Account</Link><Link to="/account/orders">Orders</Link><Link to="/wishlist">Wishlist</Link><Link to="/cart">Bag</Link>{(!API_MODE || user?.role === 'admin') && <Link to="/admin">{API_MODE ? 'Owner console' : 'Owner console · demo'}</Link>}</div>
       </div>
       <div className="footer-bottom"><span>© CREWWW STUDIO 2026</span><span>PRODUCT / PRICING / STORE DETAILS ARE PREVIEW DATA</span><Link to="/design-system">DESIGN NOTES ↗</Link></div>
     </footer>

@@ -1,15 +1,21 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Button } from '../components/Button';
+import { ColorwayMatrix } from '../components/ColorwayMatrix';
+import { ConceptWorlds } from '../components/ConceptWorlds';
+import { DropTransmissionRail } from '../components/DropTransmissionRail';
 import { featuredProducts } from '../data/mock/catalog';
+import { psychedelicPieces } from '../data/psychedelic';
 import type { Product } from '../domain/product';
 import { useCommerceStore } from '../state/commerceStore';
 import type { CartLine } from '../domain/commerce';
 import { HomepageIntroSections, HomepageStorySections } from './HomepageSections';
 import { formatCurrency } from '../utils/formatCurrency';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import type { WorldDestinationId, WorldMode } from '../scenes/CrewwwWorld';
 import { catalogService } from '../app/services';
 import { API_MODE } from '../config/runtime';
+import { trackEvent } from '../lib/insights';
 
 const HoodieViewer = lazy(() => import('../components/HoodieViewer').then((module) => ({ default: module.HoodieViewer })));
 const CrewwwWorld = lazy(() => import('../scenes/CrewwwWorld').then((module) => ({ default: module.CrewwwWorld })));
@@ -56,6 +62,11 @@ export function ShowroomPage() {
   const [quantity, setQuantity] = useState(1);
   const [details, setDetails] = useState('');
   const [toast, setToast] = useState('');
+  const [worldMode, setWorldMode] = useState<WorldMode>('cinematic');
+  const [nearDestination, setNearDestination] = useState<WorldDestinationId | null>(null);
+  const [moveInput, setMoveInput] = useState({ x: 0, z: 0 });
+  const [journey, setJourney] = useState(0);
+  const journeyTrackRef = useRef<HTMLDivElement | null>(null);
   const cardRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const transitionTimerRef = useRef<number | null>(null);
   const toastTimerRef = useRef<number | null>(null);
@@ -64,15 +75,34 @@ export function ShowroomPage() {
   const historyMarkerRef = useRef(false);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const chapterIndex = journey < 0.2 ? 0 : journey < 0.4 ? 1 : journey < 0.6 ? 2 : journey < 0.8 ? 3 : 4;
+  const chapterArt = psychedelicPieces;
+  const scrollToCollection = () => {
+    clearFilters();
+    if (window.location.hash !== '#collection') window.history.pushState({}, '', `${location.pathname}${location.search}#collection`);
+    const reducedMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.requestAnimationFrame(() => document.getElementById('collection')?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' }));
+  };
   const originForProduct = (productId: string): Origin | null => {
     const rect = cardRefs.current[productId]?.getBoundingClientRect();
     if (!rect) return null;
     return { x: rect.left + rect.width / 2 - window.innerWidth / 2, y: rect.top + rect.height / 2 - window.innerHeight / 2, scale: rect.width / Math.min(500, window.innerWidth * 0.8) };
   };
 
+  const walkVectors = {
+    backward: { x: 0, z: -1 }, forward: { x: 0, z: 1 },
+    left: { x: -1, z: 0 }, right: { x: 1, z: 0 },
+  } as const;
+  const startWalk = (direction: keyof typeof walkVectors) => setMoveInput(walkVectors[direction]);
+  const stopWalk = () => setMoveInput({ x: 0, z: 0 });
+  const walkKey = (direction: keyof typeof walkVectors) => (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); startWalk(direction); }
+  };
+
   const selectWorldDestination = (destination: keyof typeof worldCollections) => {
     setCategory('All pieces'); setCollection(worldCollections[destination]); setQuery(''); setSort('featured'); setSize(''); setColor('');
     setAvailableOnly(false); setNewOnly(false); setBestOnly(false); setMinPrice(0); setMaxPrice(250);
+    trackEvent('world_destination', { destination });
     if (window.location.hash !== '#collection') window.history.pushState({}, '', `${location.pathname}${location.search}#collection`);
     const reducedMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     window.requestAnimationFrame(() => document.getElementById('collection')?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' }));
@@ -85,6 +115,21 @@ export function ShowroomPage() {
     };
     window.addEventListener('arcfield:open-bag', openBag);
     return () => window.removeEventListener('arcfield:open-bag', openBag);
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const track = journeyTrackRef.current;
+      const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+      if (!track || reduced) { setJourney((current) => (current === 0 ? current : 0)); return; }
+      const bounds = track.getBoundingClientRect();
+      const distance = Math.max(1, bounds.height - window.innerHeight);
+      const progress = Math.max(0, Math.min(1, -bounds.top / distance));
+      setJourney((current) => (Math.abs(current - progress) > 0.01 ? progress : current));
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
@@ -205,6 +250,12 @@ export function ShowroomPage() {
       historyMarkerRef.current = false;
       closeStudio();
     };
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      requestCloseStudio();
+    };
+    window.addEventListener('keydown', onEscape);
     window.addEventListener('popstate', onPopState);
     const updateOrigin = () => {
       const nextOrigin = originForProduct(activeProduct.id);
@@ -212,6 +263,7 @@ export function ShowroomPage() {
     };
     window.addEventListener('resize', updateOrigin);
     return () => {
+      window.removeEventListener('keydown', onEscape);
       window.removeEventListener('popstate', onPopState);
       window.removeEventListener('resize', updateOrigin);
       window.document.body.style.overflow = previousOverflow;
@@ -220,11 +272,6 @@ export function ShowroomPage() {
   }, [activeProduct]);
 
   const handleStudioKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      requestCloseStudio();
-      return;
-    }
     if (event.key !== 'Tab') return;
     const focusable = event.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), [tabindex="0"]');
     if (!focusable.length) return;
@@ -259,23 +306,98 @@ export function ShowroomPage() {
 
   return (
     <div className="showroom">
-      <section className="showroom-hero" aria-labelledby="showroom-title">
-        <div className="showroom-hero-copy">
-          <p className="showroom-eyebrow"><span className="live-mark" /> CREWWW / YOUR DISTRICT</p>
-          <h1 id="showroom-title" aria-label="The block is yours">The block<br />is <em>yours.</em></h1>
-          <p className="showroom-lede">Find your next layer in the neighborhood.<br />Explore a little or shop the full edit.</p>
-          <a className="hero-cta" href="#collection" onClick={(event) => { event.preventDefault(); clearFilters(); if (window.location.hash !== '#collection') window.history.pushState({}, '', `${location.pathname}${location.search}#collection`); const reducedMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches; document.getElementById('collection')?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' }); }}>SHOP ALL HOODIES <span>↘</span></a>
+      <div className="journey-track" ref={journeyTrackRef}>
+       <div className="journey-sticky">
+        <section
+          className="showroom-hero"
+          aria-labelledby="showroom-title"
+          style={{
+            '--journey': journey,
+            '--chapter-art': `url(${chapterArt[chapterIndex].artwork})`,
+            '--chapter-accent': chapterArt[chapterIndex].accent,
+          } as CSSProperties}
+        >
+        <div className="journey-artwall" aria-hidden="true">
+          {psychedelicPieces.map((piece, index) => <img
+            key={piece.id}
+            src={piece.artwork}
+            alt=""
+            className={chapterArt[chapterIndex].id === piece.id ? 'is-active' : ''}
+            style={{ '--art-delay': `${index * -1.4}s` } as CSSProperties}
+          />)}
         </div>
-        <Suspense fallback={<div className="world-stage world-stage-fallback" aria-label="Loading Crewww district"><div className="world-fallback-scene"><span>CREWWW</span><b>THE BLOCK / FIRST RUN</b></div></div>}><CrewwwWorld onDestination={selectWorldDestination} /></Suspense>
+        <div className="showroom-hero-copy" key={`copy-${chapterIndex}`}>
+          {chapterIndex === 0 && <>
+            <p className="showroom-eyebrow"><span className="live-mark" /> CREWWW / YOUR DISTRICT</p>
+            <h1 id="showroom-title" aria-label="The block is yours">The block<br />is <em>yours.</em></h1>
+            <p className="showroom-lede">Find your next layer in the neighborhood.<br />Explore a little or shop the full edit.</p>
+            <div className="chapter-actions"><a className="hero-cta" href="#collection" onClick={(event) => { event.preventDefault(); scrollToCollection(); }}>SHOP ALL HOODIES <span>↘</span></a><Link className="hero-trip-link" to="/drops/psychedelic-minds">ENTER THE PSYCHEDELIC DROP <span>↗</span></Link></div>
+          </>}
+          {chapterIndex === 1 && <>
+            <p className="showroom-eyebrow"><span className="live-mark" /> CHAPTER 02 / THE STREET</p>
+            <h1 id="showroom-title">Two sides.<br /><em>One frequency.</em></h1>
+            <p className="showroom-lede">Every storefront is a state of mind.<br />Pick a door and walk into it.</p>
+            <div className="chapter-actions"><button className="hero-cta" type="button" onClick={scrollToCollection}>SHOP ALL HOODIES <span>↘</span></button><button className="chapter-secondary" type="button" onClick={() => setWorldMode('explore')}>EXPLORE THE BLOCK <span>↗</span></button></div>
+          </>}
+          {chapterIndex === 2 && <>
+            <p className="showroom-eyebrow"><span className="live-mark" /> CHAPTER 03 / THE SIGNAL</p>
+            <h1 id="showroom-title">Graphics<br /><em>with a pulse.</em></h1>
+            <p className="showroom-lede">Psychedelic Minds. Five transmissions<br />from the same fever dream.</p>
+            <Link className="hero-cta" to="/drops/psychedelic-minds">ENTER THE TRIP <span>↗</span></Link>
+          </>}
+          {chapterIndex === 3 && <>
+            <p className="showroom-eyebrow"><span className="live-mark" /> CHAPTER 04 / THE EDIT</p>
+            <h1 id="showroom-title">Find your<br /><em>crew.</em></h1>
+            <p className="showroom-lede">Eight heavyweight pieces.<br />The one that looks like you is in here.</p>
+            <button className="hero-cta" type="button" onClick={scrollToCollection}>SHOP THE EDIT <span>↘</span></button>
+          </>}
+          {chapterIndex === 4 && <>
+            <p className="showroom-eyebrow"><span className="live-mark" /> CHAPTER 05 / THE PORTAL</p>
+            <h1 id="showroom-title">The print is<br /><em>a door.</em></h1>
+            <p className="showroom-lede">Five concepts. Five worlds.<br />Choose the frequency you want to live in.</p>
+            <Link className="hero-cta" to="/drops/psychedelic-minds?piece=mind-03&amp;entered=1">ENTER THE GIFT ROOM <span>↗</span></Link>
+          </>}
+        </div>
+        <div className="world-mode-bar">
+          <button type="button" aria-pressed={worldMode === 'explore'} onClick={() => { setWorldMode(worldMode === 'explore' ? 'cinematic' : 'explore'); setNearDestination(null); setMoveInput({ x: 0, z: 0 }); }}>
+            {worldMode === 'explore' ? 'EXIT WALK MODE' : 'EXPLORE THE BLOCK'}
+          </button>
+          {worldMode === 'explore' && <span>WASD · DRAG TO LOOK · E TO ENTER</span>}
+        </div>
+        <Suspense fallback={<div className="world-stage world-stage-fallback" aria-label="Loading Crewww district"><div className="world-fallback-scene"><span>CREWWW</span><b>THE BLOCK / FIRST RUN</b></div></div>}><CrewwwWorld onDestination={selectWorldDestination} mode={worldMode} moveInput={moveInput} onNearDestination={setNearDestination} progress={journey} /></Suspense>
+        <div className="chapter-wipe" key={`wipe-${chapterIndex}`} aria-hidden="true" />
         <nav className="world-destinations" aria-label="Explore Crewww collections">
           {(Object.entries(worldCollections) as [keyof typeof worldCollections, string][]).map(([id, name], index) => <a href="#collection" key={id} onClick={(event) => { event.preventDefault(); selectWorldDestination(id); }}><span>0{index + 1}</span><strong>{name.replace('CREWWW / ', '')}</strong><i aria-hidden="true">↗</i></a>)}
         </nav>
         <span className="hero-footnote">SELECT A STORE / OR SHOP ALL ↘</span>
+        {worldMode === 'explore' && <>
+          <div className="world-dpad" aria-label="Walk controls">
+            <button type="button" aria-label="Walk backward" onPointerDown={() => startWalk('backward')} onPointerUp={stopWalk} onPointerLeave={stopWalk} onKeyDown={walkKey('backward')} onKeyUp={stopWalk} onBlur={stopWalk}>↓</button>
+            <button type="button" aria-label="Walk forward" onPointerDown={() => startWalk('forward')} onPointerUp={stopWalk} onPointerLeave={stopWalk} onKeyDown={walkKey('forward')} onKeyUp={stopWalk} onBlur={stopWalk}>↑</button>
+            <button type="button" aria-label="Strafe left" onPointerDown={() => startWalk('left')} onPointerUp={stopWalk} onPointerLeave={stopWalk} onKeyDown={walkKey('left')} onKeyUp={stopWalk} onBlur={stopWalk}>←</button>
+            <button type="button" aria-label="Strafe right" onPointerDown={() => startWalk('right')} onPointerUp={stopWalk} onPointerLeave={stopWalk} onKeyDown={walkKey('right')} onKeyUp={stopWalk} onBlur={stopWalk}>→</button>
+          </div>
+          {nearDestination && <button className="world-prompt" type="button" onClick={() => selectWorldDestination(nearDestination)}>PRESS E / ENTER {worldCollections[nearDestination].replace('CREWWW / ', '')} ↗</button>}
+        </>}
+        <div className="world-journey" aria-hidden="true"><span>THE BLOCK</span><i><b style={{ transform: `scaleX(${journey})` }} /></i><span>THE EDIT</span></div>
+        <div className="chapter-rail" aria-hidden="true">{['BLOCK', 'STREET', 'SIGNAL', 'EDIT', 'PORTAL'].map((label, index) => <span key={label} className={index === chapterIndex ? 'is-active' : ''}><i>{String(index + 1).padStart(2, '0')}</i>{label}</span>)}</div>
+        <div className="journey-scroll-hint" aria-hidden="true">SCROLL TO MOVE THROUGH THE BLOCK <i>↓</i></div>
+        </section>
+       </div>
+      </div>
+
+      <section className="drop-entry-banner" data-reveal style={{ '--banner-art': `url(${psychedelicPieces[2].artwork})`, '--banner-accent': psychedelicPieces[2].accent } as CSSProperties}>
+        <div><span>CREW / CONCEPT 02 / PSYCHEDELIC MINDS</span><h2>Psychedelic<br /><em>Minds.</em></h2><p>Five designs, five states of mind. Step into a drop chamber and examine each piece like an item you just unlocked.</p></div>
+        <Link to="/drops/psychedelic-minds">ENTER THE PSYCHEDELIC ROOM ↗</Link>
       </section>
+
+      <DropTransmissionRail />
+
+      <ConceptWorlds />
 
       <HomepageIntroSections />
 
-      <section className="collection" id="collection" aria-labelledby="collection-title">
+      <section className="collection" id="collection" data-reveal aria-labelledby="collection-title">
         <div className="collection-heading">
           <div><p className="showroom-eyebrow">THE FIRST RUN / 08 HOODIES</p><h2 id="collection-title">Find your <em>crew.</em></h2></div>
           <p>Heavy fleece, expressive graphics,<br />and room to make the look your own.</p>
@@ -309,6 +431,8 @@ export function ShowroomPage() {
 
       <section className="showroom-editorial"><span>CREWWW / NOTE 01</span><p>Find your people.<br /><em>Keep your own style.</em></p><a href="#collection">BACK TO THE HOODIES ↑</a></section>
 
+      <ColorwayMatrix />
+
       <HomepageStorySections />
 
       {activeProduct && <div className={`studio-overlay ${closing ? 'is-closing' : ''}`} role="dialog" aria-modal="true" aria-label={`${activeProduct.name} inspection studio`} tabIndex={-1} onKeyDown={handleStudioKeyDown}>
@@ -319,7 +443,7 @@ export function ShowroomPage() {
             <div className="studio-stage-label"><span>INSPECTION STUDIO</span><span>OBJECT / {activeProduct.id.slice(-2)}</span></div>
             <div className="studio-visual" style={{ '--origin-x': `${origin.x}px`, '--origin-y': `${origin.y}px`, '--origin-scale': origin.scale } as CSSProperties}>
               <div className="studio-glow" />
-              <Suspense fallback={<div className="hoodie-viewer viewer-unavailable">Loading 3D preview…</div>}><HoodieViewer color={activeProduct.colors.find((item) => item.name === activeColor)?.value ?? '#171719'} label={activeProduct.name} /></Suspense>
+              <Suspense fallback={<div className="hoodie-viewer viewer-unavailable">Loading 3D preview…</div>}><HoodieViewer color={activeProduct.colors.find((item) => item.name === activeColor)?.value ?? '#171719'} label={activeProduct.name} artworkUrl={activeProduct.imageUrl} /></Suspense>
               <a className="reference-image-link" href={activeProduct.imageUrl} target="_blank" rel="noreferrer">VIEW REFERENCE PHOTO ↗</a>
             </div>
             <div className="studio-controls" aria-label="3D garment preview"><span>DRAG TO ROTATE</span><span>COLOR VARIANT UPDATES VIEW</span></div>
@@ -337,7 +461,7 @@ export function ShowroomPage() {
         </div>
       </div>}
 
-      {cartOpen && <div className="cart-scrim" onClick={closeCart}><section className="cart-drawer" role="dialog" aria-modal="true" aria-label="Shopping bag" tabIndex={-1} onClick={(event) => event.stopPropagation()}><button ref={cartCloseRef} className="cart-close" type="button" aria-label="Close shopping bag" onClick={closeCart}>×</button><span className="showroom-eyebrow">YOUR SELECTION / {cartCount}</span><h2>The bag.</h2>{cartLines.length ? <div className="bag-lines">{cartLines.map((line, index) => { const product = catalogProducts.find((item) => item.id === line.productId); if (!product) return null; return <div className="bag-line" key={`${line.productId}-${line.size}-${line.color}`}><img src={product.imageUrl} alt="" /><div><strong>{product.name}</strong><span>{line.color} / {line.size} / QTY {line.quantity}</span><span>{formatCurrency((product.salePrice ?? product.price) * line.quantity, product.currency)}</span></div><button type="button" aria-label={`Remove ${product.name} from bag`} onClick={() => removeCartLine(index)}>×</button></div>; })}<p className="bag-note">{API_MODE ? 'Prices and availability are confirmed by the store service.' : 'Demo checkout is not connected yet.'}</p></div> : <p>Your bag is waiting for something good.</p>}<button type="button" onClick={() => { closeCart(); document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' }); }}>CONTINUE EXPLORING ↗</button></section></div>}
+      {cartOpen && <div className="cart-scrim" onClick={closeCart}><section className="cart-drawer" role="dialog" aria-modal="true" aria-label="Shopping bag" tabIndex={-1} onClick={(event) => event.stopPropagation()}><button ref={cartCloseRef} className="cart-close" type="button" aria-label="Close shopping bag" onClick={closeCart}>×</button><span className="showroom-eyebrow">YOUR SELECTION / {cartCount}</span><h2>The bag.</h2>{cartLines.length ? <div className="bag-lines">{cartLines.map((line, index) => { const product = catalogProducts.find((item) => item.id === line.productId); if (!product) return null; return <div className="bag-line" key={`${line.productId}-${line.size}-${line.color}`}><img src={product.imageUrl} alt="" /><div><strong>{product.name}</strong><span>{line.color} / {line.size} / QTY {line.quantity}{line.sku ? ` / SKU ${line.sku}` : ''}</span><span>{formatCurrency((product.salePrice ?? product.price) * line.quantity, product.currency)}</span></div><button type="button" aria-label={`Remove ${product.name} from bag`} onClick={() => removeCartLine(index)}>×</button></div>; })}<p className="bag-note">{API_MODE ? 'Prices and availability are confirmed by the store service.' : 'Demo checkout is not connected yet.'}</p></div> : <p>Your bag is waiting for something good.</p>}<button type="button" onClick={() => { closeCart(); document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' }); }}>CONTINUE EXPLORING ↗</button></section></div>}
       {toast && <div className="showroom-toast" role="status">{toast}<button type="button" aria-label="Dismiss" onClick={() => setToast('')}>×</button></div>}
       <button className="floating-bag" type="button" aria-label={`Shopping bag, ${cartCount} items`} onClick={(event) => openCart(event.currentTarget)}>BAG <span>{cartCount}</span></button>
     </div>

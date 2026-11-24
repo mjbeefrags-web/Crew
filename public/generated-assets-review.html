@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Crewww — Psychedelic Minds asset library</title>
+<style>
+  :root { --ink:#0e0e0e; --paper:#eee7d5; --line:#2b2b2b; --muted:#9b9488; --acid:#c9ef68; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--ink); color:var(--paper); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  header { padding:40px 32px 8px; }
+  h1 { margin:0; font-size:clamp(28px,4vw,52px); letter-spacing:-.03em; font-weight:800; }
+  header p { color:var(--muted); max-width:74ch; line-height:1.6; }
+  code { color:var(--acid); }
+  section { padding:16px 32px 40px; }
+  h2 { font-size:13px; letter-spacing:.16em; color:var(--acid); margin:28px 0 6px; text-transform:uppercase; }
+  h2 + p { margin:0 0 14px; color:var(--muted); font-size:12px; line-height:1.6; }
+  .grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); }
+  .tile { display:block; border:1px solid var(--line); background:#151515; text-decoration:none; color:inherit; }
+  .tile img { display:block; width:100%; aspect-ratio:1/1; object-fit:cover; background:#1d1d1d; }
+  .tile.plate img { aspect-ratio:674/902; object-fit:contain; }
+  .tile span { display:block; padding:8px 10px; font-size:11px; letter-spacing:.04em; color:var(--muted); border-top:1px solid var(--line); }
+  .tile:hover span { color:var(--paper); }
+</style>
+</head>
+<body>
+<header>
+  <h1>PSYCHEDELIC MINDS / ASSET LIBRARY</h1>
+  <p>Extracted at source resolution from <code>CREW_Hoodie_Collection.pdf</code> and filed by asset type under <code>public/images/drops/psychedelic-minds/</code>. Print plates come from the odd slides (21/23/25/27/29); hoodie photos and alternate views from the even slides (22/24/26/28/30). Click any tile to open the full file.</p>
+</header>
+
+<section>
+  <h2>print-plates / DTG back-print artwork</h2>
+  <p>674 × 902. Mapped onto the 3D hoodie back and used for floating plates.</p>
+  <div class="grid">
+    <a class="tile plate" href="images/drops/psychedelic-minds/print-plates/01-out-of-focus-dtg-back-print.webp"><img src="images/drops/psychedelic-minds/print-plates/01-out-of-focus-dtg-back-print.webp" alt="Out of Focus print plate" /><span>01 OUT OF FOCUS</span></a>
+    <a class="tile plate" href="images/drops/psychedelic-minds/print-plates/02-life-in-scroll-dtg-back-print.webp"><img src="images/drops/psychedelic-minds/print-plates/02-life-in-scroll-dtg-back-print.webp" alt="Life in Scroll print plate" /><span>02 LIFE IN SCROLL</span></a>
+    <a class="tile plate" href="images/drops/psychedelic-minds/print-plates/03-the-gift-theory-dtg-back-print.webp"><img src="images/drops/psychedelic-minds/print-plates/03-the-gift-theory-dtg-back-print.webp" alt="The Gift Theory print plate" /><span>03 THE GIFT THEORY</span></a>
+    <a class="tile plate" href="images/drops/psychedelic-minds/print-plates/04-lost-in-the-frequency-dtg-back-print.webp"><img src="images/drops/psychedelic-minds/print-plates/04-lost-in-the-frequency-dtg-back-print.webp" alt="Lost in the Frequency print plate" /><span>04 LOST IN THE FREQUENCY</span></a>
+    <a class="tile plate" href="images/drops/psychedelic-minds/print-plates/05-outsourced-mind-dtg-back-print.webp"><img src="images/drops/psychedelic-minds/print-plates/05-outsourced-mind-dtg-back-print.webp" alt="Outsourced Mind print plate" /><span>05 OUTSOURCED MIND</span></a>
+  </div>
+</section>
+
+<section>
+  <h2>hoodie-product-photos / main product shots</h2>
+  <p>830 × 830. Primary garment image for each design.</p>
+  <div class="grid">
+    <a class="tile" href="images/drops/psychedelic-minds/hoodie-product-photos/01-out-of-focus-hoodie.webp"><img src="images/drops/psychedelic-minds/hoodie-product-photos/01-out-of-focus-hoodie.webp" alt="Out of Focus hoodie" /><span>01 OUT OF FOCUS</span></a>
+    <a class="tile" href="images/drops/psychedelic-minds/hoodie-product-photos/02-life-in-scroll-hoodie.webp"><img src="images/drops/psychedelic-minds/hoodie-product-photos/02-life-in-scroll-hoodie.webp" alt="Life in Scroll hoodie" /><span>02 LIFE IN SCROLL</span></a>
+    <a class="tile" href="images/drops/psychedelic-minds/hoodie-product-photos/03-the-gift-theory-hoodie.webp"><img src="images/drops/psychedelic-minds/hoodie-product-photos/03-the-gift-theory-hoodie.webp" alt="The Gift Theory hoodie" /><span>03 THE GIFT THEORY</span></a>
+    <a class="tile" href="images/drops/psychedelic-minds/hoodie-product-photos/04-lost-in-the-frequency-hoodie.webp"><img src="images/drops/psychedelic-minds/hoodie-product-photos/04-lost-in-the-frequency-hoodie.webp" alt="Lost in the Frequency hoodie" /><span>04 LOST IN THE FREQUENCY</span></a>
+    <a class="tile" href="images/drops/psychedelic-minds/hoodie-product-photos/05-outsourced-mind-hoodie.webp"><img src="images/drops/psychedelic-minds/hoodie-product-photos/05-outsourced-mind-hoodie.webp" alt="Outsourced Mind hoodie" /><span>05 OUTSOURCED MIND</span></a>
+  </div>
+</section>
+
+<section>
+  <h2>alternate-colorway-views / extra angles</h2>
+  <p>405 × 405. Four supplementary views per design for galleries and colorway matrices.</p>
+  <div class="grid" id="alts"></div>
+</section>
+
+<section>
+  <h2>front-and-chest-mark / shared front</h2>
+  <p>850 × 830. One front design with the CREW chest logo, shared across all five styles (slide 20).</p>
+  <div class="grid">
+    <a class="tile" href="images/drops/psychedelic-minds/front-and-chest-mark/front-left.webp"><img src="images/drops/psychedelic-minds/front-and-chest-mark/front-left.webp" alt="Front chest mark, left panel" /><span>FRONT / LEFT PANEL</span></a>
+    <a class="tile" href="images/drops/psychedelic-minds/front-and-chest-mark/front-right.webp"><img src="images/drops/psychedelic-minds/front-and-chest-mark/front-right.webp" alt="Front chest mark, right panel" /><span>FRONT / RIGHT PANEL</span></a>
+  </div>
+</section>
+
+<section>
+  <h2>full-slide exports / cover + lineup</h2>
+  <p>The original full-slide WebP exports used for the drop cover and the lineup section.</p>
+  <div class="grid">
+    <a class="tile plate" href="images/drops/drop-21.webp"><img src="images/drops/drop-21.webp" alt="Cover slide" /><span>COVER / SLIDE 21</span></a>
+    <a class="tile plate" href="images/drops/drop-31.webp"><img src="images/drops/drop-31.webp" alt="Lineup slide" /><span>LINEUP / SLIDE 31</span></a>
+  </div>
+</section>
+
+<script>
+  const folder = 'images/drops/psychedelic-minds/alternate-colorway-views';
+  const names = ['out-of-focus','life-in-scroll','the-gift-theory','lost-in-the-frequency','outsourced-mind'];
+  const grid = document.getElementById('alts');
+  names.forEach((name, i) => {
+    ['a','b','c','d'].forEach((suffix) => {
+      const file = `0${i + 1}-${name}-view-${suffix}.webp`;
+      const a = document.createElement('a');
+      a.className = 'tile';
+      a.href = `${folder}/${file}`;
+      a.innerHTML = `<img src="${folder}/${file}" alt="${name} view ${suffix}" /><span>0${i + 1} ${name.toUpperCase()} / ${suffix.toUpperCase()}</span>`;
+      grid.appendChild(a);
+    });
+  });
+</script>
+</body>
+</html>

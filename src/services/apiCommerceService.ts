@@ -1,12 +1,12 @@
 import type { CartLine, DemoOrder } from '../domain/commerce';
 import { apiRequest } from './apiClient';
 
-type ApiCart = { id: string; items: { id: string; product_id: string; product_name: string; image_url: string; size: string; color: string; quantity: number; unit_price_minor: number; currency: string }[]; subtotal_minor: number; currency: string };
+type ApiCart = { id: string; items: { id: string; product_id: string; sku: string; product_name: string; image_url: string; size: string; color: string; quantity: number; unit_price_minor: number; currency: string }[]; subtotal_minor: number; currency: string };
 type Shipping = { first_name: string; last_name: string; email: string; address_line1: string; address_line2?: string; city: string; region?: string; postal_code?: string; country_code: string };
 type ApiOrder = { id: string; created_at: string; status: string; email: string; currency: string; subtotal_minor: number; delivery_minor: number; total_minor: number; payment_status: string; items: { product_name: string; sku: string; size: string; color: string; unit_price_minor: number; quantity: number }[] };
 
 export function mapApiCart(cart: ApiCart): CartLine[] {
-  return cart.items.map((item) => ({ productId: item.product_id, size: item.size, color: item.color, quantity: item.quantity, serverLineId: item.id }));
+  return cart.items.map((item) => ({ productId: item.product_id, size: item.size, color: item.color, quantity: item.quantity, sku: item.sku, serverLineId: item.id }));
 }
 
 function mapOrder(order: ApiOrder): DemoOrder {

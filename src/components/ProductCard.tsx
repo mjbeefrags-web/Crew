@@ -31,6 +31,8 @@ export function ProductCard({ product }: { product: Product }) {
       </Link>
       {product.isPreviewData && <span className="preview-tag">SAMPLE</span>}
       {product.isNew && <span className="store-product-tag">NEW</span>}
+      {product.bestSeller && <span className="store-product-favorite">CREW FAVORITE</span>}
+      {product.variants && product.variants.length > 0 && product.variants.reduce((total, variant) => total + variant.stockQuantity, 0) <= 5 && <span className="store-product-low-stock">LOW STOCK</span>}
       <button className={`store-wishlist${saved ? ' is-saved' : ''}`} type="button" aria-label={`${saved ? 'Remove' : 'Add'} ${product.name} ${saved ? 'from' : 'to'} wishlist`} aria-pressed={saved} onClick={() => { if (API_MODE && !user) { showNotice('Sign in to save pieces to your wishlist.'); navigate('/login'); return; } toggleWishlist(product.id); showNotice(saved ? 'Removed from your wishlist.' : 'Saved to your wishlist.'); }}>{saved ? '♥' : '♡'}</button>
     </div>
     <div className="store-product-copy">

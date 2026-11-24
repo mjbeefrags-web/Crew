@@ -1,8 +1,9 @@
 import { featuredCollections, featuredProducts } from '../data/mock/catalog';
 import { previewProducts } from '../data/mock/previewProducts';
+import { psychedelicProducts } from '../data/psychedelicProducts';
 import type { CatalogService, ProductQuery } from '../domain/service';
 
-const demoCatalog = [...featuredProducts, ...previewProducts];
+const demoCatalog = [...featuredProducts, ...previewProducts, ...psychedelicProducts];
 
 function matchesQuery(product: (typeof demoCatalog)[number], query: ProductQuery) {
   const term = query.term?.trim().toLocaleLowerCase();

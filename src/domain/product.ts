@@ -1,3 +1,14 @@
+export type ProductVariant = {
+  id: string;
+  sku: string;
+  size: string;
+  color: string;
+  colorValue: string;
+  price: number;
+  salePrice?: number;
+  stockQuantity: number;
+};
+
 export type Product = {
   id: string;
   slug: string;
@@ -40,6 +51,7 @@ export type Product = {
   ageBand?: string;
   galleryUrls?: readonly string[];
   isPreviewData?: boolean;
+  variants?: readonly ProductVariant[];
 };
 
 export type ProductCollection = {

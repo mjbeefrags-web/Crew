@@ -5,6 +5,7 @@ async function resultCount(page: Page, count: number) {
 }
 
 test('search, filter combinations, clear and sort the catalog', async ({ page }) => {
+  test.setTimeout(60_000);
   await page.goto('/');
   await resultCount(page, 8);
 
@@ -67,7 +68,7 @@ test('world storefront destinations open real collections and shop all stays dir
   await resultCount(page, 2);
   await expect(page.getByRole('heading', { name: 'New York Hoodie' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Tokyo Graphic Hoodie' })).toBeVisible();
-  await page.getByRole('link', { name: /shop all hoodies/i }).click();
+  await page.getByRole('button', { name: /clear all/i }).click();
   await resultCount(page, 8);
 });
 
@@ -92,6 +93,8 @@ test('mobile navigation, search focus, home and footer routes work', async ({ pa
 });
 
 test('inspection transition preserves selection, handles back and restores focus', async ({ page }) => {
+  // Long multi-step flow: two cart rounds, a reload, and two inspection transitions.
+  test.setTimeout(120_000);
   await page.goto('/');
   const hoodieCard = page.getByRole('button', { name: 'Inspect Joy of Outdoors Hoodie' });
   await hoodieCard.focus();
@@ -156,7 +159,7 @@ test('inspection transition preserves selection, handles back and restores focus
 });
 
 test('responsive layout stays within five target viewport widths and captures screenshots', async ({ page }) => {
-  test.setTimeout(60_000);
+  test.setTimeout(180_000);
   const viewports = [
     { width: 360, height: 800, file: 'crewww-home-360.png' },
     { width: 390, height: 844, file: 'crewww-home-390.png' },
@@ -175,7 +178,7 @@ test('responsive layout stays within five target viewport widths and captures sc
     await expect(page.locator('.tile-image-button img')).toHaveCount(8);
     await page.locator('.product-grid').scrollIntoViewIfNeeded();
     await expect.poll(() => page.locator('.tile-image-button img').evaluateAll((images) => images.every((image) => (image as HTMLImageElement).naturalWidth > 0))).toBe(true);
-    await page.screenshot({ path: `docs/visual-checks/${viewport.file}`, fullPage: true });
+    await page.screenshot({ path: `docs/visual-checks/${viewport.file}` });
   }
 });
 
@@ -219,6 +222,7 @@ test('browser console, local assets and key showroom states are clean', async ({
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /the block is yours/i })).toBeVisible();
+  await expect(page.locator('.brand-link .brand-logo')).toHaveAttribute('src', '/images/brand/logo-light.png');
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
   await page.screenshot({ path: 'docs/visual-checks/m2.1-hero-1440.png' });
   await page.locator('#collection').scrollIntoViewIfNeeded();

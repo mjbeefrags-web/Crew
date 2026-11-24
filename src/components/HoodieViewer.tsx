@@ -1,165 +1,170 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { crewMark } from '../data/drops';
+import { createStage } from '../scenes/lib/stage';
+import { createHoodieModel } from '../scenes/lib/garment';
 
-type HoodieViewerProps = { color: string; label: string };
+type HoodieViewerProps = {
+  color: string;
+  label: string;
+  artworkUrl?: string;
+};
 
-function makePrintTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 384;
-  const context = canvas.getContext('2d');
-  if (!context) return null;
-  context.fillStyle = '#f1ead9';
-  context.textAlign = 'center';
-  context.font = '900 53px Arial, sans-serif';
-  context.fillText('CREWWW', 256, 144);
-  context.font = '700 22px Arial, sans-serif';
-  context.letterSpacing = '8px';
-  context.fillText('STREET DEPT. / 01', 256, 185);
-  context.strokeStyle = '#f1ead9';
-  context.lineWidth = 5;
-  context.beginPath();
-  context.moveTo(96, 222); context.lineTo(416, 222);
-  context.moveTo(126, 258); context.lineTo(386, 258);
-  context.stroke();
-  for (const [x, y, radius] of [[96, 96, 14], [411, 112, 10], [154, 296, 9], [366, 305, 14]]) {
-    context.beginPath(); context.arc(x, y, radius, 0, Math.PI * 2); context.fill();
-  }
-  return new THREE.CanvasTexture(canvas);
-}
-
-function createHoodie(color: string) {
-  const garment = new THREE.Group();
-  const fabric = new THREE.MeshStandardMaterial({ color, roughness: 0.88, metalness: 0 });
-  const rib = new THREE.MeshStandardMaterial({ color: new THREE.Color(color).multiplyScalar(0.72), roughness: 0.92 });
-  const frontZ = 0.16;
-
-  const silhouette = new THREE.Shape();
-  silhouette.moveTo(-0.53, -0.91);
-  silhouette.lineTo(0.53, -0.91);
-  silhouette.lineTo(0.56, 0.55);
-  silhouette.lineTo(0.82, 0.73);
-  silhouette.lineTo(1.18, -0.44);
-  silhouette.quadraticCurveTo(1.34, -0.59, 1.49, -0.43);
-  silhouette.lineTo(1.18, 0.88);
-  silhouette.quadraticCurveTo(1.04, 1.06, 0.82, 1.05);
-  silhouette.lineTo(0.57, 0.92);
-  silhouette.lineTo(0.46, 1.22);
-  silhouette.lineTo(0.43, 1.42);
-  silhouette.quadraticCurveTo(0, 1.67, -0.43, 1.42);
-  silhouette.lineTo(-0.46, 1.22);
-  silhouette.lineTo(-0.57, 0.92);
-  silhouette.lineTo(-0.82, 1.05);
-  silhouette.quadraticCurveTo(-1.04, 1.06, -1.18, 0.88);
-  silhouette.lineTo(-1.49, -0.43);
-  silhouette.quadraticCurveTo(-1.34, -0.59, -1.18, -0.44);
-  silhouette.lineTo(-0.82, 0.73);
-  silhouette.lineTo(-0.56, 0.55);
-  silhouette.closePath();
-  const shell = new THREE.Mesh(new THREE.ExtrudeGeometry(silhouette, { depth: 0.12, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.035, bevelThickness: 0.035 }), fabric);
-  shell.position.z = -0.06;
-  garment.add(shell);
-
-  const hoodShape = new THREE.Shape();
-  hoodShape.moveTo(-0.39, 1.19);
-  hoodShape.quadraticCurveTo(-0.43, 1.78, 0, 1.82);
-  hoodShape.quadraticCurveTo(0.43, 1.78, 0.39, 1.19);
-  hoodShape.quadraticCurveTo(0, 1.39, -0.39, 1.19);
-  const hood = new THREE.Mesh(new THREE.ExtrudeGeometry(hoodShape, { depth: 0.16, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.025, bevelThickness: 0.025 }), rib);
-  hood.position.z = -0.1;
-  garment.add(hood);
-
-  const cuffGeometry = new THREE.BoxGeometry(0.29, 0.22, 0.19);
-  const rightCuff = new THREE.Mesh(cuffGeometry, rib); rightCuff.position.set(1.31, -0.39, 0.015); rightCuff.rotation.z = -0.22; garment.add(rightCuff);
-  const leftCuff = new THREE.Mesh(cuffGeometry, rib); leftCuff.position.set(-1.31, -0.39, 0.015); leftCuff.rotation.z = 0.22; garment.add(leftCuff);
-
-  const hem = new THREE.Mesh(new THREE.BoxGeometry(1.03, 0.18, 0.19), rib);
-  hem.position.set(0, -0.83, 0.015); garment.add(hem);
-  const pocketShape = new THREE.Shape();
-  pocketShape.moveTo(-0.34, 0.08); pocketShape.lineTo(0.34, 0.08); pocketShape.lineTo(0.28, -0.3); pocketShape.quadraticCurveTo(0, -0.42, -0.28, -0.3); pocketShape.closePath();
-  const pocket = new THREE.Mesh(new THREE.ShapeGeometry(pocketShape), rib);
-  pocket.position.set(0, -0.24, frontZ); garment.add(pocket);
-
-  const printTexture = makePrintTexture();
-  if (printTexture) {
-    const print = new THREE.Mesh(new THREE.PlaneGeometry(0.74, 0.56), new THREE.MeshBasicMaterial({ map: printTexture, transparent: true, side: THREE.DoubleSide, depthWrite: false }));
-    print.position.set(0, 0.41, frontZ + 0.012); garment.add(print);
-  }
-  const drawstring = new THREE.MeshStandardMaterial({ color: '#e8dfce', roughness: 0.8 });
-  for (const x of [-0.13, 0.13]) {
-    const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.48, 8), drawstring);
-    cord.position.set(x, 0.88, frontZ + 0.035); garment.add(cord);
-  }
-  return garment;
-}
-
-export function HoodieViewer({ color, label }: HoodieViewerProps) {
+export function HoodieViewer({ color, label, artworkUrl }: HoodieViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const sceneRef = useRef<{ garment: THREE.Group; renderer: THREE.WebGLRenderer; scene: THREE.Scene; camera: THREE.PerspectiveCamera } | null>(null);
   const [unsupported, setUnsupported] = useState(false);
-  const [rotation, setRotation] = useState(0);
+  const [autoSpin, setAutoSpin] = useState(false);
+  const autoSpinRef = useRef(autoSpin);
+  autoSpinRef.current = autoSpin;
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
-    if (!window.WebGLRenderingContext && !window.WebGL2RenderingContext) {
-      setUnsupported(true);
-      return undefined;
-    }
-    let renderer: THREE.WebGLRenderer;
-    try {
-      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
-    } catch {
-      setUnsupported(true);
-      return undefined;
-    }
+    const width = Math.max(1, canvas.clientWidth);
+    const height = Math.max(1, canvas.clientHeight);
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 30);
-    camera.position.set(0, 0.18, 7.4);
+    const camera = new THREE.PerspectiveCamera(32, width / height, 0.1, 30);
+    const disposables = new Set<{ dispose(): void }>();
+    const track = <T extends { dispose(): void }>(item: T): T => { disposables.add(item); return item; };
+
+    const target = new THREE.Vector3(0, 0.2, 0);
     scene.add(new THREE.HemisphereLight('#ffffff', '#33303b', 2));
     const key = new THREE.DirectionalLight('#fff6e6', 3.2); key.position.set(-3.5, 4.2, 5); scene.add(key);
     const rim = new THREE.DirectionalLight('#d5d2ff', 2.2); rim.position.set(4, 1.5, -3); scene.add(rim);
-    const garment = createHoodie(color);
-    garment.rotation.y = rotation;
-    scene.add(garment);
-    const resize = () => {
-      const bounds = canvas.getBoundingClientRect();
-      const width = Math.max(1, bounds.width); const height = Math.max(1, bounds.height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-      renderer.setSize(width, height, false);
-      camera.aspect = width / height; camera.updateProjectionMatrix();
-      renderer.render(scene, camera);
-    };
-    resize();
-    window.addEventListener('resize', resize);
-    sceneRef.current = { garment, renderer, scene, camera };
-    return () => {
-      window.removeEventListener('resize', resize);
-      scene.traverse((object) => {
-        if (object instanceof THREE.Mesh) {
-          object.geometry.dispose();
-          const materials = Array.isArray(object.material) ? object.material : [object.material];
-          materials.forEach((material) => { if ('map' in material && material.map) material.map.dispose(); material.dispose(); });
-        }
-      });
-      renderer.dispose();
-      sceneRef.current = null;
-    };
-  // The garment material changes when the color variant changes, so rebuild and dispose scene resources.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [color]);
+    const warm = new THREE.PointLight('#ffd79a', 18, 12); warm.position.set(2, -1, 3); scene.add(warm);
 
-  useEffect(() => {
-    if (sceneRef.current) {
-      sceneRef.current.garment.rotation.y = rotation;
-      sceneRef.current.renderer.render(sceneRef.current.scene, sceneRef.current.camera);
+    const shadowSurface = document.createElement('canvas'); shadowSurface.width = shadowSurface.height = 128;
+    const shadowContext = shadowSurface.getContext('2d');
+    if (shadowContext) {
+      const gradient = shadowContext.createRadialGradient(64, 64, 2, 64, 64, 64);
+      gradient.addColorStop(0, 'rgba(255,255,255,1)');
+      gradient.addColorStop(1, 'rgba(255,255,255,0)');
+      shadowContext.fillStyle = gradient; shadowContext.fillRect(0, 0, 128, 128);
     }
-  }, [rotation]);
+    const shadowTexture = track(new THREE.CanvasTexture(shadowSurface));
+    const shadowMaterial = track(new THREE.MeshBasicMaterial({
+      color: '#000000', transparent: true, opacity: 0.28, depthWrite: false, map: shadowTexture,
+    }));
+    const shadow = new THREE.Mesh(track(new THREE.PlaneGeometry(3.2, 1.2)), shadowMaterial);
+    shadow.rotation.x = -Math.PI / 2; shadow.position.y = -1.02; scene.add(shadow);
 
-  const turn = (direction: number) => setRotation((value) => value + direction * Math.PI / 4);
+    const model = createHoodieModel(color);
+    scene.add(model.group);
+    model.group.traverse((object) => {
+      if (object instanceof THREE.Mesh || object instanceof THREE.LineSegments) {
+        track(object.geometry);
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        materials.forEach((material) => disposables.add(material));
+      }
+    });
+
+    const loader = new THREE.TextureLoader();
+    if (artworkUrl) {
+      loader.load(artworkUrl, (texture) => {
+        texture.colorSpace = THREE.SRGBColorSpace;
+        track(texture);
+        if (model.backPrint) {
+          const material = model.backPrint.material as THREE.MeshBasicMaterial;
+          material.map = texture; material.needsUpdate = true; model.backPrint.visible = true;
+        }
+        stage?.requestRender();
+      });
+    }
+    loader.load(crewMark, (texture) => {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      track(texture);
+      if (model.chestMark) {
+        const material = model.chestMark.material as THREE.MeshBasicMaterial;
+        material.map = texture; material.needsUpdate = true; model.chestMark.visible = true;
+      }
+      stage?.requestRender();
+    });
+
+    let yaw = 0.25;
+    let velocity = 0;
+    let zoom = 7.3;
+    let targetZoom = 7.3;
+    let dragging = false;
+    let lastX = 0;
+
+    const stage = createStage(canvas, {
+      scene, camera, alpha: true, fps: 45, maxPixelRatio: 1.5,
+      onResize: (w, h) => { camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix(); },
+      onFrame: (delta) => {
+        if (autoSpinRef.current) yaw += delta * 0.28;
+        yaw += velocity * delta;
+        velocity *= Math.exp(-delta * 5);
+        zoom += (targetZoom - zoom) * (1 - Math.exp(-delta * 8));
+        model.group.rotation.y = yaw;
+        model.group.position.y = Math.sin(performance.now() * 0.0006) * 0.025;
+        camera.position.set(Math.sin(yaw * 0.18) * 0.35, target.y + 0.12, zoom);
+        camera.lookAt(target);
+      },
+    });
+    if (!stage) { setUnsupported(true); return undefined; }
+
+    const onPointerDown = (event: PointerEvent) => {
+      dragging = true; lastX = event.clientX;
+      canvas.setPointerCapture?.(event.pointerId);
+      canvas.focus({ preventScroll: true });
+    };
+    const onPointerMove = (event: PointerEvent) => {
+      if (!dragging) return;
+      const deltaX = event.clientX - lastX;
+      yaw -= deltaX * 0.008;
+      velocity = -deltaX * 0.05;
+      lastX = event.clientX;
+    };
+    const onPointerUp = (event: PointerEvent) => {
+      dragging = false;
+      canvas.releasePointerCapture?.(event.pointerId);
+    };
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      targetZoom = THREE.MathUtils.clamp(targetZoom + event.deltaY * 0.005, 5.2, 10);
+    };
+    const onTurn = (event: Event) => {
+      const direction = (event as CustomEvent<number>).detail;
+      yaw += direction * Math.PI / 4;
+      velocity = direction * 0.3;
+    };
+    const onReset = () => {
+      yaw = 0.25;
+      velocity = 0;
+      zoom = 7.3;
+      targetZoom = 7.3;
+      setAutoSpin(false);
+    };
+    canvas.addEventListener('pointerdown', onPointerDown);
+    canvas.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('pointerup', onPointerUp);
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('hoodie:turn', onTurn);
+    window.addEventListener('hoodie:reset', onReset);
+
+    return () => {
+      canvas.removeEventListener('pointerdown', onPointerDown);
+      canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('pointerup', onPointerUp);
+      canvas.removeEventListener('wheel', onWheel);
+      window.removeEventListener('hoodie:turn', onTurn);
+      window.removeEventListener('hoodie:reset', onReset);
+      stage.dispose();
+      disposables.forEach((item) => item.dispose());
+    };
+  }, [color, artworkUrl]);
+
   return <div className="hoodie-viewer" role="group" aria-label={`${label} 3D product viewer`}>
-    {!unsupported ? <canvas ref={canvasRef} aria-label={`${label}, rotate by dragging`} onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); event.currentTarget.dataset.dragX = String(event.clientX); }} onPointerMove={(event) => { if (!event.currentTarget.hasPointerCapture(event.pointerId)) return; const last = Number(event.currentTarget.dataset.dragX ?? event.clientX); const delta = event.clientX - last; event.currentTarget.dataset.dragX = String(event.clientX); setRotation((value) => value + delta * 0.008); }} onPointerUp={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }} /> : <div className="viewer-unavailable">3D preview is unavailable in this browser.</div>}
-    {!unsupported && <div className="viewer-controls"><button type="button" aria-label="Rotate hoodie left" onClick={() => turn(-1)}>↶</button><span>DRAG TO ROTATE</span><button type="button" aria-label="Rotate hoodie right" onClick={() => turn(1)}>↷</button><button type="button" aria-label="Reset hoodie view" onClick={() => setRotation(0)}>RESET</button></div>}
+    {!unsupported
+      ? <canvas ref={canvasRef} tabIndex={0} aria-label={`${label}, drag to rotate and scroll to zoom`} />
+      : <div className="viewer-unavailable">3D preview is unavailable in this browser.</div>}
+    {!unsupported && <div className="viewer-controls">
+      <button type="button" aria-label="Rotate hoodie left" onClick={() => window.dispatchEvent(new CustomEvent('hoodie:turn', { detail: -1 }))}>↶</button>
+      <button type="button" aria-label="Rotate hoodie right" onClick={() => window.dispatchEvent(new CustomEvent('hoodie:turn', { detail: 1 }))}>↷</button>
+      <button type="button" aria-label="Reset hoodie view" onClick={() => window.dispatchEvent(new Event('hoodie:reset'))}>↺</button>
+      <span>DRAG · ZOOM · SPIN</span>
+      <button type="button" aria-label="Toggle automatic spin" aria-pressed={autoSpin} onClick={() => setAutoSpin((value) => !value)}>{autoSpin ? 'STOP SPIN' : 'AUTO SPIN'}</button>
+    </div>}
     <span className="viewer-caption">ILLUSTRATIVE 3D GARMENT / CREWWW STUDY 01</span>
   </div>;
 }

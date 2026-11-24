@@ -3,6 +3,7 @@ export type CartLine = {
   size: string;
   color: string;
   quantity: number;
+  sku?: string;
   serverLineId?: string;
 };
 
