@@ -47,7 +47,11 @@ export function createStage(canvas: HTMLCanvasElement, options: StageOptions): S
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.toneMapping = options.toneMapping ?? ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, options.maxPixelRatio ?? 1.5));
+  const pixelRatio = Math.min(
+    window.devicePixelRatio || 1,
+    window.innerWidth < 640 ? Math.min(options.maxPixelRatio ?? 1.5, 1) : options.maxPixelRatio ?? 1.5,
+  );
+  renderer.setPixelRatio(pixelRatio);
 
   const motionQuery = typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -60,7 +64,10 @@ export function createStage(canvas: HTMLCanvasElement, options: StageOptions): S
   let frameId = 0;
   let lastFrame = 0;
   let elapsed = 0;
-  const minFrameTime = options.fps && options.fps > 0 ? 1000 / options.fps : 0;
+  // Cap the frame budget so animated scenes stay smooth on mid-tier devices:
+  // 40 fps under 600px, 45 fps by default, 60 fps when fps is not set.
+  const requestedFps = options.fps ?? (window.innerWidth < 600 ? 40 : 45);
+  const minFrameTime = requestedFps > 0 ? 1000 / requestedFps : 0;
 
   const render = (delta: number) => {
     options.onFrame?.(delta, elapsed);

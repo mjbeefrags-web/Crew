@@ -99,8 +99,13 @@ export function ExperienceLayer() {
       return current || routeLabel(location.pathname);
     };
 
+    let disposed = false;
+    let lastProgress = -1;
+    let lastVelocity = -2;
+
     const updateScroll = () => {
       scrollFrame = 0;
+      if (disposed || document.visibilityState === 'hidden') return;
       const y = window.scrollY;
       const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
       const progress = Math.max(0, Math.min(1, y / max));
@@ -110,12 +115,19 @@ export function ExperienceLayer() {
       lastScrollY = y;
       lastScrollTime = now;
 
-      root.style.setProperty('--xp-progress', progress.toFixed(4));
-      root.style.setProperty('--xp-velocity', velocity.toFixed(3));
-      root.style.setProperty('--xp-y', `${Math.round(y)}px`);
+      if (progress !== lastProgress) {
+        root.style.setProperty('--xp-progress', progress.toFixed(4));
+        lastProgress = progress;
+      }
+      if (velocity !== lastVelocity) {
+        root.style.setProperty('--xp-velocity', velocity.toFixed(3));
+        lastVelocity = velocity;
+      }
+      if (root.style.getPropertyValue('--xp-y').replace(/px$/, '') !== String(Math.round(y))) root.style.setProperty('--xp-y', `${Math.round(y)}px`);
       const percent = String(Math.round(progress * 100)).padStart(3, '0');
       if (countRef.current && countRef.current.textContent !== percent) countRef.current.textContent = percent;
-      if (now - chapterAt >= 250) {
+      // Throttle chapter detection; quadratic signal: dense reading moves fast.
+      if (now - chapterAt >= (Math.abs(velocity) > 0.35 ? 200 : 500)) {
         chapterAt = now;
         applyChapter(findChapter());
       }
@@ -192,6 +204,7 @@ export function ExperienceLayer() {
     updateScroll();
 
     return () => {
+      disposed = true;
       if (scrollFrame) window.cancelAnimationFrame(scrollFrame);
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
