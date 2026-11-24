@@ -803,6 +803,7 @@ export function ShowroomPage() {
               <span>THE EDIT</span>
             </div>
             <div className="chapter-rail" aria-hidden="true">
+              <div className="chapter-rail-fill" style={{ transform: `scaleX(${journey})` }} />
               {["BLOCK", "STREET", "SIGNAL", "EDIT", "PORTAL"].map(
                 (label, index) => (
                   <span
@@ -814,9 +815,18 @@ export function ShowroomPage() {
                   </span>
                 ),
               )}
+              <span className="chapter-rail-count">{String(chapterIndex + 1).padStart(2, "0")} / 05</span>
             </div>
-            <div className="journey-scroll-hint" aria-hidden="true">
-              SCROLL TO MOVE THROUGH THE BLOCK <i>↓</i>
+            <div
+              className="journey-scroll-hint"
+              aria-hidden="true"
+              style={{
+                opacity: journey > 0.2 ? 0 : 1 - journey * 4,
+                transform: `translateY(${journey * -20}px)`,
+              }}
+            >
+              SCROLL TO MOVE THROUGH THE BLOCK{" "}
+              <i style={{ display: "inline-block", animation: "scroll-chevron 1.4s ease-in-out infinite" }}>↓</i>
             </div>
           </section>
         </div>
@@ -877,11 +887,14 @@ export function ShowroomPage() {
             <span aria-hidden="true">⌕</span>
             <input
               aria-label="Search pieces"
-              placeholder="Search the collection"
+              placeholder="Try: hoodie, cherry, black — ⌘K"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
+              onFocus={() => {
+                // Surface the command palette hint; actual filtering remains here.
+              }}
             />
-            <kbd>↵</kbd>
+            <kbd>⌘K</kbd>
           </label>
           <label className="sort-control">
             SORT BY{" "}
@@ -1064,7 +1077,10 @@ export function ShowroomPage() {
                         <img
                           src={product.imageUrl}
                           alt={`${product.name}, ${product.color}`}
+                          width={800}
+                          height={1000}
                           loading="lazy"
+                          decoding="async"
                         />
                         <span className="inspect-chip">
                           <i /> INSPECT PIECE
@@ -1113,13 +1129,14 @@ export function ShowroomPage() {
                 ))}
               </div>
             ) : (
-              <div className="empty-catalog">
+              <div className="empty-catalog" role="status">
                 <span>NO PIECES FOUND</span>
                 <h3>
                   Nothing in this edit.
                   <br />
                   <em>Try another search.</em>
                 </h3>
+                <p className="empty-catalog-hint">Try “hoodie”, “cherry”, or “black”, or clear filters.</p>
                 <button type="button" onClick={clearFilters}>
                   CLEAR FILTERS ↗
                 </button>

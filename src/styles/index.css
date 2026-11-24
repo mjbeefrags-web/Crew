@@ -10081,3 +10081,5 @@ main,
     display: none;
   }
 }
+
+.empty-catalog-hint { margin: 0 0 20px; color: var(--dim); font: 12px var(--mono); letter-spacing: .04em; }

@@ -470,3 +470,11 @@ html[data-xp-label="on"] .xp-label {
     translate: none;
   }
 }
+
+@keyframes scroll-chevron { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .journey-scroll-hint i { animation: none !important; } }
+
+.chapter-rail { position: relative; }
+.chapter-rail-fill { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--lichen); transform-origin: left; transition: transform .12s linear; }
+.chapter-rail-count { margin-left: auto; font: 9px var(--mono); letter-spacing: .12em; color: var(--lichen); }
+@media (prefers-reduced-motion: reduce) { .chapter-rail-fill { transition: none; } }
