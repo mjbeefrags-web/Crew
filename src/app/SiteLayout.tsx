@@ -22,6 +22,13 @@ export function SiteLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<'shop' | 'clothes' | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const mainRef = useRef<HTMLElement | null>(null);
+  // Move keyboard focus to the main landmark when the route changes, so
+  // screen-reader and keyboard users start each page in a predictable place.
+  useEffect(() => {
+    const id = window.setTimeout(() => mainRef.current?.focus({ preventScroll: true }), 50);
+    return () => window.clearTimeout(id);
+  }, [location.pathname]);
   const bagLines = useCommerceStore((state) => state.cartLines);
   const bagCount = bagLines.reduce((total, line) => total + line.quantity, 0);
   const notice = useUiStore((state) => state.notice);
@@ -144,7 +151,7 @@ export function SiteLayout() {
         <div className="mobile-navigation-bottom"><Link to="/account">ACCOUNT</Link><Link to="/wishlist">SAVED PIECES</Link><Link to="/cart">SHOPPING BAG · {bagCount}</Link>{(!API_MODE || user?.role === 'admin') && <Link to="/admin">{API_MODE ? 'ADMIN' : 'ADMIN DEMO'}</Link>}</div>
       </nav>
     </div>}
-    <main id="main-content"><Outlet /></main>
+    <main id="main-content" ref={mainRef} tabIndex={-1}><Outlet /></main>
     <footer className="site-footer store-footer">
       <div className="store-footer-top"><div><BrandMark inverse /><p>Move your own way.<br /><em>Find your people.</em></p></div><div className="footer-newsletter-prompt"><span>CREWWW / NOTES FROM THE BLOCK</span><p>New drops, good stories, no noise.</p><Link to="/#newsletter">JOIN THE LIST ↗</Link></div></div>
       <div className="footer-link-groups">
