@@ -23,7 +23,7 @@ export function ProductCard({ product }: { product: Product }) {
   };
 
   return <article className="store-product-card">
-    <div className="store-product-media">
+    <div className="store-product-media" data-tilt data-parallax>
       <Link to={`/products/${product.slug}`} aria-label={`View ${product.name}`}>
         {product.imageUrl && !failed
           ? <img src={product.imageUrl} alt={`${product.name} · ${product.color}`} loading="lazy" onError={() => setFailed(true)} />

@@ -25,6 +25,8 @@ export function DropTransmissionRail() {
             to={`/drops/${drop.slug}`}
             className="transmission-card"
             data-reveal
+            data-tilt
+            data-cursor="OPEN DROP"
             style={{
               '--card-image': `url(${piece?.photo ?? drop.plate})`,
               '--card-art': `url(${piece?.artwork ?? drop.plate})`,

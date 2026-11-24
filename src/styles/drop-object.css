@@ -1,0 +1,594 @@
+/* ------------------------------------------------------------------
+   PSYCHEDELIC MINDS / THE OBJECT
+   A sticky scroll chamber for the garment. The page scroll turns the
+   Three.js hoodie, advances the scan HUD and moves the dossier from
+   concept to artwork to loadout.
+   ------------------------------------------------------------------ */
+
+.psychedelic-journey { position: relative; z-index: 2; }
+
+.drop-object {
+  --object-accent: #c9ef68;
+  position: relative;
+  z-index: 2;
+  height: 240vh;
+  content-visibility: auto;
+  contain-intrinsic-size: 240vh;
+  color: #f2efe6;
+  border-top: 1px solid rgba(242, 239, 230, .14);
+  background:
+    radial-gradient(circle at 72% 42%, color-mix(in srgb, var(--object-accent) 11%, transparent), transparent 42%),
+    linear-gradient(180deg, #0b0a0d 0%, #101017 45%, #0b0a0d 100%);
+}
+
+.drop-object::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .16;
+  background-image:
+    linear-gradient(rgba(242, 239, 230, .12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(242, 239, 230, .12) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(90deg, transparent, #000 38%, #000 72%, transparent);
+}
+
+.drop-object-sticky {
+  position: sticky;
+  top: 76px;
+  height: calc(100svh - 76px);
+  min-height: 624px;
+  display: grid;
+  grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr);
+  align-items: center;
+  gap: clamp(18px, 4vw, 70px);
+  overflow: hidden;
+  contain-intrinsic-size: 100svh;
+  padding: 92px clamp(24px, 6vw, 90px) 70px;
+}
+
+/* The artwork becomes the chamber wall ------------------------------ */
+.drop-object-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.drop-object-backdrop img {
+  position: absolute;
+  top: 50%;
+  right: -10%;
+  width: min(66vw, 900px);
+  max-height: 104%;
+  object-fit: contain;
+  opacity: .085;
+  transform: translateY(-50%) rotate(6deg) scale(1.08);
+  filter: saturate(1.35) contrast(1.06);
+  mask-image: radial-gradient(ellipse at 58% 48%, #000 0%, transparent 72%);
+}
+
+/* Scan HUD --------------------------------------------------------- */
+.drop-object-hud {
+  position: absolute;
+  z-index: 5;
+  top: 25px;
+  left: clamp(24px, 6vw, 90px);
+  right: clamp(24px, 6vw, 90px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  color: rgba(242, 239, 230, .54);
+  font: 8px var(--mono);
+  letter-spacing: .16em;
+}
+.drop-object-hud-signal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--object-accent);
+}
+.drop-object-hud-signal i {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--object-accent);
+  box-shadow: 0 0 14px var(--object-accent);
+  animation: trip-pulse 2.4s ease-out infinite;
+}
+
+/* Copy and dossier ------------------------------------------------ */
+.drop-object-copy {
+  position: relative;
+  z-index: 3;
+  max-width: 560px;
+}
+.drop-object-kicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 15px;
+  color: var(--object-accent);
+  font: 9px var(--mono);
+  letter-spacing: .18em;
+}
+.drop-object-kicker span {
+  font: italic 26px/1 var(--display);
+  letter-spacing: 0;
+}
+.drop-object-signal {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  color: rgba(242, 239, 230, .5);
+  font: 8px var(--mono);
+  letter-spacing: .18em;
+}
+.drop-object-signal i {
+  display: block;
+  width: 28px;
+  height: 1px;
+  background: var(--object-accent);
+}
+.drop-object-copy h2 {
+  margin: 9px 0 14px;
+  font: 400 clamp(54px, 6.6vw, 104px)/.82 var(--display);
+  letter-spacing: -.06em;
+}
+.drop-object-copy h2 span { color: var(--object-accent); }
+.drop-object-line {
+  max-width: 430px;
+  margin: 0 0 22px;
+  color: rgba(242, 239, 230, .72);
+  font: italic 16px/1.4 var(--display);
+}
+
+.drop-object-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  border-bottom: 1px solid rgba(242, 239, 230, .15);
+}
+.drop-object-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 12px 9px;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  color: rgba(242, 239, 230, .48);
+  background: none;
+  font: 8px var(--mono);
+  letter-spacing: .12em;
+  cursor: pointer;
+  transition: color .25s ease, background .25s ease, border-color .25s ease;
+}
+.drop-object-tabs button span {
+  color: var(--object-accent);
+  opacity: .55;
+}
+.drop-object-tabs button:hover { color: #f2efe6; }
+.drop-object-tabs button.is-active {
+  color: #0b0a0d;
+  background: var(--object-accent);
+  border-color: var(--object-accent);
+}
+.drop-object-tabs button.is-active span {
+  color: #0b0a0d;
+  opacity: .6;
+}
+
+.drop-object-dossier {
+  min-height: 126px;
+  padding: 18px 0 14px;
+  animation: object-dossier-in .5s cubic-bezier(.2, .8, .2, 1) both;
+}
+@keyframes object-dossier-in {
+  from { opacity: 0; transform: translateY(10px); filter: blur(5px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+.drop-object-dossier > p {
+  max-width: 470px;
+  margin: 0;
+  color: rgba(242, 239, 230, .74);
+  font: 12px/1.7 var(--sans);
+}
+.drop-object-fineprint {
+  margin-top: 10px !important;
+  padding-top: 10px;
+  border-top: 1px solid rgba(242, 239, 230, .12);
+  color: rgba(242, 239, 230, .5) !important;
+  font: 10px/1.6 var(--sans) !important;
+}
+.drop-object-palette {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.drop-object-palette i {
+  display: block;
+  width: 30px;
+  height: 10px;
+  border: 1px solid rgba(242, 239, 230, .28);
+}
+.drop-object-palette span {
+  color: rgba(242, 239, 230, .5);
+  font: 8px var(--mono);
+  letter-spacing: .12em;
+}
+
+/* Object stats and loadout ---------------------------------------- */
+.drop-object-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 2px 0 18px;
+  padding: 12px 0;
+  border-top: 1px solid rgba(242, 239, 230, .12);
+  border-bottom: 1px solid rgba(242, 239, 230, .12);
+}
+.drop-object-stats b {
+  display: block;
+  color: var(--object-accent);
+  font: 400 22px/1 var(--display);
+}
+.drop-object-stats span {
+  display: block;
+  margin-top: 4px;
+  color: rgba(242, 239, 230, .45);
+  font: 7px var(--mono);
+  letter-spacing: .1em;
+}
+
+.drop-object-loadout {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 11px 16px;
+  margin-bottom: 16px;
+}
+.drop-object-loadout p {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0;
+  color: rgba(242, 239, 230, .44);
+  font: 8px var(--mono);
+  letter-spacing: .12em;
+}
+.drop-object-loadout p b {
+  color: #f2efe6;
+  font-weight: 400;
+}
+.drop-object-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.drop-object-swatches button {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid rgba(242, 239, 230, .34);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.drop-object-swatches button[aria-pressed="true"] {
+  transform: scale(1.22);
+  box-shadow: 0 0 0 1px var(--object-accent), 0 0 14px var(--object-accent);
+}
+.drop-object-sizes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+.drop-object-sizes button {
+  min-width: 30px;
+  padding: 6px 7px;
+  border: 1px solid rgba(242, 239, 230, .24);
+  color: #f2efe6;
+  background: transparent;
+  font: 8px var(--mono);
+  cursor: pointer;
+  transition: color .25s ease, background .25s ease, border-color .25s ease;
+}
+.drop-object-sizes button[aria-pressed="true"] {
+  color: #0b0a0d;
+  background: var(--object-accent);
+  border-color: var(--object-accent);
+}
+
+.drop-object-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+.drop-object-equip {
+  padding: 15px 22px;
+  border: 1px solid var(--object-accent);
+  color: #0b0a0d;
+  background: var(--object-accent);
+  font: 9px var(--mono);
+  letter-spacing: .12em;
+  cursor: pointer;
+  transition: transform .3s ease, filter .3s ease;
+}
+.drop-object-equip:hover:not(:disabled) {
+  transform: translateY(-3px);
+  filter: brightness(1.08);
+}
+.drop-object-equip:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+.drop-object-detail {
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(242, 239, 230, .36);
+  color: #f2efe6;
+  font: 9px var(--mono);
+  letter-spacing: .12em;
+  text-decoration: none;
+}
+.drop-object-detail:hover { color: var(--object-accent); }
+
+/* The object stage ------------------------------------------------- */
+.drop-object-stage {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  min-height: 520px;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+}
+.drop-object-stage .hoodie-viewer {
+  width: min(48vw, 620px);
+  height: min(78vh, 720px);
+  min-height: 420px;
+  margin: 0;
+}
+.drop-object-stage .hoodie-viewer canvas { cursor: grab; }
+.drop-object-stage .hoodie-viewer canvas:active { cursor: grabbing; }
+.drop-object-stage .viewer-controls { bottom: 2px; }
+.drop-object-stage .viewer-caption { display: none; }
+
+.drop-object-poster {
+  width: min(40vw, 430px);
+  max-height: 70vh;
+  object-fit: contain;
+  filter: drop-shadow(0 34px 60px rgba(0, 0, 0, .62));
+}
+.viewer-fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 30px 60px rgba(0, 0, 0, .55));
+}
+.drop-object-loading {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  min-height: 60vh;
+  color: rgba(242, 239, 230, .5);
+  background: #0b0a0d;
+  font: 8px var(--mono);
+  letter-spacing: .2em;
+}
+
+/* Artwork card, orbit rings and reticle --------------------------- */
+.drop-object-artcard {
+  position: absolute;
+  z-index: 0;
+  top: 8%;
+  right: -2%;
+  width: min(22vw, 280px);
+  opacity: .5;
+  transform: rotate(7deg);
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, .45));
+}
+.drop-object-artcard img {
+  width: 100%;
+  object-fit: contain;
+  mix-blend-mode: screen;
+}
+.drop-object-artcard span {
+  display: block;
+  margin-top: 8px;
+  color: var(--object-accent);
+  font: 7px var(--mono);
+  letter-spacing: .16em;
+  text-align: right;
+}
+
+.drop-object-ring {
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  left: 50%;
+  width: min(43vw, 580px);
+  aspect-ratio: 1;
+  opacity: .4;
+  transform: translate(-50%, -50%) rotate(calc(var(--object-progress) * 360deg));
+  will-change: transform;
+}
+.drop-object-ring i {
+  position: absolute;
+  inset: 0;
+  border: 1px solid color-mix(in srgb, var(--object-accent) 36%, transparent);
+  border-radius: 50%;
+}
+.drop-object-ring i:nth-child(2) {
+  inset: 9%;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--world-b) 68%, transparent);
+}
+.drop-object-ring i:nth-child(3) {
+  inset: 22%;
+  border-color: color-mix(in srgb, var(--world-c) 55%, transparent);
+}
+
+.drop-object-reticle {
+  position: absolute;
+  z-index: 3;
+  width: min(45vw, 590px);
+  aspect-ratio: 1;
+  pointer-events: none;
+  opacity: .52;
+}
+.drop-object-reticle i {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 0 solid var(--object-accent);
+}
+.drop-object-reticle i:nth-child(1) { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
+.drop-object-reticle i:nth-child(2) { top: 0; right: 0; border-top-width: 1px; border-right-width: 1px; }
+.drop-object-reticle i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 1px; border-left-width: 1px; }
+.drop-object-reticle i:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
+
+.drop-object-readout {
+  position: absolute;
+  z-index: 4;
+  bottom: 28px;
+  left: 50%;
+  display: flex;
+  gap: 22px;
+  color: rgba(242, 239, 230, .46);
+  font: 7px var(--mono);
+  letter-spacing: .16em;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+.drop-object-readout b {
+  color: var(--object-accent);
+  font-weight: 400;
+}
+
+/* Bottom progress rail -------------------------------------------- */
+.drop-object-progress {
+  position: absolute;
+  z-index: 5;
+  left: clamp(24px, 6vw, 90px);
+  right: clamp(24px, 6vw, 90px);
+  bottom: 22px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  color: rgba(242, 239, 230, .42);
+  font: 7px var(--mono);
+  letter-spacing: .16em;
+}
+.drop-object-progress > i {
+  display: block;
+  height: 1px;
+  overflow: hidden;
+  background: rgba(242, 239, 230, .15);
+}
+.drop-object-progress b {
+  display: block;
+  height: 100%;
+  background: var(--object-accent);
+  transform-origin: left;
+  transform: scaleX(var(--object-progress));
+}
+
+/* Short desktop viewports ----------------------------------------- */
+@media (max-height: 760px) and (min-width: 1001px) {
+  .drop-object-sticky { padding: 76px 6vw 58px; }
+  .drop-object-copy h2 { font-size: clamp(46px, 5.4vw, 78px); }
+  .drop-object-dossier { min-height: 108px; padding-top: 14px; }
+  .drop-object-stats { padding: 9px 0; margin-bottom: 14px; }
+}
+@media (max-height: 700px) and (min-width: 1001px) {
+  .drop-object-stats { display: none; }
+  .drop-object-dossier { min-height: 96px; }
+  .drop-object-dossier > p { font-size: 11px; line-height: 1.6; }
+}
+
+/* Tablet and phone: the chamber becomes a readable vertical story -- */
+@media (max-width: 1000px) {
+  .drop-object { height: auto; }
+  .drop-object-sticky {
+    position: relative;
+    top: auto;
+    height: auto;
+    min-height: 0;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 26px 24px 52px;
+  }
+  .drop-object-hud {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    order: -3;
+    margin-bottom: 8px;
+  }
+  .drop-object-stage {
+    order: -2;
+    height: 52svh;
+    min-height: 360px;
+    margin-bottom: 10px;
+  }
+  .drop-object-stage .hoodie-viewer {
+    width: min(88vw, 460px);
+    height: 100%;
+    min-height: 360px;
+  }
+  .drop-object-copy { max-width: none; }
+  .drop-object-copy h2 { font-size: clamp(48px, 12vw, 74px); }
+  .drop-object-artcard { width: 34vw; right: -4%; opacity: .38; }
+  .drop-object-ring { width: 78vw; }
+  .drop-object-reticle { width: 80vw; }
+  .drop-object-readout { display: none; }
+  .drop-object-progress {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    order: 2;
+    margin-top: 22px;
+  }
+  .drop-object-poster { width: min(64vw, 360px); max-height: 44svh; }
+}
+
+@media (max-width: 600px) {
+  .drop-object-hud span:last-child { display: none; }
+  .drop-object-dossier { min-height: 0; }
+  .drop-object-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 8px; }
+  .drop-object-loadout { grid-template-columns: 1fr; }
+  .drop-object-sizes { justify-content: flex-start; }
+  .drop-object-actions { align-items: stretch; }
+  .drop-object-equip { width: 100%; }
+  .drop-object-detail { align-self: flex-start; }
+}
+
+/* Reduced motion: the same story, with no scroll theatre ----------- */
+@media (prefers-reduced-motion: reduce) {
+  .drop-object { height: auto; }
+  .drop-object-sticky {
+    position: relative;
+    top: auto;
+    height: auto;
+    min-height: 0;
+  }
+  .drop-object-ring,
+  .drop-object-dossier,
+  .drop-object-hud-signal i { animation: none !important; }
+  .drop-object-ring { transform: translate(-50%, -50%); }
+  .drop-object-progress { display: none; }
+  .drop-object-backdrop img { transform: translateY(-50%) rotate(6deg); }
+}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { BrandMark } from '../components/BrandMark';
+import { ExperienceLayer } from '../components/ExperienceLayer';
 import { SiteSoundToggle } from '../components/SiteSoundToggle';
 import { Toast } from '../components/Toast';
 import { useCommerceStore } from '../state/commerceStore';
@@ -100,6 +101,7 @@ export function SiteLayout() {
 
   return <>
     <a className="skip-link" href="#main-content">SKIP TO CONTENT</a>
+    <ExperienceLayer />
     {!isTrip && <div className="ambient-layer" aria-hidden="true"><i /><i /><i /></div>}
     <div className="announcement"><span>CREWWW / MAKE YOUR OWN FREQUENCY</span><i aria-hidden="true">·</i><Link className="announcement-trip" to="/drops/psychedelic-minds">PSYCHEDELIC MINDS / ENTER THE ROOM ↗</Link><i aria-hidden="true">·</i><span>DEVELOPMENT PREVIEW / COMMERCE DATA IS SAMPLE ONLY</span></div>
     <header className={`site-header${menuOpen ? ' has-open-menu' : ''}`} onMouseLeave={() => setActiveMenu(null)}>

@@ -14,6 +14,7 @@ import { trackEvent } from '../lib/insights';
 import { isSoundEnabled, playSound, setSoundEnabled, startAmbience, stopAmbience } from '../lib/sound';
 
 const PsychedelicField = lazy(() => import('../scenes/PsychedelicField').then((module) => ({ default: module.PsychedelicField })));
+const DropObjectStage = lazy(() => import('../components/DropObjectStage').then((module) => ({ default: module.DropObjectStage })));
 
 /**
  * Concept 02 — not a product page but a room you enter. Every hoodie owns a
@@ -71,7 +72,7 @@ export function PsychedelicDropPage() {
 
   const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
   const [zoom, setZoom] = useState(1);
-  const stageRef = useRef<HTMLDivElement | null>(null);
+  const stageRef = useRef<HTMLElement | null>(null);
   const addCartLine = useCommerceStore((state) => state.addCartLine);
   const showNotice = useUiStore((state) => state.showNotice);
 
@@ -141,6 +142,14 @@ export function PsychedelicDropPage() {
     if (next) { startAmbience(); playSound('unlock'); } else stopAmbience();
   };
 
+  const equip = () => {
+    if (soldOut) return;
+    addCartLine({ productId: product.id, size: selectedSize, color: selectedColor.name, quantity: 1 });
+    trackEvent('drop_add', { dropSlug: `psychedelic-minds/${piece.id}`, productSlug: product.slug, query: `${selectedColor.name}/${selectedSize}` });
+    playSound('select');
+    showNotice(`${product.name} · ${selectedColor.name} · ${selectedSize} added to your bag.`);
+  };
+
   const onRoomPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     const bounds = event.currentTarget.getBoundingClientRect();
     const x = (event.clientX - bounds.left) / Math.max(1, bounds.width) - 0.5;
@@ -208,7 +217,8 @@ export function PsychedelicDropPage() {
       <p className="trip-note">NO FLASHING LIGHTS · EASY ON THE EYES · ARROW KEYS TO MOVE BETWEEN WORLDS</p>
     </div>}
 
-    {entered && <main className="psychedelic-room" ref={stageRef}>
+    {entered && <main className="psychedelic-journey">
+      <section className="psychedelic-room" data-chapter="THE ROOM" ref={stageRef}>
       <section className="trip-copy" key={piece.id}>
         <p className="trip-world-kicker"><span aria-hidden="true">{piece.world.glyph}</span> WORLD / {piece.world.name}</p>
         <p className="trip-eyebrow"><span className="trip-pulse" /> SIGNAL / {piece.signal}</p>
@@ -231,11 +241,7 @@ export function PsychedelicDropPage() {
           {selectedVariant && <p className="trip-stock">{soldOut ? 'SOLD OUT IN THIS VARIANT' : selectedVariant.stockQuantity <= 5 ? `ONLY ${selectedVariant.stockQuantity} LEFT` : `SKU ${selectedVariant.sku}`}</p>}
         </div>
         <div className="trip-actions">
-          <button type="button" className="trip-bag" disabled={soldOut} onClick={() => {
-            addCartLine({ productId: product.id, size: selectedSize, color: selectedColor.name, quantity: 1 });
-            trackEvent('drop_add', { dropSlug: `psychedelic-minds/${piece.id}`, productSlug: product.slug, query: `${selectedColor.name}/${selectedSize}` });
-            playSound('select'); showNotice(`${product.name} · ${selectedColor.name} · ${selectedSize} added to your bag.`);
-          }}>ADD TO BAG · {product.price.toFixed(0)} ↗</button>
+          <button type="button" className="trip-bag" disabled={soldOut} onClick={equip}>ADD TO BAG · {product.price.toFixed(0)} ↗</button>
           <Link to={`/products/${product.slug}`} className="trip-detail">FULL DETAILS ↗</Link>
         </div>
       </section>
@@ -310,6 +316,22 @@ export function PsychedelicDropPage() {
         onClick={() => choose(index)}
       />)}</div>
       <p className="trip-scroll-note">SCROLL TO ZOOM · ARROW KEYS TO CHANGE WORLD · HOVER THE GARMENT</p>
+      </section>
+
+      <Suspense fallback={<div className="drop-object-loading" role="status">PREPARING OBJECT…</div>}>
+        <DropObjectStage
+          piece={piece}
+          product={product}
+          index={active}
+          colorways={dropColorways}
+          colorIndex={colorIndex}
+          sizeIndex={sizeIndex}
+          soldOut={soldOut}
+          onColorChange={(next) => { setParam('colour', dropColorways[next]?.name ?? null); playSound('select'); }}
+          onSizeChange={(size) => { setParam('size', size); playSound('click'); }}
+          onEquip={equip}
+        />
+      </Suspense>
     </main>}
   </div>;
 }

@@ -1274,7 +1274,7 @@ body:has(.storefront-page),body:has(.showroom) { background:var(--store-bg); col
 @media(max-width:900px) { .chapter-rail { display:none; } }
 
 /* ── Psychedelic Minds — an entire room, not a page ──────────────────────── */
-.psychedelic-drop { --trip-accent:#c9ef68; position:relative; min-height:100svh; overflow:hidden; background:#0b0a0d; color:#f2efe6; isolation:isolate; }
+.psychedelic-drop { --trip-accent:#c9ef68; position:relative; min-height:100svh; overflow:hidden; overflow:clip; background:#0b0a0d; color:#f2efe6; isolation:isolate; }
 .psychedelic-backdrop { position:fixed; inset:0; z-index:-1; pointer-events:none; }
 .psychedelic-field { width:100%; height:100%; display:block; }
 .psychedelic-field.is-unsupported,.psychedelic-fallback { position:absolute; inset:0; background:radial-gradient(circle at 50% 45%,#7d2026,#2b1b4d 48%,#0b0a0d 85%); }

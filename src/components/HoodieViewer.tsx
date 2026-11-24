@@ -8,14 +8,20 @@ type HoodieViewerProps = {
   color: string;
   label: string;
   artworkUrl?: string;
+  /** Extra rotation in radians. Scroll-driven stages add this on top of drag input. */
+  scrollYaw?: number;
+  /** Shown instead of the generic notice when WebGL is unavailable. */
+  fallbackUrl?: string;
 };
 
-export function HoodieViewer({ color, label, artworkUrl }: HoodieViewerProps) {
+export function HoodieViewer({ color, label, artworkUrl, scrollYaw = 0, fallbackUrl }: HoodieViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [unsupported, setUnsupported] = useState(false);
   const [autoSpin, setAutoSpin] = useState(false);
   const autoSpinRef = useRef(autoSpin);
+  const scrollYawRef = useRef(scrollYaw);
   autoSpinRef.current = autoSpin;
+  scrollYawRef.current = scrollYaw;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -95,9 +101,10 @@ export function HoodieViewer({ color, label, artworkUrl }: HoodieViewerProps) {
         yaw += velocity * delta;
         velocity *= Math.exp(-delta * 5);
         zoom += (targetZoom - zoom) * (1 - Math.exp(-delta * 8));
-        model.group.rotation.y = yaw;
+        const totalYaw = yaw + scrollYawRef.current;
+        model.group.rotation.y = totalYaw;
         model.group.position.y = Math.sin(performance.now() * 0.0006) * 0.025;
-        camera.position.set(Math.sin(yaw * 0.18) * 0.35, target.y + 0.12, zoom);
+        camera.position.set(Math.sin(totalYaw * 0.18) * 0.35, target.y + 0.12, zoom);
         camera.lookAt(target);
       },
     });
@@ -156,8 +163,10 @@ export function HoodieViewer({ color, label, artworkUrl }: HoodieViewerProps) {
 
   return <div className="hoodie-viewer" role="group" aria-label={`${label} 3D product viewer`}>
     {!unsupported
-      ? <canvas ref={canvasRef} tabIndex={0} aria-label={`${label}, drag to rotate and scroll to zoom`} />
-      : <div className="viewer-unavailable">3D preview is unavailable in this browser.</div>}
+      ? <canvas ref={canvasRef} tabIndex={0} data-cursor="TURN" aria-label={`${label}, drag to rotate and scroll to zoom`} />
+      : fallbackUrl
+        ? <img className="viewer-fallback" src={fallbackUrl} alt={`${label} garment preview`} />
+        : <div className="viewer-unavailable">3D preview is unavailable in this browser.</div>}
     {!unsupported && <div className="viewer-controls">
       <button type="button" aria-label="Rotate hoodie left" onClick={() => window.dispatchEvent(new CustomEvent('hoodie:turn', { detail: -1 }))}>↶</button>
       <button type="button" aria-label="Rotate hoodie right" onClick={() => window.dispatchEvent(new CustomEvent('hoodie:turn', { detail: 1 }))}>↷</button>
