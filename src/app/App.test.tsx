@@ -53,24 +53,32 @@ describe("foundation routes", () => {
   it("filters products and opens a clearly labeled static inspection fallback", async () => {
     const user = userEvent.setup();
     renderApp("/");
-    await user.type(
-      await screen.findByRole(
-        "textbox",
-        { name: /search pieces/i },
-        { timeout: 3000 },
-      ),
-      "Cherry",
+    const search = await screen.findByRole(
+      "textbox",
+      { name: /search pieces/i },
+      { timeout: 3000 },
     );
+    // SiteLayout intentionally moves focus to <main> once the route settles.
+    // Wait for that mount timer before typing, otherwise it steals focus
+    // after the first character and the rest of the query goes nowhere.
+    await waitFor(() =>
+      expect(document.activeElement?.id).toBe("main-content"),
+    );
+    await user.type(search, "Cherry");
     const collection = within(
       screen.getByRole("region", { name: /find your crew/i }),
     );
     expect(
       collection.getByRole("heading", { name: "Cherry Blossom Hoodie" }),
     ).toBeInTheDocument();
-    await waitFor(() =>
-      expect(
-        collection.queryByRole("heading", { name: "Vivre La Vie Hoodie" }),
-      ).not.toBeInTheDocument(),
+    // The showroom mounts a lazy 3D scene and several art rails, so filtered
+    // result updates can take longer than the 1s default on slow CI machines.
+    await waitFor(
+      () =>
+        expect(
+          collection.queryByRole("heading", { name: "Vivre La Vie Hoodie" }),
+        ).not.toBeInTheDocument(),
+      { timeout: 5000 },
     );
     await user.clear(screen.getByRole("textbox", { name: /search pieces/i }));
     await user.click(
@@ -99,7 +107,7 @@ describe("foundation routes", () => {
       screen.getByRole("dialog", { name: /shopping bag/i }),
     ).toHaveTextContent("Mocha / L / QTY 1");
     expect(window.localStorage.getItem("arcfield-bag")).toContain("product-03");
-  });
+  }, 20000);
 
   it("renders the design-system preview", () => {
     renderApp("/design-system");
