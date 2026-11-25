@@ -87,6 +87,9 @@ export function DropExperience({
   const [autoSpin, setAutoSpin] = useState(true);
   const [portal, setPortal] = useState(true);
   const [notice, setNotice] = useState("");
+  const [cardCollapsed, setCardCollapsed] = useState(
+    () => typeof window !== "undefined" && window.innerWidth <= 900,
+  );
   const [unsupported, setUnsupported] = useState(false);
   const selectRef = useRef(onSelectDrop);
   const autoSpinRef = useRef(autoSpin);
@@ -866,7 +869,18 @@ export function DropExperience({
         )}
       </div>
 
-      <aside className="drop-item-card">
+      <aside className={`drop-item-card${cardCollapsed ? " is-collapsed" : ""}`}>
+        <button
+          type="button"
+          className="drop-card-handle"
+          aria-expanded={!cardCollapsed}
+          aria-controls="drop-card-body"
+          onClick={() => setCardCollapsed((v) => !v)}
+        >
+          <span>{cardCollapsed ? "SHOW DETAILS" : "HIDE DETAILS"}</span>
+          <span aria-hidden="true">{cardCollapsed ? "↑" : "↓"}</span>
+        </button>
+        <div id="drop-card-body" className="drop-card-body">
         <p className="drop-kicker">
           DROP {activeDrop.number} · {activeDrop.signal}
         </p>
@@ -961,6 +975,7 @@ export function DropExperience({
           >
             {view === "focus" ? "ENTER THE GALLERY →" : "BACK TO THE OBJECT →"}
           </button>
+        </div>
         </div>
         {notice && (
           <p className="drop-notice" role="status">

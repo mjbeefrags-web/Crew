@@ -28,6 +28,7 @@ import type { WorldDestinationId, WorldMode } from "../scenes/CrewwwWorld";
 import { catalogService } from "../app/services";
 import { API_MODE } from "../config/runtime";
 import { trackEvent } from "../lib/insights";
+import { isSoundEnabled, startAmbience, stopAmbience } from "../lib/sound";
 
 const HoodieViewer = lazy(() =>
   import("../components/HoodieViewer").then((module) => ({
@@ -222,6 +223,20 @@ export function ShowroomPage() {
     };
     window.addEventListener("arcfield:open-bag", openBag);
     return () => window.removeEventListener("arcfield:open-bag", openBag);
+  }, []);
+
+  // Ambient sound on home when enabled (Tier 3.21)
+  useEffect(() => {
+    const sync = () => {
+      if (isSoundEnabled()) startAmbience();
+      else stopAmbience();
+    };
+    sync();
+    window.addEventListener("crewww:sound-change", sync);
+    return () => {
+      window.removeEventListener("crewww:sound-change", sync);
+      stopAmbience();
+    };
   }, []);
 
   useEffect(() => {
@@ -565,9 +580,8 @@ export function ShowroomPage() {
                     <span className="live-mark" /> CREWWW / YOUR DISTRICT
                   </p>
                   <h1 id="showroom-title" aria-label="The block is yours">
-                    The block
-                    <br />
-                    is <em>yours.</em>
+                    <span className="hero-line">The block</span>
+                    <span className="hero-line">is <em>yours.</em></span>
                   </h1>
                   <p className="showroom-lede">
                     Find your next layer in the neighborhood.
@@ -600,9 +614,8 @@ export function ShowroomPage() {
                     <span className="live-mark" /> CHAPTER 02 / THE STREET
                   </p>
                   <h1 id="showroom-title">
-                    Two sides.
-                    <br />
-                    <em>One frequency.</em>
+                    <span className="hero-line">Two sides.</span>
+                    <span className="hero-line"><em>One frequency.</em></span>
                   </h1>
                   <p className="showroom-lede">
                     Every storefront is a state of mind.
@@ -633,9 +646,8 @@ export function ShowroomPage() {
                     <span className="live-mark" /> CHAPTER 03 / THE SIGNAL
                   </p>
                   <h1 id="showroom-title">
-                    Graphics
-                    <br />
-                    <em>with a pulse.</em>
+                    <span className="hero-line">Graphics</span>
+                    <span className="hero-line"><em>with a pulse.</em></span>
                   </h1>
                   <p className="showroom-lede">
                     Psychedelic Minds. Five transmissions
@@ -653,9 +665,8 @@ export function ShowroomPage() {
                     <span className="live-mark" /> CHAPTER 04 / THE EDIT
                   </p>
                   <h1 id="showroom-title">
-                    Find your
-                    <br />
-                    <em>crew.</em>
+                    <span className="hero-line">Find your</span>
+                    <span className="hero-line"><em>crew.</em></span>
                   </h1>
                   <p className="showroom-lede">
                     Eight heavyweight pieces.
@@ -677,9 +688,8 @@ export function ShowroomPage() {
                     <span className="live-mark" /> CHAPTER 05 / THE PORTAL
                   </p>
                   <h1 id="showroom-title">
-                    The print is
-                    <br />
-                    <em>a door.</em>
+                    <span className="hero-line">The print is</span>
+                    <span className="hero-line"><em>a door.</em></span>
                   </h1>
                   <p className="showroom-lede">
                     Five concepts. Five worlds.
@@ -1111,7 +1121,17 @@ export function ShowroomPage() {
               <span>{products.length} PIECES</span>
               <span>SELECT A PIECE TO INSPECT ↗</span>
             </div>
-            {products.length ? (
+            {catalogQuery.isLoading ? (
+              <div className="product-grid" aria-hidden="true">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className={`product-tile tile-${i % 5} skeleton-tile`}>
+                    <div className="skeleton-image" />
+                    <div className="skeleton-line" style={{ width: "40%" }} />
+                    <div className="skeleton-line" style={{ width: "70%" }} />
+                  </div>
+                ))}
+              </div>
+            ) : products.length ? (
               <div className="product-grid">
                 {products.map((product, index) => (
                   <article

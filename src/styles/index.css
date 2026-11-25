@@ -6657,16 +6657,62 @@ body:has(.showroom) {
 @media (max-width: 900px) {
   .drop-experience {
     grid-template-columns: 1fr;
-    grid-template-rows: 48px minmax(0, 1fr) auto;
+    grid-template-rows: 48px minmax(0, 1fr);
+  }
+  .drop-stage {
+    grid-row: 2;
+    grid-column: 1;
+    min-height: 0;
   }
   .drop-item-card {
-    max-height: 42vh;
-    padding: 18px 20px 22px;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 12;
+    max-height: min(44vh, 340px);
+    padding: 16px 18px calc(18px + env(safe-area-inset-bottom, 0px));
     border-left: 0;
     border-top: 1px solid rgba(239, 231, 214, 0.16);
+    background: linear-gradient(180deg, rgba(20, 14, 16, 0.96), rgba(10, 9, 11, 0.98));
+    backdrop-filter: blur(8px);
+    transition: transform 0.28s ease, max-height 0.28s ease;
+  }
+  .drop-item-card.is-collapsed {
+    max-height: 56px;
+    overflow: hidden;
+    padding-bottom: 12px;
+  }
+  .drop-item-card.is-collapsed .drop-card-body {
+    display: none;
+  }
+  .drop-card-handle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0;
+    margin: 0 0 8px;
+    border: 0;
+    background: transparent;
+    color: #c9ef68;
+    font: 9px var(--mono);
+    letter-spacing: 0.14em;
+    cursor: pointer;
+  }
+  .drop-card-handle::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 36px;
+    height: 3px;
+    margin-left: -18px;
+    border-radius: 2px;
+    background: rgba(239, 231, 214, 0.28);
   }
   .drop-item-card h2 {
-    font-size: 38px;
+    font-size: 32px;
   }
   .drop-topbar span {
     display: none;
@@ -6678,6 +6724,14 @@ body:has(.showroom) {
     width: max-content;
     max-width: 90%;
     justify-content: center;
+    bottom: calc(min(44vh, 340px) + 12px);
+  }
+  .drop-view-tools {
+    bottom: calc(min(44vh, 340px) + 12px);
+  }
+  .drop-experience:has(.drop-item-card.is-collapsed) .drop-walk-hint,
+  .drop-experience:has(.drop-item-card.is-collapsed) .drop-view-tools {
+    bottom: 72px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -10149,3 +10203,10 @@ html { scroll-padding-top: 76px; }
 @media (min-width: 681px) {
   .catalog-tools { position: sticky; top: 76px; z-index: 5; background: rgba(17,18,16,.92); backdrop-filter: blur(8px); padding: 12px 0; margin-bottom: 20px; }
 }
+
+@media (min-width: 901px) { .drop-card-handle { display: none; } }
+.skeleton-tile { pointer-events: none; }
+.skeleton-image { aspect-ratio: 4/5; background: linear-gradient(110deg, rgba(255,255,255,.04) 8%, rgba(255,255,255,.1) 18%, rgba(255,255,255,.04) 33%); background-size: 200% 100%; animation: skeleton-shimmer 1.4s linear infinite; }
+.skeleton-line { height: 10px; margin-top: 10px; background: rgba(255,255,255,.06); border-radius: 2px; }
+@keyframes skeleton-shimmer { to { background-position-x: -200%; } }
+@media (prefers-reduced-motion: reduce) { .skeleton-image { animation: none; } }
