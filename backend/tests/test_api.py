@@ -363,4 +363,5 @@ async def test_authenticated_checkout_uses_owner_scoped_session_transaction(clie
     )
     assert result.status_code == 201
     assert result.json()["status"] == "processing"
-    assert (await client.get("/api/v1/orders", headers=headers)).json()[0]["id"] == result.json()["id"]
+    orders = (await client.get("/api/v1/orders", headers=headers)).json()
+    assert orders[0]["id"] == result.json()["id"]
