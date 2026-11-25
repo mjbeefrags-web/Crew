@@ -7,7 +7,14 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import admin_user
 from app.db.session import get_session
-from app.models import Category, Collection, InventoryAdjustment, Product, ProductVariant, User
+from app.models import (
+    Category,
+    Collection,
+    InventoryAdjustment,
+    Product,
+    ProductVariant,
+    User,
+)
 from app.schemas import (
     CategoryCreateIn,
     CollectionCreateIn,
@@ -15,8 +22,8 @@ from app.schemas import (
     ProductCreateIn,
     ProductOut,
     ProductPageOut,
-    ProductVariantOut,
     ProductUpdateIn,
+    ProductVariantOut,
 )
 
 router = APIRouter(tags=["catalog"])
@@ -75,7 +82,11 @@ def product_payload(product: Product) -> ProductOut:
                 color=variant.color,
                 colorValue=variant.color_value,
                 price=variant.price_minor / 100,
-                salePrice=variant.sale_price_minor / 100 if variant.sale_price_minor is not None else None,
+                salePrice=(
+                    variant.sale_price_minor / 100
+                    if variant.sale_price_minor is not None
+                    else None
+                ),
                 stockQuantity=variant.stock_quantity,
             )
             for variant in variants

@@ -1,6 +1,8 @@
 import logging
+import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from uuid import uuid4
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -42,6 +44,34 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "Idempotency-Key", "X-Request-ID"],
     )
+
+    @app.middleware("http")
+    async def request_context(request: Request, call_next):
+        request_id = request.headers.get("X-Request-ID") or uuid4().hex
+        request.state.request_id = request_id
+        started = time.perf_counter()
+        try:
+            response = await call_next(request)
+        except Exception:
+            logger.exception(
+                "request_failed method=%s path=%s request_id=%s",
+                request.method,
+                request.url.path,
+                request_id,
+            )
+            raise
+        duration_ms = (time.perf_counter() - started) * 1000
+        response.headers["X-Request-ID"] = request_id
+        log = logger.warning if duration_ms >= 500 else logger.info
+        log(
+            "request method=%s path=%s status=%s duration_ms=%.1f request_id=%s",
+            request.method,
+            request.url.path,
+            response.status_code,
+            duration_ms,
+            request_id,
+        )
+        return response
 
     @app.middleware("http")
     async def security_headers(request: Request, call_next):
