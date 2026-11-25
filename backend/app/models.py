@@ -89,6 +89,8 @@ class Product(TimestampMixin, Base):
     __table_args__ = (
         Index("ix_products_status_category", "status", "category_id"),
         Index("ix_products_featured_new", "featured", "is_new"),
+        Index("ix_products_status_created", "status", "created_at"),
+        Index("ix_products_best_seller", "best_seller"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=new_id)
@@ -146,6 +148,9 @@ class ProductVariant(TimestampMixin, Base):
         UniqueConstraint("product_id", "size", "color", name="uq_variant_product_size_color"),
         CheckConstraint("price_minor >= 0", name="ck_variant_price_nonnegative"),
         CheckConstraint("stock_quantity >= 0", name="ck_variant_stock_nonnegative"),
+        Index("ix_variants_product_size", "product_id", "size"),
+        Index("ix_variants_product_color", "product_id", "color"),
+        Index("ix_variants_product_price", "product_id", "price_minor"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=new_id)
@@ -250,6 +255,8 @@ class Order(TimestampMixin, Base):
     __table_args__ = (
         UniqueConstraint("idempotency_key", name="uq_order_idempotency"),
         CheckConstraint("total_minor >= 0", name="ck_order_total_nonnegative"),
+        Index("ix_orders_user_created", "user_id", "created_at"),
+        Index("ix_orders_status_created", "status", "created_at"),
     )
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=new_id)
     user_id: Mapped[UUID | None] = mapped_column(
@@ -290,6 +297,7 @@ class OrderItem(Base):
 
 class Payment(Base):
     __tablename__ = "payments"
+    __table_args__ = (Index("ix_payments_order_status", "order_id", "status"),)
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=new_id)
     order_id: Mapped[UUID] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), index=True)
     provider: Mapped[str] = mapped_column(String(32), default="mock")
