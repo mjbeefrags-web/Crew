@@ -104,6 +104,9 @@ jobs:
       - name: Upgrade to head
         working-directory: backend
         run: alembic upgrade head
+      - name: Verify metadata matches the migrated schema
+        working-directory: backend
+        run: alembic check
       - name: Seed idempotently
         working-directory: backend
         run: python -m app.seed
