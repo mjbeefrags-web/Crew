@@ -1,0 +1,172 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "24"
+  PYTHON_VERSION: "3.13"
+
+jobs:
+  web:
+    name: Web (typecheck, lint, unit tests, build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test -- --run
+      - run: npm run build
+      - name: Upload production bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: dist
+          retention-days: 7
+
+  api:
+    name: API (lint, tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install API
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Lint API
+        working-directory: backend
+        run: ruff check .
+      - name: Test API
+        working-directory: backend
+        run: pytest -q
+
+  migrations:
+    name: Migrations (PostgreSQL + Redis)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: crewww_ci
+          POSTGRES_USER: crewww
+          POSTGRES_PASSWORD: crewww_ci_password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U crewww -d crewww_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      APP_ENV: staging
+      DEBUG: "false"
+      DATABASE_URL: postgresql+asyncpg://crewww:crewww_ci_password@127.0.0.1:5432/crewww_ci
+      REDIS_URL: redis://127.0.0.1:6379/0
+      REDIS_REQUIRED: "true"
+      JWT_SECRET: ci-only-jwt-secret-that-is-longer-than-forty-characters-123456
+      FRONTEND_ORIGINS: https://ci.example.test
+      COOKIE_SECURE: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install API
+        working-directory: backend
+        run: pip install -e .[dev]
+      - name: Upgrade to head
+        working-directory: backend
+        run: alembic upgrade head
+      - name: Seed idempotently
+        working-directory: backend
+        run: python -m app.seed
+      - name: Round-trip migrations
+        working-directory: backend
+        run: |
+          alembic downgrade base
+          alembic upgrade head
+      - name: Seed again (must stay idempotent)
+        working-directory: backend
+        run: python -m app.seed
+
+  docker:
+    name: Docker images
+    runs-on: ubuntu-latest
+    needs: [web, api]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: crewww-web:ci
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+      - name: Build api image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: false
+          tags: crewww-api:ci
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+  compose-smoke:
+    name: Compose smoke test
+    runs-on: ubuntu-latest
+    needs: [docker]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start stack
+        run: |
+          cp .env.example .env
+          docker compose up --build -d
+      - name: Wait for readiness
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8080/api/ready >/dev/null; then
+              echo "API ready"; exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs --no-color
+          exit 1
+      - name: Check storefront and headers
+        run: |
+          curl -fsS http://127.0.0.1:8080/ >/dev/null
+          curl -fsSI http://127.0.0.1:8080/ | grep -qi "x-content-type-options: nosniff"
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
