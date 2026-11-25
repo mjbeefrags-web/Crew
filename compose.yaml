@@ -1,5 +1,11 @@
 name: crewww
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: postgres:17-alpine
@@ -7,8 +13,29 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-crewww}
       POSTGRES_USER: ${POSTGRES_USER:-crewww}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-only-change-me-123456}
+    command:
+      - postgres
+      - -c
+      - max_connections=${POSTGRES_MAX_CONNECTIONS:-100}
+      - -c
+      - shared_buffers=${POSTGRES_SHARED_BUFFERS:-256MB}
+      - -c
+      - effective_cache_size=${POSTGRES_EFFECTIVE_CACHE_SIZE:-768MB}
+      - -c
+      - work_mem=${POSTGRES_WORK_MEM:-4MB}
+      - -c
+      - maintenance_work_mem=${POSTGRES_MAINTENANCE_WORK_MEM:-64MB}
+      - -c
+      - wal_compression=on
+      - -c
+      - log_min_duration_statement=${POSTGRES_SLOW_QUERY_MS:-250}
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=all
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./deploy/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -16,11 +43,17 @@ services:
       retries: 20
       start_period: 5s
     restart: unless-stopped
+    stop_grace_period: 60s
+    mem_limit: ${DB_MEM_LIMIT:-1g}
+    cpus: ${DB_CPUS:-2}
+    pids_limit: 512
+    security_opt: ["no-new-privileges:true"]
+    logging: *default-logging
     networks: [internal]
 
   redis:
     image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "${REDIS_MAXMEMORY:-256mb}", "--maxmemory-policy", "allkeys-lru"]
     volumes:
       - redis_data:/data
     healthcheck:
@@ -29,6 +62,11 @@ services:
       timeout: 3s
       retries: 20
     restart: unless-stopped
+    mem_limit: ${REDIS_MEM_LIMIT:-320m}
+    cpus: ${REDIS_CPUS:-1}
+    pids_limit: 256
+    security_opt: ["no-new-privileges:true"]
+    logging: *default-logging
     networks: [internal]
 
   migrate:
@@ -47,6 +85,9 @@ services:
       PAYMENT_MODE: ${PAYMENT_MODE:-mock}
       EMAIL_MODE: ${EMAIL_MODE:-console}
       APP_NAME: ${APP_NAME:-Crewww API}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
+      DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-20}
+      DB_POOL_RECYCLE_SECONDS: ${DB_POOL_RECYCLE_SECONDS:-1800}
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
       BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
     command: ["sh", "-c", "alembic upgrade head && python -m app.seed"]
@@ -54,6 +95,11 @@ services:
       db: { condition: service_healthy }
       redis: { condition: service_healthy }
     restart: "no"
+    init: true
+    mem_limit: ${MIGRATE_MEM_LIMIT:-512m}
+    cpus: ${MIGRATE_CPUS:-1}
+    security_opt: ["no-new-privileges:true"]
+    logging: *default-logging
     networks: [internal]
 
   api:
@@ -72,6 +118,13 @@ services:
       retries: 10
       start_period: 15s
     restart: unless-stopped
+    stop_grace_period: 30s
+    init: true
+    mem_limit: ${API_MEM_LIMIT:-512m}
+    cpus: ${API_CPUS:-1.5}
+    pids_limit: 256
+    security_opt: ["no-new-privileges:true"]
+    logging: *default-logging
     networks: [internal]
 
   web:
@@ -82,11 +135,24 @@ services:
         VITE_DATA_MODE: api
         VITE_API_BASE_URL: ""
         VITE_INITIAL_ROUTE: ${VITE_INITIAL_ROUTE:-/}
+        VITE_FEATURE_RECENTLY_VIEWED: ${VITE_FEATURE_RECENTLY_VIEWED:-true}
+        VITE_FEATURE_COMMAND_PALETTE: ${VITE_FEATURE_COMMAND_PALETTE:-true}
+        VITE_FEATURE_AMBIENT_SOUND: ${VITE_FEATURE_AMBIENT_SOUND:-true}
+        VITE_FEATURE_WORLD_WALK: ${VITE_FEATURE_WORLD_WALK:-true}
     ports:
       - "127.0.0.1:${WEB_PORT:-8080}:80"
     depends_on:
       api: { condition: service_healthy }
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+    mem_limit: ${WEB_MEM_LIMIT:-256m}
+    cpus: ${WEB_CPUS:-1}
+    pids_limit: 128
+    security_opt: ["no-new-privileges:true"]
+    logging: *default-logging
     networks: [internal]
 
 volumes:
@@ -96,4 +162,3 @@ volumes:
 networks:
   internal:
     driver: bridge
-
