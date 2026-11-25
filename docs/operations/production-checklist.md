@@ -88,6 +88,37 @@ been run against the target environment.
 - [ ] `POSTGRES_PASSWORD` and `JWT_SECRET` replaced with random 40+ char values
 - [ ] `BOOTSTRAP_ADMIN_*` removed after the first admin exists
 
+### Using an existing PostgreSQL server
+
+Compose defaults to the bundled `db` service. To use a server that is already
+installed (for example on the same host), point `DATABASE_URL` at it and let the
+`migrate` service create the schema:
+
+```sql
+-- Run once as a PostgreSQL superuser.
+CREATE ROLE crewww LOGIN PASSWORD 'replace-with-a-long-random-password';
+CREATE DATABASE crewww OWNER crewww;
+\c crewww
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+```
+
+```dotenv
+# .env.production
+# The API runs in a container, so 127.0.0.1 would be the container itself.
+# Docker Desktop resolves host.docker.internal; on Linux use the host bridge IP
+# (usually 172.17.0.1) or add an extra_hosts entry for host.docker.internal.
+DATABASE_URL=postgresql+asyncpg://crewww:replace-with-a-long-random-password@host.docker.internal:5432/crewww
+```
+
+```bash
+docker compose --env-file .env.production run --rm migrate
+```
+
+If the API runs on a different host, allow it in `pg_hba.conf` with `scram-sha-256`
+over TLS, and keep port 5432 off the public internet.
+
 ## Sign-off commands
 
 ```bash
