@@ -27,6 +27,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { WorldDestinationId, WorldMode } from "../scenes/CrewwwWorld";
 import { catalogService } from "../app/services";
 import { API_MODE } from "../config/runtime";
+import { FEATURES } from "../config/features";
 import { trackEvent } from "../lib/insights";
 import { isSoundEnabled, startAmbience, stopAmbience } from "../lib/sound";
 
@@ -71,17 +72,27 @@ export function ShowroomPage() {
     : featuredProducts;
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [category, setCategory] = useState(searchParams.get("category") || "All pieces");
-  const [collection, setCollection] = useState(searchParams.get("collection") || "");
+  const [category, setCategory] = useState(
+    searchParams.get("category") || "All pieces",
+  );
+  const [collection, setCollection] = useState(
+    searchParams.get("collection") || "",
+  );
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [sort, setSort] = useState(searchParams.get("sort") || "featured");
   const [size, setSize] = useState(searchParams.get("size") || "");
   const [color, setColor] = useState(searchParams.get("color") || "");
-  const [availableOnly, setAvailableOnly] = useState(searchParams.get("available") === "1");
+  const [availableOnly, setAvailableOnly] = useState(
+    searchParams.get("available") === "1",
+  );
   const [newOnly, setNewOnly] = useState(searchParams.get("new") === "1");
   const [bestOnly, setBestOnly] = useState(searchParams.get("best") === "1");
-  const [minPrice, setMinPrice] = useState(Number(searchParams.get("minPrice") || 0));
-  const [maxPrice, setMaxPrice] = useState(Number(searchParams.get("maxPrice") || 250));
+  const [minPrice, setMinPrice] = useState(
+    Number(searchParams.get("minPrice") || 0),
+  );
+  const [maxPrice, setMaxPrice] = useState(
+    Number(searchParams.get("maxPrice") || 250),
+  );
   const wishlist = useCommerceStore((state) => state.wishlist);
   const cartLines = useCommerceStore((state) => state.cartLines);
   const addCartLine = useCommerceStore((state) => state.addCartLine);
@@ -106,11 +117,17 @@ export function ShowroomPage() {
     if (worldMode !== "explore") return;
     try {
       if (localStorage.getItem("crewww:walk-hint-seen")) return;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     setWalkHint(true);
     const t = window.setTimeout(() => {
       setWalkHint(false);
-      try { localStorage.setItem("crewww:walk-hint-seen", "1"); } catch { /* ignore */ }
+      try {
+        localStorage.setItem("crewww:walk-hint-seen", "1");
+      } catch {
+        /* ignore */
+      }
     }, 6000);
     return () => window.clearTimeout(t);
   }, [worldMode]);
@@ -227,6 +244,7 @@ export function ShowroomPage() {
 
   // Ambient sound on home when enabled (Tier 3.21)
   useEffect(() => {
+    if (!FEATURES.ambientSound) return;
     const sync = () => {
       if (isSoundEnabled()) startAmbience();
       else stopAmbience();
@@ -306,7 +324,8 @@ export function ShowroomPage() {
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
     const set = (k: string, v: string, def = "") => {
-      if (v && v !== def) next.set(k, v); else next.delete(k);
+      if (v && v !== def) next.set(k, v);
+      else next.delete(k);
     };
     set("category", category, "All pieces");
     set("collection", collection);
@@ -322,7 +341,21 @@ export function ShowroomPage() {
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
-  }, [category, collection, query, sort, size, color, availableOnly, newOnly, bestOnly, minPrice, maxPrice, searchParams, setSearchParams]);
+  }, [
+    category,
+    collection,
+    query,
+    sort,
+    size,
+    color,
+    availableOnly,
+    newOnly,
+    bestOnly,
+    minPrice,
+    maxPrice,
+    searchParams,
+    setSearchParams,
+  ]);
 
   const openCart = (opener: HTMLElement) => {
     cartOpenerRef.current = opener;
@@ -581,7 +614,9 @@ export function ShowroomPage() {
                   </p>
                   <h1 id="showroom-title" aria-label="The block is yours">
                     <span className="hero-line">The block</span>
-                    <span className="hero-line">is <em>yours.</em></span>
+                    <span className="hero-line">
+                      is <em>yours.</em>
+                    </span>
                   </h1>
                   <p className="showroom-lede">
                     Find your next layer in the neighborhood.
@@ -615,7 +650,9 @@ export function ShowroomPage() {
                   </p>
                   <h1 id="showroom-title">
                     <span className="hero-line">Two sides.</span>
-                    <span className="hero-line"><em>One frequency.</em></span>
+                    <span className="hero-line">
+                      <em>One frequency.</em>
+                    </span>
                   </h1>
                   <p className="showroom-lede">
                     Every storefront is a state of mind.
@@ -647,7 +684,9 @@ export function ShowroomPage() {
                   </p>
                   <h1 id="showroom-title">
                     <span className="hero-line">Graphics</span>
-                    <span className="hero-line"><em>with a pulse.</em></span>
+                    <span className="hero-line">
+                      <em>with a pulse.</em>
+                    </span>
                   </h1>
                   <p className="showroom-lede">
                     Psychedelic Minds. Five transmissions
@@ -666,7 +705,9 @@ export function ShowroomPage() {
                   </p>
                   <h1 id="showroom-title">
                     <span className="hero-line">Find your</span>
-                    <span className="hero-line"><em>crew.</em></span>
+                    <span className="hero-line">
+                      <em>crew.</em>
+                    </span>
                   </h1>
                   <p className="showroom-lede">
                     Eight heavyweight pieces.
@@ -689,7 +730,9 @@ export function ShowroomPage() {
                   </p>
                   <h1 id="showroom-title">
                     <span className="hero-line">The print is</span>
-                    <span className="hero-line"><em>a door.</em></span>
+                    <span className="hero-line">
+                      <em>a door.</em>
+                    </span>
                   </h1>
                   <p className="showroom-lede">
                     Five concepts. Five worlds.
@@ -705,7 +748,7 @@ export function ShowroomPage() {
                 </>
               )}
             </div>
-            <div className="world-mode-bar">
+            <div className="world-mode-bar" hidden={!FEATURES.worldWalk}>
               <button
                 type="button"
                 aria-pressed={worldMode === "explore"}
@@ -727,7 +770,9 @@ export function ShowroomPage() {
               {walkHint && (
                 <div className="walk-hint" role="status" aria-live="polite">
                   <b>EXPLORE MODE</b>
-                  <span>WASD / arrows to move · drag to look · E to enter a store</span>
+                  <span>
+                    WASD / arrows to move · drag to look · E to enter a store
+                  </span>
                 </div>
               )}
             </div>
@@ -857,7 +902,10 @@ export function ShowroomPage() {
               <span>THE EDIT</span>
             </div>
             <div className="chapter-rail" aria-hidden="true">
-              <div className="chapter-rail-fill" style={{ transform: `scaleX(${journey})` }} />
+              <div
+                className="chapter-rail-fill"
+                style={{ transform: `scaleX(${journey})` }}
+              />
               {["BLOCK", "STREET", "SIGNAL", "EDIT", "PORTAL"].map(
                 (label, index) => (
                   <span
@@ -869,7 +917,9 @@ export function ShowroomPage() {
                   </span>
                 ),
               )}
-              <span className="chapter-rail-count">{String(chapterIndex + 1).padStart(2, "0")} / 05</span>
+              <span className="chapter-rail-count">
+                {String(chapterIndex + 1).padStart(2, "0")} / 05
+              </span>
             </div>
             <div
               className="journey-scroll-hint"
@@ -880,7 +930,14 @@ export function ShowroomPage() {
               }}
             >
               SCROLL TO MOVE THROUGH THE BLOCK{" "}
-              <i style={{ display: "inline-block", animation: "scroll-chevron 1.4s ease-in-out infinite" }}>↓</i>
+              <i
+                style={{
+                  display: "inline-block",
+                  animation: "scroll-chevron 1.4s ease-in-out infinite",
+                }}
+              >
+                ↓
+              </i>
             </div>
           </section>
         </div>
@@ -950,7 +1007,18 @@ export function ShowroomPage() {
                 // Surface the command palette hint; actual filtering remains here.
               }}
             />
-            <button type="button" className="catalog-search-kbd" onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))} aria-label="Open command palette">⌘K</button>
+            <button
+              type="button"
+              className="catalog-search-kbd"
+              onClick={() =>
+                window.dispatchEvent(
+                  new KeyboardEvent("keydown", { key: "k", metaKey: true }),
+                )
+              }
+              aria-label="Open command palette"
+            >
+              ⌘K
+            </button>
           </label>
           <label className="sort-control">
             SORT BY{" "}
@@ -973,9 +1041,13 @@ export function ShowroomPage() {
             aria-expanded={filtersOpen}
             onClick={() => setFiltersOpen((o) => !o)}
           >
-            FILTERS {filtersOpen ? "−" : "+"} <span>{products.length} PIECES</span>
+            FILTERS {filtersOpen ? "−" : "+"}{" "}
+            <span>{products.length} PIECES</span>
           </button>
-          <aside className={`filter-panel${filtersOpen ? " is-mobile-open" : ""}`} aria-label="Product filters">
+          <aside
+            className={`filter-panel${filtersOpen ? " is-mobile-open" : ""}`}
+            aria-label="Product filters"
+          >
             <div className="filter-title">
               <span>REFINE</span>
               <button type="button" onClick={clearFilters}>
@@ -1124,7 +1196,10 @@ export function ShowroomPage() {
             {catalogQuery.isLoading ? (
               <div className="product-grid" aria-hidden="true">
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className={`product-tile tile-${i % 5} skeleton-tile`}>
+                  <div
+                    key={i}
+                    className={`product-tile tile-${i % 5} skeleton-tile`}
+                  >
                     <div className="skeleton-image" />
                     <div className="skeleton-line" style={{ width: "40%" }} />
                     <div className="skeleton-line" style={{ width: "70%" }} />
@@ -1212,7 +1287,9 @@ export function ShowroomPage() {
                   <br />
                   <em>Try another search.</em>
                 </h3>
-                <p className="empty-catalog-hint">Try “hoodie”, “cherry”, or “black”, or clear filters.</p>
+                <p className="empty-catalog-hint">
+                  Try “hoodie”, “cherry”, or “black”, or clear filters.
+                </p>
                 <button type="button" onClick={clearFilters}>
                   CLEAR FILTERS ↗
                 </button>

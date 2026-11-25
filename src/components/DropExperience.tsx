@@ -869,7 +869,9 @@ export function DropExperience({
         )}
       </div>
 
-      <aside className={`drop-item-card${cardCollapsed ? " is-collapsed" : ""}`}>
+      <aside
+        className={`drop-item-card${cardCollapsed ? " is-collapsed" : ""}`}
+      >
         <button
           type="button"
           className="drop-card-handle"
@@ -881,101 +883,103 @@ export function DropExperience({
           <span aria-hidden="true">{cardCollapsed ? "↑" : "↓"}</span>
         </button>
         <div id="drop-card-body" className="drop-card-body">
-        <p className="drop-kicker">
-          DROP {activeDrop.number} · {activeDrop.signal}
-        </p>
-        <h2>{activeDrop.name}</h2>
-        <p className="drop-world-line">
-          <i aria-hidden="true">{piece.world.glyph}</i> {piece.world.name} /{" "}
-          {piece.world.realm}
-        </p>
-        <p className="drop-line">“{activeDrop.line}”</p>
-        <p className="drop-lore">{activeDrop.lore}</p>
-        <div className="drop-specs">
-          <span>PRINT / FULL-COLOUR DTG BACK</span>
-          <span>MARK / CREW CHEST</span>
-          <span>SERIES / CONCEPT 02</span>
-        </div>
-        <div
-          className="drop-colorways"
-          role="group"
-          aria-label="Choose a colourway"
-        >
-          {activeDrop.colorways.map((item, index) => (
+          <p className="drop-kicker">
+            DROP {activeDrop.number} · {activeDrop.signal}
+          </p>
+          <h2>{activeDrop.name}</h2>
+          <p className="drop-world-line">
+            <i aria-hidden="true">{piece.world.glyph}</i> {piece.world.name} /{" "}
+            {piece.world.realm}
+          </p>
+          <p className="drop-line">“{activeDrop.line}”</p>
+          <p className="drop-lore">{activeDrop.lore}</p>
+          <div className="drop-specs">
+            <span>PRINT / FULL-COLOUR DTG BACK</span>
+            <span>MARK / CREW CHEST</span>
+            <span>SERIES / CONCEPT 02</span>
+          </div>
+          <div
+            className="drop-colorways"
+            role="group"
+            aria-label="Choose a colourway"
+          >
+            {activeDrop.colorways.map((item, index) => (
+              <button
+                key={item.name}
+                type="button"
+                aria-label={`Select ${item.name}`}
+                aria-pressed={colorIndex === index}
+                className={colorIndex === index ? "selected" : ""}
+                style={{ background: item.value }}
+                onClick={() => {
+                  playSound("select");
+                  setColorIndex(index);
+                  setParam("colour", item.name);
+                  onColorwayChange?.(item.name);
+                }}
+              />
+            ))}
+            <span>{activeDrop.colorways[colorIndex]?.name}</span>
+          </div>
+          <div className="drop-sizes" role="group" aria-label="Choose a size">
+            {product.sizes.map((size, index) => (
+              <button
+                key={size}
+                type="button"
+                aria-label={`Select size ${size}`}
+                aria-pressed={sizeIndex === index}
+                className={sizeIndex === index ? "selected" : ""}
+                onClick={() => {
+                  playSound("click");
+                  setSizeIndex(index);
+                  setParam("size", size);
+                }}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
+          {selectedVariant && (
+            <p className="drop-stock">
+              {soldOut
+                ? "SOLD OUT IN THIS VARIANT"
+                : selectedVariant.stockQuantity <= 5
+                  ? `ONLY ${selectedVariant.stockQuantity} LEFT`
+                  : `SKU ${selectedVariant.sku}`}
+            </p>
+          )}
+          <div className="drop-actions">
             <button
-              key={item.name}
               type="button"
-              aria-label={`Select ${item.name}`}
-              aria-pressed={colorIndex === index}
-              className={colorIndex === index ? "selected" : ""}
-              style={{ background: item.value }}
+              className="drop-claim"
+              disabled={soldOut}
               onClick={() => {
-                playSound("select");
-                setColorIndex(index);
-                setParam("colour", item.name);
-                onColorwayChange?.(item.name);
-              }}
-            />
-          ))}
-          <span>{activeDrop.colorways[colorIndex]?.name}</span>
-        </div>
-        <div className="drop-sizes" role="group" aria-label="Choose a size">
-          {product.sizes.map((size, index) => (
-            <button
-              key={size}
-              type="button"
-              aria-label={`Select size ${size}`}
-              aria-pressed={sizeIndex === index}
-              className={sizeIndex === index ? "selected" : ""}
-              onClick={() => {
-                playSound("click");
-                setSizeIndex(index);
-                setParam("size", size);
+                playSound("unlock");
+                onAddToBag?.(
+                  activeDrop.colorways[colorIndex]?.name ?? "Black",
+                  selectedSize,
+                );
+                flashNotice(`ADDED TO YOUR LOADOUT · ${selectedSize}`);
               }}
             >
-              {size}
+              ADD TO LOADOUT ↗
             </button>
-          ))}
-        </div>
-        {selectedVariant && (
-          <p className="drop-stock">
-            {soldOut
-              ? "SOLD OUT IN THIS VARIANT"
-              : selectedVariant.stockQuantity <= 5
-                ? `ONLY ${selectedVariant.stockQuantity} LEFT`
-                : `SKU ${selectedVariant.sku}`}
-          </p>
-        )}
-        <div className="drop-actions">
-          <button
-            type="button"
-            className="drop-claim"
-            disabled={soldOut}
-            onClick={() => {
-              playSound("unlock");
-              onAddToBag?.(
-                activeDrop.colorways[colorIndex]?.name ?? "Black",
-                selectedSize,
-              );
-              flashNotice(`ADDED TO YOUR LOADOUT · ${selectedSize}`);
-            }}
-          >
-            ADD TO LOADOUT ↗
-          </button>
-          <button
-            type="button"
-            className="drop-gallery-toggle"
-            onClick={() => {
-              playSound("portal");
-              setPortal(true);
-              const next = view === "focus" ? "gallery" : "focus";
-              setView(next);
-              setParam("view", next === "focus" ? null : next);
-            }}
-          >
-            {view === "focus" ? "ENTER THE GALLERY →" : "BACK TO THE OBJECT →"}
-          </button>
-        </div>
+            <button
+              type="button"
+              className="drop-gallery-toggle"
+              onClick={() => {
+                playSound("portal");
+                setPortal(true);
+                const next = view === "focus" ? "gallery" : "focus";
+                setView(next);
+                setParam("view", next === "focus" ? null : next);
+              }}
+            >
+              {view === "focus"
+                ? "ENTER THE GALLERY →"
+                : "BACK TO THE OBJECT →"}
+            </button>
+          </div>
         </div>
         {notice && (
           <p className="drop-notice" role="status">

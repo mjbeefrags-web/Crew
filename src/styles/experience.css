@@ -471,20 +471,91 @@ html[data-xp-label="on"] .xp-label {
   }
 }
 
-@keyframes scroll-chevron { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
-@media (prefers-reduced-motion: reduce) { .journey-scroll-hint i { animation: none !important; } }
+@keyframes scroll-chevron {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .journey-scroll-hint i {
+    animation: none !important;
+  }
+}
 
-.chapter-rail { position: relative; }
-.chapter-rail-fill { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--lichen); transform-origin: left; transition: transform .12s linear; }
-.chapter-rail-count { margin-left: auto; font: 9px var(--mono); letter-spacing: .12em; color: var(--lichen); }
-@media (prefers-reduced-motion: reduce) { .chapter-rail-fill { transition: none; } }
+.chapter-rail {
+  position: relative;
+}
+.chapter-rail-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  background: var(--lichen);
+  transform-origin: left;
+  transition: transform 0.12s linear;
+}
+.chapter-rail-count {
+  margin-left: auto;
+  font: 9px var(--mono);
+  letter-spacing: 0.12em;
+  color: var(--lichen);
+}
+@media (prefers-reduced-motion: reduce) {
+  .chapter-rail-fill {
+    transition: none;
+  }
+}
 /* Hero neon flicker - subtle, velocity-reactive */
-.hero-flicker { position: absolute; inset: 0; pointer-events: none; opacity: calc(.03 + var(--xp-velocity, 0) * .04); background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(201,239,104,.03) 2px, rgba(201,239,104,.03) 4px); mix-blend-mode: screen; }
-@media (prefers-reduced-motion: reduce) { .hero-flicker { opacity: .02; } }
+.hero-flicker {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: calc(0.03 + var(--xp-velocity, 0) * 0.04);
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(201, 239, 104, 0.03) 2px,
+    rgba(201, 239, 104, 0.03) 4px
+  );
+  mix-blend-mode: screen;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-flicker {
+    opacity: 0.02;
+  }
+}
 /* H1 reveal (Tier 3.22) */
-.showroom-hero h1 { overflow: clip; }
-.showroom-hero h1 .hero-line { display: block; animation: hero-line-rise .85s cubic-bezier(.16,1,.3,1) both; }
-.showroom-hero h1 .hero-line:nth-child(2) { animation-delay: .08s; }
-.showroom-hero h1 .hero-line:nth-child(3) { animation-delay: .16s; }
-@keyframes hero-line-rise { from { opacity: 0; transform: translateY(.55em) skewY(1deg); filter: blur(4px); } }
-@media (prefers-reduced-motion: reduce) { .showroom-hero h1 .hero-line { animation: none; opacity: 1; transform: none; filter: none; } }
+.showroom-hero h1 {
+  overflow: clip;
+}
+.showroom-hero h1 .hero-line {
+  display: block;
+  animation: hero-line-rise 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.showroom-hero h1 .hero-line:nth-child(2) {
+  animation-delay: 0.08s;
+}
+.showroom-hero h1 .hero-line:nth-child(3) {
+  animation-delay: 0.16s;
+}
+@keyframes hero-line-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.55em) skewY(1deg);
+    filter: blur(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .showroom-hero h1 .hero-line {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}

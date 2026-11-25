@@ -34,7 +34,9 @@ export function SiteSoundToggle() {
     const next = !enabled;
     setEnabled(next);
     setSoundEnabled(next);
-    window.dispatchEvent(new CustomEvent("crewww:sound-change", { detail: { enabled: next } }));
+    window.dispatchEvent(
+      new CustomEvent("crewww:sound-change", { detail: { enabled: next } }),
+    );
     if (next) {
       playSound("select");
       trackEvent("sound_opt_in");

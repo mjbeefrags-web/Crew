@@ -15,6 +15,7 @@ import { useCommerceStore } from "../state/commerceStore";
 import { useUiStore } from "../state/uiStore";
 import { useAuthStore } from "../state/authStore";
 import { API_MODE } from "../config/runtime";
+import { FEATURES } from "../config/features";
 import { apiCommerceService } from "../services/apiCommerceService";
 import { apiAuthService } from "../services/apiAuthService";
 
@@ -281,7 +282,7 @@ export function SiteLayout() {
         SKIP TO CONTENT
       </a>
       <ExperienceLayer />
-      <CommandPalette />
+      {FEATURES.commandPalette && <CommandPalette />}
       {!isTrip && (
         <div className="ambient-layer" aria-hidden="true">
           <i />
