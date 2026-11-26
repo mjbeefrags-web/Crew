@@ -7259,6 +7259,47 @@ body:has(.showroom) {
   color: var(--store-acid);
   border-color: #c9ef6855;
 }
+.admin-console-visual {
+  position: relative;
+  margin: 0 5vw;
+  overflow: hidden;
+  border-bottom: 1px solid var(--store-line);
+}
+.admin-console-visual img {
+  display: block;
+  width: 100%;
+  height: clamp(190px, 26vw, 360px);
+  object-fit: cover;
+  filter: saturate(0.9) contrast(1.05);
+}
+.admin-console-visual::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 45%,
+    rgba(10, 11, 9, 0.82) 100%
+  );
+  content: "";
+  pointer-events: none;
+}
+.admin-console-visual figcaption {
+  position: absolute;
+  right: 18px;
+  bottom: 14px;
+  left: 18px;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--store-acid);
+  font: 8px var(--mono);
+  letter-spacing: 0.12em;
+  text-shadow: 0 1px 8px #0a0b09;
+}
+.admin-console-visual figcaption span:last-child {
+  color: #d8d5cc;
+}
 .admin-range {
   display: flex;
   border: 1px solid var(--store-line);

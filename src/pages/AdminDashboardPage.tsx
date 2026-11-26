@@ -504,6 +504,21 @@ export function AdminDashboardPage() {
         </div>
       </section>
 
+      <figure className="admin-console-visual">
+        <img
+          src="/images/admin/owner-console.svg"
+          alt="Illustrated CREWWW studio rail with hoodies and folded denim beside a projected sales chart"
+          width={1600}
+          height={900}
+          loading="lazy"
+          decoding="async"
+        />
+        <figcaption>
+          <span>OWNER VIEW / STUDIO FLOOR</span>
+          <span>LIVE SIGNALS BELOW</span>
+        </figcaption>
+      </figure>
+
       {query.data?.limitations.length ? (
         <aside className="admin-data-note" aria-label="Data limitations">
           <strong>READ THIS FIRST</strong>

@@ -1,0 +1,183 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">CREWWW owner console visual</title>
+  <desc id="desc">A dark studio rail with two hoodies and folded denim, lit by an acid-green strip, with a projected sales chart.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#090a08"/>
+      <stop offset="0.55" stop-color="#11130f"/>
+      <stop offset="1" stop-color="#080907"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.78" cy="0.28" r="0.55">
+      <stop offset="0" stop-color="#c9ef68" stop-opacity="0.18"/>
+      <stop offset="0.45" stop-color="#c9ef68" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#c9ef68" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="hoodie" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#262a21"/>
+      <stop offset="0.55" stop-color="#171a14"/>
+      <stop offset="1" stop-color="#0d0f0b"/>
+    </linearGradient>
+    <linearGradient id="hoodieBack" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1c1f18"/>
+      <stop offset="1" stop-color="#0a0b08"/>
+    </linearGradient>
+    <linearGradient id="denim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#222a33"/>
+      <stop offset="1" stop-color="#0d1116"/>
+    </linearGradient>
+    <linearGradient id="denimTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3540"/>
+      <stop offset="1" stop-color="#151a20"/>
+    </linearGradient>
+    <linearGradient id="rail" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5d6057"/>
+      <stop offset="0.5" stop-color="#24261f"/>
+      <stop offset="1" stop-color="#0c0d0a"/>
+    </linearGradient>
+    <linearGradient id="chartArea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c9ef68" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#c9ef68" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="scan" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#c9ef68" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#c9ef68" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#c9ef68" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="fade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0b0c09" stop-opacity="0.9"/>
+      <stop offset="0.7" stop-color="#0b0c09" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="16"/>
+    </filter>
+    <filter id="lineGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" seed="7"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.055"/>
+      </feComponentTransfer>
+    </filter>
+    <radialGradient id="vignette" cx="0.5" cy="0.45" r="0.78">
+      <stop offset="0.55" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.65"/>
+    </radialGradient>
+    <g id="hanger">
+      <path d="M150 6v26" fill="none" stroke="#8f9488" stroke-width="5" stroke-linecap="round"/>
+      <path d="M150 32 66 78h168z" fill="none" stroke="#8f9488" stroke-width="5" stroke-linejoin="round"/>
+    </g>
+    <g id="hoodieShape">
+      <path d="M150 60c-19 0-32 9-40 24l-44 19c-13 6-19 19-15 32l16 45c4 12 17 18 29 14l16-6v193c0 15 10 25 25 25h26c15 0 25-10 25-25V188l16 6c12 4 25-2 29-14l16-45c4-13-2-26-15-32l-44-19c-8-15-21-24-40-24z" fill="url(#hoodie)" stroke="#33372c" stroke-width="2"/>
+      <path d="M112 84c6-27 19-40 38-40s32 13 38 40c-11-8-24-12-38-12s-27 4-38 12z" fill="#0c0e0a" stroke="#2c3026" stroke-width="2"/>
+      <path d="M122 88c8-5 17-8 28-8s20 3 28 8" fill="none" stroke="#3d4234" stroke-width="2"/>
+      <path d="M114 286h72v54h-72z" fill="none" stroke="#31352a" stroke-width="2"/>
+      <path d="M136 82c-2 24-4 44-6 66M164 82c2 24 4 44 6 66" fill="none" stroke="#5a5f50" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="130" cy="152" r="3.5" fill="#8f9488"/>
+      <circle cx="170" cy="152" r="3.5" fill="#8f9488"/>
+      <path d="M188 188l16 6c12 4 25-2 29-14l16-45" fill="none" stroke="#c9ef68" stroke-opacity="0.5" stroke-width="2"/>
+      <path d="M112 340h76" fill="none" stroke="#2a2e24" stroke-width="2"/>
+    </g>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect width="1600" height="900" fill="url(#glow)"/>
+
+  <!-- Back wall grid -->
+  <g stroke="#c9ef68" stroke-opacity="0.05" stroke-width="1">
+    <path d="M0 150h1600M0 300h1600M0 450h1600M0 600h1600"/>
+    <path d="M100 0v620M300 0v620M500 0v620M700 0v620M900 0v620M1100 0v620M1300 0v620M1500 0v620"/>
+  </g>
+
+  <!-- Acid light strip -->
+  <rect x="120" y="268" width="700" height="3" fill="#c9ef68" opacity="0.9" filter="url(#lineGlow)"/>
+  <rect x="120" y="246" width="700" height="48" fill="#c9ef68" opacity="0.08" filter="url(#soft)"/>
+
+  <!-- Floor -->
+  <path d="M0 620h1600v280H0z" fill="#070806"/>
+  <g stroke="#c9ef68" stroke-opacity="0.07" stroke-width="1">
+    <path d="M800 620 200 900M800 620 500 900M800 620 800 900M800 620 1100 900M800 620 1400 900"/>
+    <path d="M0 690h1600M0 770h1600M0 860h1600"/>
+  </g>
+
+  <!-- Clothing rail -->
+  <g>
+    <rect x="898" y="226" width="516" height="12" rx="6" fill="url(#rail)"/>
+    <rect x="898" y="238" width="516" height="4" fill="#050604" opacity="0.7"/>
+    <rect x="912" y="238" width="10" height="402" fill="url(#rail)"/>
+    <rect x="1390" y="238" width="10" height="402" fill="url(#rail)"/>
+    <rect x="886" y="636" width="46" height="10" rx="5" fill="#161812"/>
+    <rect x="1366" y="636" width="46" height="10" rx="5" fill="#161812"/>
+  </g>
+
+  <!-- Back hoodie -->
+  <g transform="translate(1150 222) scale(0.86)" opacity="0.72">
+    <use href="#hanger"/>
+    <use href="#hoodieShape"/>
+  </g>
+
+  <!-- Front hoodie -->
+  <g transform="translate(940 210) scale(1.02)">
+    <use href="#hanger"/>
+    <use href="#hoodieShape"/>
+  </g>
+
+  <!-- Denim stack -->
+  <g>
+    <path d="M1110 610h300l26 46-320 10z" fill="url(#denimTop)" stroke="#39424d" stroke-width="2"/>
+    <path d="M1116 660h300l22 42-322 8z" fill="url(#denim)" stroke="#2d353e" stroke-width="2"/>
+    <path d="M1122 706h298l18 38-318 6z" fill="url(#denim)" stroke="#252c34" stroke-width="2"/>
+    <g stroke="#8a7a4d" stroke-opacity="0.55" stroke-width="1.5" stroke-dasharray="4 4">
+      <path d="M1130 622h272M1136 672h270M1142 716h266"/>
+    </g>
+    <rect x="1310" y="616" width="58" height="30" rx="3" fill="#3d3423" opacity="0.85"/>
+    <rect x="1320" y="622" width="38" height="4" fill="#c9ef68" opacity="0.35"/>
+  </g>
+
+  <!-- Projected analytics -->
+  <g>
+    <rect x="118" y="318" width="548" height="266" rx="4" fill="#c9ef68" fill-opacity="0.035" stroke="#c9ef68" stroke-opacity="0.22"/>
+    <g stroke="#c9ef68" stroke-opacity="0.1">
+      <path d="M150 360h484M150 412h484M150 464h484M150 516h484"/>
+      <path d="M150 342v204M271 342v204M392 342v204M513 342v204M634 342v204"/>
+    </g>
+    <path d="M150 500 196 470 242 482 288 430 334 448 380 392 426 414 472 366 518 388 564 340 610 356 634 330v216H150z" fill="url(#chartArea)"/>
+    <path d="M150 500 196 470 242 482 288 430 334 448 380 392 426 414 472 366 518 388 564 340 610 356 634 330" fill="none" stroke="#c9ef68" stroke-width="3" stroke-linejoin="round" filter="url(#lineGlow)"/>
+    <circle cx="564" cy="340" r="6" fill="#0b0c09" stroke="#c9ef68" stroke-width="3"/>
+    <g fill="#c9ef68">
+      <rect x="160" y="528" width="22" height="26" opacity="0.35"/>
+      <rect x="190" y="518" width="22" height="36" opacity="0.45"/>
+      <rect x="220" y="534" width="22" height="20" opacity="0.3"/>
+      <rect x="250" y="508" width="22" height="46" opacity="0.5"/>
+      <rect x="280" y="524" width="22" height="30" opacity="0.38"/>
+      <rect x="310" y="498" width="22" height="56" opacity="0.58"/>
+      <rect x="340" y="516" width="22" height="38" opacity="0.44"/>
+      <rect x="370" y="488" width="22" height="66" opacity="0.66"/>
+      <rect x="400" y="506" width="22" height="48" opacity="0.5"/>
+      <rect x="430" y="478" width="22" height="76" opacity="0.74"/>
+    </g>
+    <rect x="536" y="326" width="96" height="10" fill="#c9ef68" opacity="0.55"/>
+    <rect x="536" y="346" width="58" height="7" fill="#c9ef68" opacity="0.25"/>
+    <rect x="150" y="336" width="120" height="7" fill="#c9ef68" opacity="0.3"/>
+    <rect x="150" y="352" width="76" height="5" fill="#e9e5df" opacity="0.18"/>
+    <rect x="118" y="318" width="548" height="266" fill="url(#scan)" opacity="0.25"/>
+  </g>
+
+  <!-- Left fade for headline legibility -->
+  <rect x="0" y="0" width="420" height="900" fill="url(#fade)"/>
+
+  <!-- Signal marker -->
+  <g transform="translate(1468 92)">
+    <rect x="0" y="0" width="44" height="44" fill="none" stroke="#c9ef68" stroke-opacity="0.7"/>
+    <rect x="8" y="8" width="28" height="28" fill="#c9ef68" opacity="0.16"/>
+    <circle cx="22" cy="22" r="4" fill="#c9ef68"/>
+  </g>
+
+  <rect width="1600" height="900" fill="url(#vignette)"/>
+  <rect width="1600" height="900" filter="url(#grain)" opacity="0.7"/>
+</svg>

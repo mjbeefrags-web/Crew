@@ -73,6 +73,26 @@ Rollback is the previous tag plus `docker compose up -d --build`; database
 migrations are forward-only, so keep the pre-deploy dump until the release is
 verified.
 
+## Admin accounts
+
+The seed creates the first administrator from `BOOTSTRAP_ADMIN_EMAIL` and
+`BOOTSTRAP_ADMIN_PASSWORD` when the `migrate` service runs. Staging and
+production reject a non-empty bootstrap password, so use the CLI instead:
+
+```bash
+# Inside the API container (uses the configured DATABASE_URL)
+docker compose exec api python -m app.create_admin \
+  --email owner@crewww.example.com \
+  --password 'use-a-password-manager'
+
+# Reset or promote an existing account
+docker compose exec api python -m app.create_admin \
+  --email owner@crewww.example.com --password 'new-password' --force
+```
+
+Omit `--password` to be prompted without echoing it. Sign in at `/login`, then
+open `/admin`; the API still enforces the `admin` role on every request.
+
 ## Secrets
 
 - Never commit `.env`, `.env.staging`, or `.env.production`.
