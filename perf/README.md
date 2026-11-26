@@ -21,6 +21,20 @@ Thresholds (the run fails if breached):
 - `http_req_duration p(95) < 500 ms`, `p(99) < 1000 ms`
 - `checks > 99%`
 
+## Frontend budgets
+
+Two Playwright audits live here. Run them against a built site (`npm run build
+&& npm run preview -- --port 5201`) with `PERF_BASE_URL=http://localhost:5201`:
+
+```bash
+node perf/audit-overflow.mjs   # zero horizontal overflow at 320/390/768/1024/1440
+node perf/audit-perf.mjs       # downloaded bytes by resource type + first paint
+```
+
+Current production baseline: `/shop` 0.8 MB images / 0.50 MB JS / FCP ~280 ms,
+`/drops` 1.9 MB images / 0.51 MB JS / FCP ~120 ms, home FCP ~130 ms. The WebGL
+world loads only after the browser is idle.
+
 Record results in the release notes. Investigate regressions with:
 
 ```bash

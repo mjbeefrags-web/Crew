@@ -33,9 +33,9 @@ test('owner console switches range and exports orders', async ({ page }) => {
   expect(file.suggestedFilename()).toBe('crewww-orders-7d.csv');
 });
 
-test('owner console is reachable from the header and survives refresh', async ({ page }) => {
-  await page.goto('/');
-  await page.locator('.header-admin-link').click();
+test('owner console is reachable directly and survives refresh', async ({ page }) => {
+  // Demo chrome is hidden from shoppers; the console itself stays routable.
+  await page.goto('/admin');
   await expect(page).toHaveURL(/\/admin$/);
   await expect(page.getByRole('heading', { name: /store signals/i })).toBeVisible();
   await page.reload();

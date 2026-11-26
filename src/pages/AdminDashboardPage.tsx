@@ -5,6 +5,7 @@ import { computeAdminMetrics } from "../services/adminAnalytics";
 import { useAdminData } from "../features/admin/useAdminData";
 import { TimeSeriesChart } from "../features/admin/TimeSeriesChart";
 import { BarChart } from "../features/admin/BarChart";
+import { AiAdvisor } from "../features/admin/AiAdvisor";
 import { API_MODE } from "../config/runtime";
 import { formatMoneyMinor, formatPercent } from "../utils/formatMoneyMinor";
 
@@ -317,6 +318,17 @@ function Dashboard({
           )}
         </div>
       </section>
+
+      <AiAdvisor
+        signals={{
+          rangeDays,
+          kpis: metrics.kpis,
+          products: metrics.products,
+          collections: metrics.collections,
+          drops: metrics.drops,
+          searches: metrics.searches,
+        }}
+      />
 
       <section className="admin-tables">
         <article className="admin-table-panel">

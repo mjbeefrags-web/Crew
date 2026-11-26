@@ -9,6 +9,7 @@ import { formatCurrency } from "../utils/formatCurrency";
 
 export function ProductCard({ product }: { product: Product }) {
   const [failed, setFailed] = useState(false);
+  const [sizeOpen, setSizeOpen] = useState(false);
   const wishlist = useCommerceStore((state) => state.wishlist);
   const toggleWishlist = useCommerceStore((state) => state.toggleWishlist);
   const addCartLine = useCommerceStore((state) => state.addCartLine);
@@ -17,14 +18,25 @@ export function ProductCard({ product }: { product: Product }) {
   const navigate = useNavigate();
   const saved = wishlist.includes(product.id);
 
-  const quickAdd = () => {
+  const sizes = product.sizes.length ? product.sizes : ["ONE SIZE"];
+
+  const addSize = (chosenSize: string) => {
     addCartLine({
       productId: product.id,
-      size: product.sizes[0] ?? "ONE SIZE",
+      size: chosenSize,
       color: product.colors[0]?.name ?? product.color,
       quantity: 1,
     });
-    showNotice(`${product.name} added to your preview bag.`);
+    setSizeOpen(false);
+    showNotice(`${product.name} · ${chosenSize} added to your preview bag.`);
+  };
+
+  const quickAdd = () => {
+    if (sizes.length === 1) {
+      addSize(sizes[0]);
+      return;
+    }
+    setSizeOpen((open) => !open);
   };
 
   return (
@@ -38,6 +50,8 @@ export function ProductCard({ product }: { product: Product }) {
             <img
               src={product.imageUrl}
               alt={`${product.name} · ${product.color}`}
+              width={800}
+              height={1052}
               loading="lazy"
               decoding="async"
               onError={() => setFailed(true)}
@@ -105,9 +119,32 @@ export function ProductCard({ product }: { product: Product }) {
           </small>
         )}
       </div>
-      <button className="quick-add" type="button" onClick={quickAdd}>
-        QUICK ADD <span>↗</span>
+      <button
+        className="quick-add"
+        type="button"
+        aria-expanded={sizeOpen}
+        aria-controls={`quick-add-${product.id}`}
+        onClick={quickAdd}
+      >
+        {sizeOpen ? "CHOOSE A SIZE" : "QUICK ADD"}{" "}
+        <span>{sizeOpen ? "−" : "+"}</span>
       </button>
+      {sizeOpen && (
+        <div
+          className="quick-add-panel"
+          id={`quick-add-${product.id}`}
+          aria-label={`Choose a size for ${product.name}`}
+        >
+          <span>SELECT SIZE</span>
+          <div>
+            {sizes.map((item) => (
+              <button key={item} type="button" onClick={() => addSize(item)}>
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </article>
   );
 }

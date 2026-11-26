@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { catalogService } from "../../app/services";
@@ -24,6 +24,7 @@ const SORTS: readonly ProductQuery["sort"][] = [
  */
 export function CatalogPage({ route }: { route: CatalogRoute }) {
   const [params, setParams] = useSearchParams();
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const read = (key: string) => params.get(key) ?? "";
   const term = read("q");
   const collectionFilter = read("collection");
@@ -194,9 +195,7 @@ export function CatalogPage({ route }: { route: CatalogRoute }) {
         <span> / </span>
         <span>{route.eyebrow.split(" / ").at(-1)}</span>
       </div>
-      {route.demoNote && (
-        <p className="demo-data-note">DEVELOPMENT PREVIEW · {route.demoNote}</p>
-      )}
+      {route.demoNote && <p className="demo-data-note">{route.demoNote}</p>}
       <div className="catalog-route-heading">
         <p className="store-eyebrow">
           {productsQuery.data?.total ?? "—"} PIECES / CURRENT VIEW
@@ -244,7 +243,20 @@ export function CatalogPage({ route }: { route: CatalogRoute }) {
         className="catalog-results"
         aria-label={`${route.title} product results`}
       >
-        <aside className="catalog-filter-panel" aria-label="Filter products">
+        <button
+          className="mobile-filter-toggle"
+          type="button"
+          aria-expanded={filtersOpen}
+          onClick={() => setFiltersOpen((open) => !open)}
+        >
+          FILTERS
+          {activeFilters.length > 0 ? ` (${activeFilters.length})` : ""}
+          <span>{filtersOpen ? "−" : "+"}</span>
+        </button>
+        <aside
+          className={`catalog-filter-panel${filtersOpen ? " is-mobile-open" : ""}`}
+          aria-label="Filter products"
+        >
           <div className="filter-heading">
             <span>REFINE</span>
             <button type="button" onClick={clear}>

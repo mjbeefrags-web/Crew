@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     bootstrap_admin_password: SecretStr | None = None
     payment_mode: Literal["mock"] = "mock"
     email_mode: Literal["console"] = "console"
+    # Optional advisor. `local` needs no keys and is the safe default; `openai`
+    # uses any OpenAI-compatible chat completions endpoint when configured.
+    ai_provider: Literal["local", "openai"] = "local"
+    ai_api_url: str = ""
+    ai_api_key: SecretStr | None = None
+    ai_model: str = "gpt-4o-mini"
 
     @property
     def allowed_origins(self) -> list[str]:
@@ -72,6 +78,14 @@ class Settings(BaseSettings):
                 )
         if self.redis_required and not self.redis_url:
             raise ValueError("REDIS_URL is required when REDIS_REQUIRED is true")
+        if self.ai_provider == "openai" and (
+            not self.ai_api_url
+            or self.ai_api_key is None
+            or not self.ai_api_key.get_secret_value()
+        ):
+            raise ValueError(
+                "AI_API_URL and AI_API_KEY are required when AI_PROVIDER is 'openai'"
+            )
         return self
 
 

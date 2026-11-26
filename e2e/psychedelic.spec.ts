@@ -6,7 +6,7 @@ test('psychedelic room is entered, changes piece and mood, and adds to bag', asy
   await page.getByRole('button', { name: /enter the room/i }).click();
   await expect(page.getByRole('heading', { name: /out of focus/i })).toBeVisible();
   await page.getByRole('button', { name: /Life in Scroll/i }).click();
-  await expect(page.getByRole('heading', { name: /life in scroll/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Life in Scroll', exact: true })).toBeVisible();
   await page.getByRole('button', { name: /BLOOM/i }).click();
   await page.getByRole('button', { name: /add to bag/i }).click();
   await expect(page.getByText(/added to your bag/i)).toBeVisible();

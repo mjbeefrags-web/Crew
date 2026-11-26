@@ -13,25 +13,25 @@ const discovery = [
   {
     label: "DENIM / FIND YOUR FIT",
     route: "/denim",
-    image: "/images/editorial/candidate-denim.jpg",
+    image: "/images/editorial/candidate-denim.webp",
     tone: "sand",
   },
   {
     label: "MINI CREW / KIDS",
     route: "/kids",
-    image: "/images/editorial/kids-story.jpg",
+    image: "/images/editorial/kids-story.webp",
     tone: "clay",
   },
   {
     label: "OBJECTS / ACCESSORIES",
     route: "/accessories",
-    image: "/images/editorial/accessories.jpg",
+    image: "/images/editorial/accessories.webp",
     tone: "plum",
   },
   {
     label: "STEP OUT / SHOES",
     route: "/shoes",
-    image: "/images/editorial/shoes.jpg",
+    image: "/images/editorial/shoes.webp",
     tone: "amber",
   },
 ];
@@ -171,7 +171,7 @@ export function HomepageStorySections() {
       <section className="home-feature home-denim-feature" data-reveal>
         <div className="home-feature-image">
           <img
-            src="/images/editorial/denim-story.jpg"
+            src="/images/editorial/denim-story.webp"
             alt="Denim styling study for the Crewww fit preview"
             loading="lazy"
           />
@@ -211,7 +211,7 @@ export function HomepageStorySections() {
         </div>
         <div className="home-feature-image">
           <img
-            src="/images/editorial/candidate-kids2.jpg"
+            src="/images/editorial/candidate-kids2.webp"
             alt="Kidswear campaign study"
             loading="lazy"
           />
@@ -223,7 +223,7 @@ export function HomepageStorySections() {
         data-reveal
         style={{
           backgroundImage:
-            "linear-gradient(90deg,rgba(14,17,14,.91),rgba(14,17,14,.28)),url(/images/editorial/drop-story.jpg)",
+            "linear-gradient(90deg,rgba(14,17,14,.91),rgba(14,17,14,.28)),url(/images/editorial/drop-story.webp)",
         }}
       >
         <div>
@@ -288,7 +288,7 @@ export function HomepageStorySections() {
         </div>
         <Link to="/accessories" className="home-object-image">
           <img
-            src="/images/editorial/accessories.jpg"
+            src="/images/editorial/accessories.webp"
             alt="Crewww accessory campaign study"
             loading="lazy"
           />
@@ -296,7 +296,7 @@ export function HomepageStorySections() {
         </Link>
         <Link to="/shoes" className="home-object-image secondary">
           <img
-            src="/images/editorial/shoes.jpg"
+            src="/images/editorial/shoes.webp"
             alt="Crewww footwear campaign study"
             loading="lazy"
           />

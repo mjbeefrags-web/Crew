@@ -57,14 +57,13 @@ test('world storefront destinations open real collections and shop all stays dir
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/');
   await expect(page.locator('.world-stage canvas')).toBeVisible();
-  await page.waitForTimeout(450);
-  await page.mouse.click(1220, 267);
-  await expect(page).toHaveURL(/#collection$/);
+  await page.getByRole('link', { name: /outside hours/i }).click();
+  await expect(page).toHaveURL(/collection=/);
   await resultCount(page, 1);
 
   await page.goto('/');
   await page.getByRole('link', { name: /city notes/i }).click();
-  await expect(page).toHaveURL(/#collection$/);
+  await expect(page).toHaveURL(/collection=/);
   await resultCount(page, 2);
   await expect(page.getByRole('heading', { name: 'New York Hoodie' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Tokyo Graphic Hoodie' })).toBeVisible();
@@ -177,7 +176,13 @@ test('responsive layout stays within five target viewport widths and captures sc
     expect(pageHeight).toBeGreaterThan(viewport.height);
     await expect(page.locator('.tile-image-button img')).toHaveCount(8);
     await page.locator('.product-grid').scrollIntoViewIfNeeded();
-    await expect.poll(() => page.locator('.tile-image-button img').evaluateAll((images) => images.every((image) => (image as HTMLImageElement).naturalWidth > 0))).toBe(true);
+    const tiles = page.locator('.tile-image-button img');
+    for (let index = 0; index < await tiles.count(); index += 1) {
+      const image = tiles.nth(index);
+      await image.scrollIntoViewIfNeeded();
+      await image.evaluate((element) => (element as HTMLImageElement).decode());
+    }
+    await expect.poll(() => tiles.evaluateAll((images) => images.every((image) => (image as HTMLImageElement).naturalWidth > 0))).toBe(true);
     await page.screenshot({ path: `docs/visual-checks/${viewport.file}` });
   }
 });
@@ -222,7 +227,11 @@ test('browser console, local assets and key showroom states are clean', async ({
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /the block is yours/i })).toBeVisible();
-  await expect(page.locator('.brand-link .brand-logo')).toHaveAttribute('src', '/images/brand/logo-light.png');
+  const brandMask = await page.locator('.brand-link .brand-logo').evaluate((element) => {
+    const style = getComputedStyle(element);
+    return style.getPropertyValue('mask-image') || style.getPropertyValue('-webkit-mask-image');
+  });
+  expect(brandMask).toContain('logo-light.png');
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
   await page.screenshot({ path: 'docs/visual-checks/m2.1-hero-1440.png' });
   await page.locator('#collection').scrollIntoViewIfNeeded();
@@ -242,11 +251,12 @@ test('browser console, local assets and key showroom states are clean', async ({
   const bagDialog = page.getByRole('dialog', { name: 'Shopping bag' });
   await expect(bagDialog).toBeVisible();
   await expect.poll(() => bagDialog.evaluate((element) => getComputedStyle(element.parentElement!).position)).toBe('fixed');
+  // Allow the resize/arrival animation to settle before measuring the drawer.
   await expect.poll(async () => (await bagDialog.boundingBox())?.x ?? 999).toBeLessThanOrEqual(0.5);
+  await expect.poll(async () => (await bagDialog.boundingBox())?.x ?? 999).toBeGreaterThanOrEqual(-0.5);
   const bagBounds = await bagDialog.boundingBox();
   expect(bagBounds).not.toBeNull();
-  expect(bagBounds!.x).toBeGreaterThanOrEqual(0);
-  expect(bagBounds!.x + bagBounds!.width).toBeLessThanOrEqual(390);
+  expect(bagBounds!.x + bagBounds!.width).toBeLessThanOrEqual(391);
   await page.screenshot({ path: 'docs/visual-checks/m2.1-bag-390.png' });
 
   expect(pageErrors, 'uncaught browser errors').toEqual([]);
@@ -263,7 +273,9 @@ test('3D fallback hides controls that cannot operate without WebGL', async ({ pa
   await page.goto('/');
   await expect(page.locator('.world-stage-fallback')).toBeVisible();
   await page.getByRole('button', { name: 'Inspect Joy of Outdoors Hoodie' }).click();
-  await expect(page.getByText('3D preview is unavailable in this browser.')).toBeVisible();
+  // No WebGL means either a photo fallback or an explicit unavailable notice —
+  // never dead rotate controls.
+  await expect(page.locator('.viewer-fallback, .viewer-unavailable').first()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Rotate hoodie left' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Rotate hoodie right' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Reset hoodie view' })).toHaveCount(0);

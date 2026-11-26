@@ -58,12 +58,8 @@ describe("foundation routes", () => {
       { name: /search pieces/i },
       { timeout: 3000 },
     );
-    // SiteLayout intentionally moves focus to <main> once the route settles.
-    // Wait for that mount timer before typing, otherwise it steals focus
-    // after the first character and the rest of the query goes nowhere.
-    await waitFor(() =>
-      expect(document.activeElement?.id).toBe("main-content"),
-    );
+    // The skip link stays the first Tab stop on initial load; focus moves to
+    // <main> only on later route changes. Typing here is therefore safe.
     await user.type(search, "Cherry");
     const collection = within(
       screen.getByRole("region", { name: /find your crew/i }),

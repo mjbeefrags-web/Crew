@@ -2,7 +2,10 @@ type BrandMarkProps = {
   inverse?: boolean;
 };
 
-/** The approved CREWWW logo plate, tinted for dark surfaces via CSS. */
+/**
+ * The approved CREWWW logo plate, used as a CSS mask so its fill can follow the
+ * psychedelic palette without shipping a separate image per colourway.
+ */
 export function BrandMark({ inverse = false }: BrandMarkProps) {
   return (
     <span
@@ -10,12 +13,7 @@ export function BrandMark({ inverse = false }: BrandMarkProps) {
       role="img"
       aria-label="Crewww"
     >
-      <img
-        className="brand-logo"
-        src="/images/brand/logo-light.png"
-        alt=""
-        aria-hidden="true"
-      />
+      <span className="brand-logo" aria-hidden="true" />
     </span>
   );
 }

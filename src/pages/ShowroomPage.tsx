@@ -42,6 +42,20 @@ const CrewwwWorld = lazy(() =>
   })),
 );
 
+function WorldStageFallback() {
+  return (
+    <div
+      className="world-stage world-stage-fallback"
+      aria-label="Crewww district"
+    >
+      <div className="world-fallback-scene">
+        <span>CREWWW</span>
+        <b>THE BLOCK / FIRST RUN</b>
+      </div>
+    </div>
+  );
+}
+
 const worldCollections = {
   graphic: "CREWWW / GRAPHIC HOODIES",
   outside: "CREWWW / OUTSIDE HOURS",
@@ -113,6 +127,26 @@ export function ShowroomPage() {
   const [toast, setToast] = useState("");
   const [worldMode, setWorldMode] = useState<WorldMode>("cinematic");
   const [walkHint, setWalkHint] = useState(false);
+  // The hero poster paints immediately; the WebGL block is mounted once the
+  // browser is idle so Three.js never competes with the first render.
+  const [worldReady, setWorldReady] = useState(false);
+  useEffect(() => {
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (
+        callback: () => void,
+        options?: { timeout: number },
+      ) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    if (typeof idleWindow.requestIdleCallback === "function") {
+      const handle = idleWindow.requestIdleCallback(() => setWorldReady(true), {
+        timeout: 1200,
+      });
+      return () => idleWindow.cancelIdleCallback?.(handle);
+    }
+    const timer = window.setTimeout(() => setWorldReady(true), 500);
+    return () => window.clearTimeout(timer);
+  }, []);
   useEffect(() => {
     if (worldMode !== "explore") return;
     try {
@@ -776,27 +810,19 @@ export function ShowroomPage() {
                 </div>
               )}
             </div>
-            <Suspense
-              fallback={
-                <div
-                  className="world-stage world-stage-fallback"
-                  aria-label="Loading Crewww district"
-                >
-                  <div className="world-fallback-scene">
-                    <span>CREWWW</span>
-                    <b>THE BLOCK / FIRST RUN</b>
-                  </div>
-                </div>
-              }
-            >
-              <CrewwwWorld
-                onDestination={selectWorldDestination}
-                mode={worldMode}
-                moveInput={moveInput}
-                onNearDestination={setNearDestination}
-                progress={journey}
-              />
-            </Suspense>
+            {worldReady ? (
+              <Suspense fallback={<WorldStageFallback />}>
+                <CrewwwWorld
+                  onDestination={selectWorldDestination}
+                  mode={worldMode}
+                  moveInput={moveInput}
+                  onNearDestination={setNearDestination}
+                  progress={journey}
+                />
+              </Suspense>
+            ) : (
+              <WorldStageFallback />
+            )}
             <div
               className="chapter-wipe"
               key={`wipe-${chapterIndex}`}
@@ -941,6 +967,17 @@ export function ShowroomPage() {
             </div>
           </section>
         </div>
+      </div>
+
+      {/* Breathing threshold between the world and the scroll journey. The
+          colour fields react to scroll velocity; the spacer itself never
+          changes layout height, so scrolling stays smooth. */}
+      <div className="scroll-breath" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+        <i />
+        <span>BREATHE / SCROLL TO FIND YOUR FREQUENCY</span>
       </div>
 
       <section

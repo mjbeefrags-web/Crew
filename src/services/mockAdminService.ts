@@ -4,6 +4,7 @@ import type {
   AdminOrder,
   AdminProduct,
   AdminVariant,
+  AiAdvice,
 } from "../domain/admin";
 import type { AdminService } from "./adminService";
 import { featuredProducts } from "../data/mock/catalog";
@@ -236,6 +237,67 @@ function sampleCarts(now: Date, products: AdminProduct[]) {
 }
 
 export const mockAdminService: AdminService = {
+  async advise(signals, question = ""): Promise<AiAdvice> {
+    const kpis =
+      signals.kpis && typeof signals.kpis === "object"
+        ? (signals.kpis as Record<string, unknown>)
+        : {};
+    const value = (key: string) => {
+      const raw = kpis[key];
+      return typeof raw === "number" && Number.isFinite(raw) ? raw : 0;
+    };
+    const low = value("lowStockSkus");
+    const out = value("outOfStockSkus");
+    const conversion = value("conversionProxy");
+    const recommendations = [
+      low || out
+        ? {
+            title: "Replenish before the next drop lands",
+            detail: `${low} low-stock and ${out} sold-out SKUs. Reorder the fastest size/colour pairs first.`,
+            priority: "high" as const,
+            horizon: "This week",
+            evidence: "Local preview stock snapshot",
+          }
+        : null,
+      conversion && conversion < 0.35
+        ? {
+            title: "Tighten the product page before buying traffic",
+            detail:
+              "Conversion is under 35%. Lead with approved photography, make size choice explicit and move delivery terms next to the CTA.",
+            priority: "high" as const,
+            horizon: "Next sprint",
+            evidence: `conversionProxy=${conversion.toFixed(2)}`,
+          }
+        : null,
+      {
+        title: question
+          ? `Review the full edit for “${question}”`
+          : "Instrument the next drop",
+        detail:
+          "Connect real stock and drop events so this advisor can separate views, add-to-bag and purchases for every drop.",
+        priority: "medium" as const,
+        horizon: "Before launch",
+        evidence: "Demo mode uses sample data",
+      },
+    ].filter(Boolean) as AiAdvice["recommendations"];
+    return {
+      provider: "local-rag (demo)",
+      summary: `Next best move: ${recommendations[0]?.title ?? "review your signals"}.`,
+      recommendations,
+      sources: [
+        {
+          title: "Scaling drops",
+          excerpt:
+            "Ship each drop as a collection with stable slugs, its own SKU set and real stock links.",
+        },
+        {
+          title: "Conversion and product presentation",
+          excerpt:
+            "Lead with product photography; keep size selection explicit and trust signals near the CTA.",
+        },
+      ],
+    };
+  },
   async load(): Promise<AdminData> {
     const now = new Date();
     const products = sampleProducts();

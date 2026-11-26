@@ -141,7 +141,7 @@ export function LookbookIndexPage({
       <section
         className="story-index-hero"
         style={{
-          backgroundImage: `linear-gradient(90deg,rgba(15,18,15,.9),rgba(15,18,15,.2)),url(${isDrop ? "/images/editorial/drop-story.jpg" : "/images/editorial/lookbook-03.jpg"})`,
+          backgroundImage: `linear-gradient(90deg,rgba(15,18,15,.9),rgba(15,18,15,.2)),url(${isDrop ? "/images/editorial/drop-story.webp" : "/images/editorial/lookbook-03.webp"})`,
         }}
       >
         <p className="store-eyebrow">
@@ -298,7 +298,7 @@ export function AboutPage() {
         className="about-hero"
         style={{
           backgroundImage:
-            "linear-gradient(90deg,rgba(13,16,13,.86),rgba(13,16,13,.17)),url(/images/editorial/hero-campaign.jpg)",
+            "linear-gradient(90deg,rgba(13,16,13,.86),rgba(13,16,13,.17)),url(/images/editorial/hero-campaign.webp)",
         }}
       >
         <p className="store-eyebrow">CREWWW / WORKING STORY</p>

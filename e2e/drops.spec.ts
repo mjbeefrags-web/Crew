@@ -40,7 +40,7 @@ test('drops index opens a playable drop chamber and returns to the index', async
 
 test('drop chamber handles direct links, sound opt-in and missing drops', async ({ page }) => {
   await page.goto('/drops');
-  const siteSound = page.getByRole('button', { name: 'Sound toggle' });
+  const siteSound = page.getByRole('button', { name: /sound (on|off|toggle)/i });
   await siteSound.click();
   await expect(siteSound).toHaveAttribute('aria-pressed', 'true');
   await siteSound.click();

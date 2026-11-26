@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import {
   Link,
   NavLink,
@@ -83,6 +89,7 @@ export function SiteLayout() {
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const drawerRef = useRef<HTMLDivElement | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
+  const headerRef = useRef<HTMLElement | null>(null);
   const bagLinkRef = useRef<HTMLAnchorElement | null>(null);
   const prevBagCount = useRef(0);
   const bagLines = useCommerceStore((state) => state.cartLines);
@@ -106,9 +113,13 @@ export function SiteLayout() {
   const isHome = location.pathname === "/";
   const isTrip = location.pathname === "/drops/psychedelic-minds";
 
-  // Move keyboard focus to the main landmark when the route changes, so
-  // screen-reader and keyboard users start each page in a predictable place.
+  // Move keyboard focus to the main landmark on later route changes. Skipping
+  // the first render keeps the skip-link as the first Tab stop on page load.
+  const previousPathRef = useRef<string | null>(null);
   useEffect(() => {
+    const previous = previousPathRef.current;
+    previousPathRef.current = location.pathname;
+    if (previous === null || previous === location.pathname) return undefined;
     const id = window.setTimeout(
       () => mainRef.current?.focus({ preventScroll: true }),
       50,
@@ -156,6 +167,52 @@ export function SiteLayout() {
     setMenuOpen(false);
     setActiveMenu(null);
   }, [location.pathname, location.search]);
+
+  // Follow-scroll navigation. The header slides out of the way while reading
+  // and comes back on the smallest upward movement. Writing attributes directly
+  // keeps a high-frequency scroll listener off React's render path.
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return undefined;
+    let decisionY = window.scrollY;
+    let queued = false;
+    const reduced =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
+    const apply = () => {
+      const y = window.scrollY;
+      header.dataset.scrolled = String(y > 24);
+      const locked =
+        reduced ||
+        header.classList.contains("has-open-menu") ||
+        header.contains(document.activeElement) ||
+        y < 120;
+      if (locked) {
+        header.dataset.navHidden = "false";
+        decisionY = y;
+      } else if (y > decisionY + 12) {
+        header.dataset.navHidden = "true";
+        decisionY = y;
+      } else if (y < decisionY - 12) {
+        header.dataset.navHidden = "false";
+        decisionY = y;
+      }
+      queued = false;
+    };
+    const onScroll = () => {
+      if (queued) return;
+      queued = true;
+      window.requestAnimationFrame(apply);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    apply();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const header = headerRef.current;
+    if (header) header.dataset.navHidden = "false";
+  }, [location.pathname]);
 
   useEffect(() => {
     const nodes = () =>
@@ -296,13 +353,24 @@ export function SiteLayout() {
         <Link className="announcement-trip" to="/drops/psychedelic-minds">
           PSYCHEDELIC MINDS / ENTER THE ROOM ↗
         </Link>
-        <i aria-hidden="true">·</i>
-        <span>DEVELOPMENT PREVIEW / COMMERCE DATA IS SAMPLE ONLY</span>
+        <i aria-hidden="true" className="announcement-preview-sep">
+          ·
+        </i>
+        <span className="announcement-preview">
+          PREVIEW STORE / SAMPLE DATA
+        </span>
       </div>
       <header
+        ref={headerRef}
         className={`site-header${menuOpen ? " has-open-menu" : ""}`}
         onMouseLeave={() => setActiveMenu(null)}
       >
+        <div className="header-aura" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+          <i />
+        </div>
         <button
           ref={menuButtonRef}
           className="menu-toggle"
@@ -392,13 +460,13 @@ export function SiteLayout() {
         </Link>
         <nav className="header-actions" aria-label="Shopping utilities">
           <SiteSoundToggle />
-          {(!API_MODE || user?.role === "admin") && (
+          {API_MODE && user?.role === "admin" && (
             <Link
               className="header-admin-link"
               to="/admin"
               aria-label="Owner console"
             >
-              {API_MODE ? "ADMIN" : "ADMIN DEMO"}
+              ADMIN
             </Link>
           )}
           <Link to="/search" aria-label="Search Crewww">
@@ -550,15 +618,23 @@ export function SiteLayout() {
               <Link to="/account">ACCOUNT</Link>
               <Link to="/wishlist">SAVED PIECES</Link>
               <Link to="/cart">SHOPPING BAG · {bagCount}</Link>
-              {(!API_MODE || user?.role === "admin") && (
-                <Link to="/admin">{API_MODE ? "ADMIN" : "ADMIN DEMO"}</Link>
+              {API_MODE && user?.role === "admin" && (
+                <Link to="/admin">ADMIN</Link>
               )}
             </div>
           </nav>
         </div>
       )}
       <main id="main-content" ref={mainRef} tabIndex={-1}>
-        <Outlet />
+        <Suspense
+          fallback={
+            <div className="catalog-skeleton" role="status">
+              OPENING CREWWW…
+            </div>
+          }
+        >
+          <Outlet />
+        </Suspense>
       </main>
       <footer className="site-footer store-footer">
         <div className="store-footer-top">
@@ -594,7 +670,7 @@ export function SiteLayout() {
             <Link to="/contact">Contact</Link>
           </div>
           <div>
-            <span>HELP / PREVIEW</span>
+            <span>HELP & INFO</span>
             <Link to="/support">Support</Link>
             <Link to="/faq">FAQ</Link>
             <Link to="/shipping">Shipping</Link>
@@ -608,16 +684,14 @@ export function SiteLayout() {
             <Link to="/account/orders">Orders</Link>
             <Link to="/wishlist">Wishlist</Link>
             <Link to="/cart">Bag</Link>
-            {(!API_MODE || user?.role === "admin") && (
-              <Link to="/admin">
-                {API_MODE ? "Owner console" : "Owner console · demo"}
-              </Link>
+            {API_MODE && user?.role === "admin" && (
+              <Link to="/admin">Owner console</Link>
             )}
           </div>
         </div>
         <div className="footer-bottom">
           <span>© CREWWW STUDIO 2026</span>
-          <span>PRODUCT / PRICING / STORE DETAILS ARE PREVIEW DATA</span>
+          <span>PREVIEW STORE · SAMPLE PRODUCT DATA</span>
           <Link to="/design-system">DESIGN NOTES ↗</Link>
         </div>
       </footer>

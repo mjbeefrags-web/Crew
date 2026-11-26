@@ -12,6 +12,7 @@ from redis.asyncio import Redis
 
 from app.api import admin as admin_routes
 from app.api import auth, catalog, commerce, system
+from app.core.cache import ResponseCache
 from app.core.config import Settings, get_settings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -26,6 +27,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.redis = (
             Redis.from_url(config.redis_url, decode_responses=True) if config.redis_url else None
         )
+        app.state.catalog_cache = ResponseCache(app.state.redis)
         logger.info(
             "application_start env=%s redis_configured=%s", config.app_env, bool(config.redis_url)
         )
@@ -36,6 +38,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title=config.app_name, version="0.1.0", debug=config.debug, lifespan=lifespan)
     app.state.redis = None
+    app.state.catalog_cache = ResponseCache(None)
     app.dependency_overrides[get_settings] = lambda: config
     app.add_middleware(
         CORSMiddleware,
@@ -79,12 +82,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
-        response.headers.setdefault(
-            "Cache-Control",
-            "no-store"
-            if "/auth/" in request.url.path or "/admin/" in request.url.path
-            else "no-cache",
-        )
+        if "/auth/" in request.url.path or "/admin/" in request.url.path:
+            cache_control = "no-store"
+        elif (
+            request.method == "GET"
+            and request.url.path.startswith(
+                ("/api/v1/products", "/api/v1/categories", "/api/v1/collections")
+            )
+        ):
+            # Read-through cached in Redis; browsers may hold a short copy too.
+            cache_control = "public, max-age=30, stale-while-revalidate=120"
+        else:
+            cache_control = "no-cache"
+        response.headers.setdefault("Cache-Control", cache_control)
         if config.app_env == "production":
             response.headers.setdefault(
                 "Strict-Transport-Security", "max-age=31536000; includeSubDomains"

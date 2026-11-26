@@ -151,7 +151,7 @@ async def seed() -> None:
             colors = [{"name": color, "value": color_value}]
             if slug == "joy-of-outdoors-hoodie":
                 colors.append({"name": "Black", "value": "#171719"})
-            image_url = f"/images/crewww/hoodie-{PRODUCTS.index(product_data) + 1:02}.jpg"
+            image_url = f"/images/crewww/hoodie-{PRODUCTS.index(product_data) + 1:02}.webp"
             if product is None:
                 product = Product(
                     slug=slug,

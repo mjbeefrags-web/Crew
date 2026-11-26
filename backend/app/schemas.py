@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
@@ -263,3 +263,28 @@ class ContactIn(BaseModel):
     email: EmailStr
     topic: str = Field(min_length=2, max_length=80)
     message: str = Field(min_length=10, max_length=4000)
+
+
+class AiAdviseIn(BaseModel):
+    question: str = Field(default="", max_length=400)
+    signals: dict[str, Any] = Field(default_factory=dict)
+
+
+class AiRecommendation(BaseModel):
+    title: str
+    detail: str
+    priority: Literal["high", "medium", "low"]
+    horizon: str
+    evidence: str
+
+
+class AiSource(BaseModel):
+    title: str
+    excerpt: str
+
+
+class AiAdviceOut(BaseModel):
+    provider: str
+    summary: str
+    recommendations: list[AiRecommendation]
+    sources: list[AiSource]

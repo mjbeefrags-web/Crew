@@ -37,7 +37,7 @@ export const stories: readonly EditorialStory[] = [
     eyebrow: "LOOKBOOK / 01",
     description:
       "A campaign visual study built around graphic fleece, city light and the pieces that move with you.",
-    image: "/images/editorial/lookbook-01.jpg",
+    image: "/images/editorial/lookbook-01.webp",
     type: "lookbook",
   },
   {
@@ -46,7 +46,7 @@ export const stories: readonly EditorialStory[] = [
     eyebrow: "LOOKBOOK / 02",
     description:
       "A visual note on the hours around the plan, with sample wardrobe references.",
-    image: "/images/editorial/lookbook-02.jpg",
+    image: "/images/editorial/lookbook-02.webp",
     type: "lookbook",
   },
   {
@@ -55,7 +55,7 @@ export const stories: readonly EditorialStory[] = [
     eyebrow: "LOOKBOOK / 03",
     description:
       "Everyday shape, expressive graphics and room to make the look your own.",
-    image: "/images/editorial/lookbook-03.jpg",
+    image: "/images/editorial/lookbook-03.webp",
     type: "lookbook",
   },
   {
@@ -64,7 +64,7 @@ export const stories: readonly EditorialStory[] = [
     eyebrow: "DROP 01 / THE FIRST RUN",
     description:
       "A development campaign for the Crewww hoodie edit. Product, pricing and campaign details remain subject to owner confirmation.",
-    image: "/images/editorial/drop-story.jpg",
+    image: "/images/editorial/drop-story.webp",
     type: "drop",
   },
 ];

@@ -135,6 +135,26 @@ export type AdminInsight = {
   body: string;
 };
 
+export type AiRecommendation = {
+  title: string;
+  detail: string;
+  priority: "high" | "medium" | "low";
+  horizon: string;
+  evidence: string;
+};
+
+export type AiSource = {
+  title: string;
+  excerpt: string;
+};
+
+export type AiAdvice = {
+  provider: string;
+  summary: string;
+  recommendations: AiRecommendation[];
+  sources: AiSource[];
+};
+
 export type AdminMetrics = {
   source: AdminDataSource;
   generatedAt: string;

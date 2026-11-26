@@ -15,7 +15,7 @@ export type CatalogRoute = {
 };
 
 const previewNote =
-  "Preview assortment · sample names, images, sizes and prices are for frontend review only.";
+  "Preview collection · imagery, sizing and pricing are sample data while the store is being built.";
 
 export const catalogRoutes: readonly CatalogRoute[] = [
   {
@@ -24,7 +24,7 @@ export const catalogRoutes: readonly CatalogRoute[] = [
     eyebrow: "SHOP / ALL PIECES",
     description:
       "An evolving collection of layers, graphics and everyday objects.",
-    image: "/images/editorial/new-arrivals.jpg",
+    image: "/images/editorial/new-arrivals.webp",
     query: {},
     filters: ["size", "color", "collection", "price", "availability"],
     demoNote: previewNote,
@@ -34,7 +34,7 @@ export const catalogRoutes: readonly CatalogRoute[] = [
     title: "Just landed",
     eyebrow: "LATEST / NEW ARRIVALS",
     description: "New pieces and first looks from the current Crewww preview.",
-    image: "/images/editorial/new-arrivals.jpg",
+    image: "/images/editorial/new-arrivals.webp",
     query: { newOnly: true },
     filters: ["size", "color", "collection", "price"],
     demoNote: previewNote,
@@ -44,7 +44,7 @@ export const catalogRoutes: readonly CatalogRoute[] = [
     title: "Crew favorites",
     eyebrow: "POPULAR / BEST SELLERS",
     description: "A deterministic sample ranking for the frontend preview.",
-    image: "/images/editorial/drop-story.jpg",
+    image: "/images/editorial/drop-story.webp",
     query: { bestSeller: true, sort: "popular" },
     filters: ["size", "color", "collection", "price"],
     demoNote: previewNote,
@@ -55,7 +55,7 @@ export const catalogRoutes: readonly CatalogRoute[] = [
     eyebrow: "SHOP / KIDS",
     description:
       "A kidswear concept edit. Age bands and sizing shown are demonstration data.",
-    image: "/images/editorial/kids-story.jpg",
+    image: "/images/editorial/kids-story.webp",
     query: { audience: "kids" },
     filters: ["size", "color", "price"],
     demoNote: previewNote,
@@ -66,7 +66,7 @@ export const catalogRoutes: readonly CatalogRoute[] = [
     eyebrow: "SHOP / DENIM",
     description:
       "Explore candidate fits and washes; the fit names and measurements are not approved product specifications.",
-    image: "/images/editorial/denim-story.jpg",
+    image: "/images/editorial/denim-story.webp",
     query: { category: "denim" },
     filters: ["size", "color", "fit", "wash", "price"],
     demoNote: previewNote,
@@ -76,7 +76,7 @@ export const catalogRoutes: readonly CatalogRoute[] = [
     title: "Clothes",
     eyebrow: "SHOP / CLOTHES",
     description: "Layers and everyday forms across tops and bottoms.",
-    image: "/images/editorial/lookbook-02.jpg",
+    image: "/images/editorial/lookbook-02.webp",
     query: {
       categories: [
         "tops",
@@ -97,7 +97,7 @@ export const catalogRoutes: readonly CatalogRoute[] = [
     title: "Tops",
     eyebrow: "SHOP / CLOTHES / TOPS",
     description: "The upper half of your everyday rotation.",
-    image: "/images/editorial/lookbook-02.jpg",
+    image: "/images/editorial/lookbook-02.webp",
     query: {
       categories: [
         "tops",
@@ -116,7 +116,7 @@ export const catalogRoutes: readonly CatalogRoute[] = [
     title: "T-shirts",
     eyebrow: "SHOP / CLOTHES / TOPS / T-SHIRTS",
     description: "A foundational layer, presented as sample inventory.",
-    image: "/images/editorial/new-arrivals.jpg",
+    image: "/images/editorial/new-arrivals.webp",
     query: { category: "t-shirts" },
     filters: ["size", "color", "price"],
     demoNote: previewNote,
@@ -127,7 +127,7 @@ export const catalogRoutes: readonly CatalogRoute[] = [
     eyebrow: "SHOP / CLOTHES / TOPS / HOODIES",
     description:
       "Owner-provided Crewww hoodie references. Price and availability remain provisional.",
-    image: "/images/crewww/hoodie-01.jpg",
+    image: "/images/crewww/hoodie-01.webp",
     query: { category: "hoodies" },
     filters: ["size", "color", "collection", "price", "availability"],
   },
@@ -136,7 +136,7 @@ export const catalogRoutes: readonly CatalogRoute[] = [
     title: "Sweatshirts",
     eyebrow: "SHOP / CLOTHES / TOPS / SWEATSHIRTS",
     description: "A sweatshirt category preview with sample-only records.",
-    image: "/images/editorial/drop-story.jpg",
+    image: "/images/editorial/drop-story.webp",
     query: { category: "sweatshirts" },
     filters: ["size", "color", "price"],
     demoNote: previewNote,
@@ -146,7 +146,7 @@ export const catalogRoutes: readonly CatalogRoute[] = [
     title: "Shirts",
     eyebrow: "SHOP / CLOTHES / TOPS / SHIRTS",
     description: "An overshirt study for the frontend preview.",
-    image: "/images/editorial/lookbook-02.jpg",
+    image: "/images/editorial/lookbook-02.webp",
     query: { category: "shirts" },
     filters: ["size", "color", "price"],
     demoNote: previewNote,
@@ -156,7 +156,7 @@ export const catalogRoutes: readonly CatalogRoute[] = [
     title: "Jackets",
     eyebrow: "SHOP / CLOTHES / TOPS / JACKETS",
     description: "Outer layers shown as sample-only catalog data.",
-    image: "/images/editorial/lookbook-03.jpg",
+    image: "/images/editorial/lookbook-03.webp",
     query: { category: "jackets" },
     filters: ["size", "color", "price"],
     demoNote: previewNote,
@@ -166,7 +166,7 @@ export const catalogRoutes: readonly CatalogRoute[] = [
     title: "Bottoms",
     eyebrow: "SHOP / CLOTHES / BOTTOMS",
     description: "Trousers, shorts and denim fit discovery.",
-    image: "/images/editorial/candidate-denim.jpg",
+    image: "/images/editorial/candidate-denim.webp",
     query: { categories: ["denim", "trousers", "shorts"] },
     filters: ["size", "color", "fit", "wash", "price"],
     demoNote: previewNote,
@@ -176,7 +176,7 @@ export const catalogRoutes: readonly CatalogRoute[] = [
     title: "Trousers",
     eyebrow: "SHOP / CLOTHES / BOTTOMS / TROUSERS",
     description: "Everyday bottoms in a development assortment.",
-    image: "/images/editorial/lookbook-01.jpg",
+    image: "/images/editorial/lookbook-01.webp",
     query: { category: "trousers" },
     filters: ["size", "color", "price"],
     demoNote: previewNote,
@@ -186,7 +186,7 @@ export const catalogRoutes: readonly CatalogRoute[] = [
     title: "Shorts",
     eyebrow: "SHOP / CLOTHES / BOTTOMS / SHORTS",
     description: "A warm-weather category preview.",
-    image: "/images/editorial/lookbook-02.jpg",
+    image: "/images/editorial/lookbook-02.webp",
     query: { category: "shorts" },
     filters: ["size", "color", "price"],
     demoNote: previewNote,
@@ -197,7 +197,7 @@ export const catalogRoutes: readonly CatalogRoute[] = [
     eyebrow: "SHOP / ACCESSORIES",
     description:
       "Accessory placeholders demonstrate the category journey; no confirmed Crewww objects were supplied.",
-    image: "/images/editorial/accessories.jpg",
+    image: "/images/editorial/accessories.webp",
     query: { category: "accessories" },
     filters: ["color", "price"],
     demoNote: previewNote,
@@ -208,7 +208,7 @@ export const catalogRoutes: readonly CatalogRoute[] = [
     eyebrow: "SHOP / SHOES",
     description:
       "Footwear placeholders demonstrate the category journey; no confirmed Crewww footwear was supplied.",
-    image: "/images/editorial/shoes.jpg",
+    image: "/images/editorial/shoes.webp",
     query: { category: "shoes" },
     filters: ["size", "color", "price"],
     demoNote: previewNote,
@@ -221,35 +221,35 @@ export const fits = [
     title: "Straight",
     description:
       "A consistent line from the seat through the leg. Fit and measurements in this preview are provisional.",
-    image: "/images/editorial/denim-story.jpg",
+    image: "/images/editorial/denim-story.webp",
   },
   {
     slug: "slim",
     title: "Slim",
     description:
       "A closer line through the leg. Fit and measurements in this preview are provisional.",
-    image: "/images/editorial/candidate-denim.jpg",
+    image: "/images/editorial/candidate-denim.webp",
   },
   {
     slug: "relaxed",
     title: "Relaxed",
     description:
       "More room through the seat and thigh. Fit and measurements in this preview are provisional.",
-    image: "/images/editorial/lookbook-01.jpg",
+    image: "/images/editorial/lookbook-01.webp",
   },
   {
     slug: "wide-leg",
     title: "Wide-leg",
     description:
       "An open leg shape from hip to hem. Fit and measurements in this preview are provisional.",
-    image: "/images/editorial/lookbook-03.jpg",
+    image: "/images/editorial/lookbook-03.webp",
   },
   {
     slug: "baggy",
     title: "Baggy",
     description:
       "A generous silhouette with extra ease. Fit and measurements in this preview are provisional.",
-    image: "/images/editorial/lookbook-02.jpg",
+    image: "/images/editorial/lookbook-02.webp",
   },
 ] as const;
 

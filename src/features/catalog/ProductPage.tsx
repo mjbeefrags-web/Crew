@@ -70,6 +70,7 @@ export function ProductPage() {
   const [details, setDetails] = useState("");
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [show3D, setShow3D] = useState(false);
   const sizeGuideRef = useRef<HTMLElement | null>(null);
   const zoomRef = useRef<HTMLDivElement | null>(null);
   const wishlist = useCommerceStore((state) => state.wishlist);
@@ -253,36 +254,14 @@ export function ProductPage() {
         <span> / </span>
         <span>{product.name.toUpperCase()}</span>
       </div>
-      {product.isPreviewData && (
-        <p className="demo-data-note">
-          SAMPLE PRODUCT · This record and its image, variants and price are
-          placeholders for frontend review.
-        </p>
-      )}
       <section className="product-detail-layout">
         <div className="product-gallery">
-          {product.category === "hoodies" && !product.isPreviewData && (
-            <div className="pdp-3d-panel">
-              <Suspense
-                fallback={
-                  <div className="viewer-unavailable">
-                    Loading the garment preview…
-                  </div>
-                }
-              >
-                <HoodieViewer
-                  color={activeColor?.value ?? "#171719"}
-                  label={product.name}
-                  artworkUrl={product.imageUrl}
-                />
-              </Suspense>
-              <span>ILLUSTRATIVE CREWWW GARMENT STUDY</span>
-            </div>
-          )}
           <div className="product-main-image">
             <img
-              src={gallery[imageIndex] || "/images/crewww/hoodie-01.jpg"}
+              src={gallery[imageIndex] || "/images/crewww/hoodie-01.webp"}
               alt={`${product.name} in ${color}`}
+              width={800}
+              height={1000}
               onClick={() => setZoomOpen(true)}
             />
             <button
@@ -307,15 +286,45 @@ export function ProductPage() {
                   aria-pressed={imageIndex === index}
                   onClick={() => setImageIndex(index)}
                 >
-                  <img src={image} alt="" />
+                  <img src={image} alt="" width={150} height={176} />
                 </button>
               ))}
             </div>
           )}
-          {product.isPreviewData && (
-            <p className="product-image-caption">
-              CAMPAIGN IMAGE / NOT A CONFIRMED PRODUCT PHOTOGRAPH
-            </p>
+          <div className="product-gallery-tools">
+            {product.category === "hoodies" && !product.isPreviewData && (
+              <button
+                className="pdp-3d-toggle"
+                type="button"
+                aria-expanded={show3D}
+                onClick={() => setShow3D((open) => !open)}
+              >
+                {show3D ? "CLOSE 3D STUDY −" : "VIEW IN 3D ↗"}
+              </button>
+            )}
+            {product.isPreviewData && (
+              <p className="product-image-caption">
+                CONCEPT STUDY / PREVIEW IMAGE
+              </p>
+            )}
+          </div>
+          {show3D && (
+            <div className="pdp-3d-panel">
+              <Suspense
+                fallback={
+                  <div className="viewer-unavailable">
+                    Loading the garment preview…
+                  </div>
+                }
+              >
+                <HoodieViewer
+                  color={activeColor?.value ?? "#171719"}
+                  label={product.name}
+                  artworkUrl={product.imageUrl}
+                />
+              </Suspense>
+              <span>ILLUSTRATIVE CREWWW GARMENT STUDY</span>
+            </div>
           )}
         </div>
         <div className="product-purchase-panel">
@@ -334,7 +343,7 @@ export function ProductPage() {
                 )}
               </del>
             )}
-            {product.isPreviewData && <small>DEMO PRICE</small>}
+            {product.isPreviewData && <small>PREVIEW PRICE</small>}
           </div>
           <p className="availability-line" aria-live="polite">
             <i
@@ -353,12 +362,12 @@ export function ProductPage() {
                 ? `IN STOCK · ${selectedVariant.stockQuantity <= 5 ? `ONLY ${selectedVariant.stockQuantity} LEFT` : "READY TO SHIP"}`
                 : "SOLD OUT IN THIS OPTION"
               : product.available
-                ? "PREVIEW AVAILABILITY"
+                ? "AVAILABLE · PREVIEW DATA"
                 : "CURRENTLY UNAVAILABLE"}
             <span>
               {selectedVariant
                 ? ` · SKU ${selectedVariant.sku}`
-                : " · No live stock connection"}
+                : " · SAMPLE INVENTORY"}
             </span>
           </p>
           <div className="product-option-block">
@@ -406,11 +415,11 @@ export function ProductPage() {
               ))}
             </div>
             {product.ageBand && (
-              <small>AGE RANGE / {product.ageBand} · DEMO GUIDE</small>
+              <small>AGE RANGE / {product.ageBand} · PREVIEW GUIDE</small>
             )}
             {product.fit && (
               <small>
-                FIT / {product.fit} · {product.wash} · DEMO GUIDE
+                FIT / {product.fit} · {product.wash} · PREVIEW GUIDE
               </small>
             )}
             <FitFinder
@@ -475,11 +484,8 @@ export function ProductPage() {
             {saved ? "♥ SAVED TO YOUR WISHLIST" : "♡ SAVE TO YOUR WISHLIST"}
           </button>
           <div className="product-purchase-notes">
-            <p>
-              DELIVERY / OPTIONS WILL BE CONFIRMED WHEN STORE DETAILS ARE
-              APPROVED.
-            </p>
-            <Link to="/shipping">SHIPPING & RETURNS ↗</Link>
+            <p>DELIVERY & RETURNS / PREVIEW TERMS</p>
+            <Link to="/shipping">READ THE PREVIEW POLICY ↗</Link>
           </div>
           <div className="product-details-accordion">
             {(
@@ -518,6 +524,11 @@ export function ProductPage() {
           </Link>
         </div>
       </section>
+      {product.isPreviewData && (
+        <p className="preview-data-note">
+          PREVIEW RECORD · IMAGE, PRICE AND VARIANTS ARE SAMPLE DATA
+        </p>
+      )}
       <section className="related-products">
         <div className="catalog-route-heading">
           <p className="store-eyebrow">KEEP EXPLORING / SAME EDIT</p>
@@ -607,7 +618,7 @@ export function ProductPage() {
             ×
           </button>
           <img
-            src={gallery[imageIndex] || "/images/crewww/hoodie-01.jpg"}
+            src={gallery[imageIndex] || "/images/crewww/hoodie-01.webp"}
             alt={`${product.name} detail`}
           />
         </div>

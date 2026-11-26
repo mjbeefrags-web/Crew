@@ -57,7 +57,7 @@ docker compose exec api python -m app.create_admin `
 ```
 
 Staging and production reject a non-empty bootstrap password. See
-[docs/operations/ci-cd.md#admin-accounts](./docs/operations/ci-cd.md#admin-accounts).
+[docs/operations/admin-user.md](./docs/operations/admin-user.md).
 
 ## Show it to clients on your Wi-Fi
 
@@ -301,7 +301,7 @@ k6 run -e BASE_URL=http://127.0.0.1:8080 perf/k6/catalog.js
 - [Docker workflow](./DOCKER.md)
 - [Deployment notes](./DEPLOYMENT.md)
 - [PostgreSQL in Docker](./docs/operations/postgres-docker.md)
-- [Admin accounts](./docs/operations/ci-cd.md#admin-accounts)
+- [Admin accounts](./docs/operations/admin-user.md)
 - [Backups and disaster recovery](./docs/operations/backup-restore.md)
 - [Domain, DNS and TLS](./docs/operations/domain-tls.md)
 - [CI/CD and releases](./docs/operations/ci-cd.md)

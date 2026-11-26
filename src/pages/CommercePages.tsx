@@ -53,8 +53,8 @@ export function CartPage() {
           The <em>bag.</em>
         </h1>
         <p className="page-hero-copy">
-          A local preview basket. Availability and payment are not connected to
-          a live store.
+          Your selection, gathered in one place. Checkout is a preview — no
+          payment is taken.
         </p>
       </section>
       {cartLines.length === 0 ? (
@@ -114,7 +114,7 @@ export function CartPage() {
                       {line.color} / {line.size}
                       {line.sku ? ` / SKU ${line.sku}` : ""}
                     </span>
-                    {product.isPreviewData && <small>DEMO PRODUCT</small>}
+                    {product.isPreviewData && <small>PREVIEW PRODUCT</small>}
                     <button type="button" onClick={() => removeCartLine(index)}>
                       REMOVE PIECE ×
                     </button>
@@ -171,7 +171,7 @@ export function CartPage() {
             </div>
             {totals.discount > 0 && (
               <div>
-                <span>DEMO PROMOTION / 10%</span>
+                <span>PREVIEW PROMOTION / 10%</span>
                 <strong>
                   −{formatCurrency(totals.discount, totals.currency)}
                 </strong>
@@ -189,13 +189,11 @@ export function CartPage() {
                   showNotice(
                     promotionInput.trim().toUpperCase() === "CREWWW10"
                       ? "Demo code applied."
-                      : "That demo code is not recognized.",
+                      : "That preview code is not recognized.",
                   );
               }}
             >
-              <label htmlFor="promotion-code">
-                PROMO CODE / DEMO: CREWWW10
-              </label>
+              <label htmlFor="promotion-code">PROMO CODE / TRY CREWWW10</label>
               <div>
                 <input
                   id="promotion-code"
@@ -217,8 +215,8 @@ export function CartPage() {
               CONTINUE TO CHECKOUT ↗
             </Link>
             <p className="checkout-disclaimer">
-              No payment will be taken. Checkout creates a local demonstration
-              order only.
+              No payment will be taken. Checkout creates a local preview order
+              only.
             </p>
             <Link to="/shop" className="text-link">
               KEEP LOOKING ↗
@@ -387,7 +385,7 @@ export function CheckoutPage() {
             Nothing to <em>check out.</em>
           </h1>
           <p className="page-hero-copy">
-            Your bag is empty. This demo does not reserve inventory.
+            Your bag is empty. Add a piece to continue.
           </p>
           <Link to="/shop" className="primary-store-button">
             RETURN TO THE SHOP ↗
@@ -404,7 +402,7 @@ export function CheckoutPage() {
         <span>02 / DELIVERY</span>
         <i />
         <span>03 / REVIEW</span>
-        <b>{API_MODE ? "MOCK PAYMENT" : "DEMO ONLY"}</b>
+        <b>{API_MODE ? "SIMULATED PAYMENT" : "PREVIEW MODE"}</b>
       </div>
       <div className="simple-page-hero checkout-intro">
         <p className="store-eyebrow">CREWWW / SECURE PREVIEW</p>
@@ -414,7 +412,7 @@ export function CheckoutPage() {
         <p className="page-hero-copy">
           {API_MODE
             ? "Your order and stock are validated by the local store API. Payment is simulated; nothing is charged or shipped."
-            : "Complete the form to create a local demonstration order. No payment or shipment will occur."}
+            : "Complete the form to create a local preview order. No payment or shipment will occur."}
         </p>
       </div>
       <form className="checkout-layout" onSubmit={submit}>
@@ -578,7 +576,7 @@ export function CheckoutPage() {
             </strong>
           </div>
           <div className="checkout-total-line grand-total">
-            <span>DEMO TOTAL</span>
+            <span>PREVIEW TOTAL</span>
             <strong>
               {formatCurrency(total, products[0]?.currency ?? "USD")}
             </strong>
@@ -593,10 +591,10 @@ export function CheckoutPage() {
             type="submit"
             disabled={busy}
           >
-            {busy ? "CREATING PREVIEW…" : "PLACE DEMO ORDER ↗"}
+            {busy ? "CREATING PREVIEW…" : "PLACE PREVIEW ORDER ↗"}
           </button>
           <p className="checkout-disclaimer">
-            This button creates a locally stored demo receipt. It does not
+            This button creates a locally stored preview receipt. It does not
             process a payment.
           </p>
         </aside>
@@ -647,7 +645,7 @@ export function OrderConfirmationPage() {
               className="primary-store-button"
               to={API_MODE ? "/account/orders" : `/account/orders/${order.id}`}
             >
-              VIEW {API_MODE ? "ORDERS" : "DEMO ORDER"} ↗
+              VIEW {API_MODE ? "ORDERS" : "PREVIEW ORDER"} ↗
             </Link>
           </>
         ) : (
@@ -812,7 +810,7 @@ export function AuthPage({ mode }: { mode: "login" | "register" | "forgot" }) {
               : mode === "register"
                 ? API_MODE
                   ? "CREATE ACCOUNT"
-                  : "CREATE DEMO ACCOUNT"
+                  : "CREATE PREVIEW ACCOUNT"
                 : mode === "forgot"
                   ? "REQUEST RECOVERY"
                   : API_MODE
@@ -926,7 +924,7 @@ export function AccountPage({
             DISPLAY NAME
             <input placeholder="Add a display name" />
           </label>
-          <button className="primary-store-button">SAVE DEMO PROFILE</button>
+          <button className="primary-store-button">SAVE PREVIEW PROFILE</button>
         </form>
       </section>
     ) : section === "addresses" ? (
@@ -960,7 +958,7 @@ export function AccountPage({
             ))}
           </div>
         ) : (
-          <p>No demo orders are saved in this browser yet.</p>
+          <p>No preview orders are saved in this browser yet.</p>
         )}
       </section>
     ) : section === "order-detail" ? (
@@ -970,7 +968,7 @@ export function AccountPage({
         {orderQuery.data ? (
           <>
             <p>
-              Local demo status: {orderQuery.data.status}. No payment was made.
+              Preview status: {orderQuery.data.status}. No payment was made.
             </p>
             {orderQuery.data.lines.map((line, index) => (
               <p key={`${line.productId}-${index}`}>
@@ -988,7 +986,7 @@ export function AccountPage({
     ) : (
       <section className="account-card">
         <p className="store-eyebrow">
-          GOOD TO SEE YOU / {API_MODE ? "LOCAL API ACCOUNT" : "DEMO MODE"}
+          GOOD TO SEE YOU / {API_MODE ? "LOCAL API ACCOUNT" : "PREVIEW MODE"}
         </p>
         <h2>{currentEmail}</h2>
         <p>
@@ -1001,6 +999,9 @@ export function AccountPage({
           <Link to="/account/addresses">ADDRESSES ↗</Link>
           <Link to="/account/orders">ORDER HISTORY ↗</Link>
           <Link to="/wishlist">SAVED PIECES ↗</Link>
+          {API_MODE && authUser?.role === "admin" && (
+            <Link to="/admin">OWNER CONSOLE ↗</Link>
+          )}
         </div>
         <button type="button" onClick={signOut}>
           SIGN OUT ↗
@@ -1025,6 +1026,9 @@ export function AccountPage({
           <Link to="/account/profile">Profile</Link>
           <Link to="/account/addresses">Addresses</Link>
           <Link to="/account/orders">Orders</Link>
+          {API_MODE && authUser?.role === "admin" && (
+            <Link to="/admin">Owner console</Link>
+          )}
           <button type="button" onClick={signOut}>
             Sign out
           </button>

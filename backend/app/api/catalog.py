@@ -1,11 +1,12 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import admin_user
+from app.core.cache import cached, invalidate_catalog
 from app.db.session import get_session
 from app.models import (
     Category,
@@ -104,7 +105,9 @@ def product_statement():
 
 
 @router.get("/products", response_model=ProductPageOut)
+@cached()
 async def list_products(
+    request: Request,
     session: AsyncSession = Depends(get_session),
     category: str | None = None,
     collection: str | None = None,
@@ -125,6 +128,7 @@ async def list_products(
     page: int = Query(default=1, ge=1, le=10000),
     page_size: int = Query(default=24, ge=1, le=48),
 ) -> ProductPageOut:
+    del request
     filters = [Product.status.in_(["active", "sample"])]
     if category:
         filters.append(Product.category_ref.has(Category.slug == category))
@@ -190,7 +194,11 @@ async def list_products(
 
 
 @router.get("/products/featured", response_model=list[ProductOut])
-async def featured_products(session: AsyncSession = Depends(get_session)) -> list[ProductOut]:
+@cached()
+async def featured_products(
+    request: Request, session: AsyncSession = Depends(get_session)
+) -> list[ProductOut]:
+    del request
     rows = (
         await session.scalars(
             product_statement()
@@ -203,7 +211,11 @@ async def featured_products(session: AsyncSession = Depends(get_session)) -> lis
 
 
 @router.get("/products/{slug}", response_model=ProductOut)
-async def get_product(slug: str, session: AsyncSession = Depends(get_session)) -> ProductOut:
+@cached()
+async def get_product(
+    request: Request, slug: str, session: AsyncSession = Depends(get_session)
+) -> ProductOut:
+    del request
     product = await session.scalar(
         product_statement().where(Product.slug == slug, Product.status.in_(["active", "sample"]))
     )
@@ -216,9 +228,12 @@ async def get_product(slug: str, session: AsyncSession = Depends(get_session)) -
 
 
 @router.get("/categories")
+@cached()
 async def list_categories(
+    request: Request,
     session: AsyncSession = Depends(get_session),
 ) -> list[dict[str, str | None]]:
+    del request
     rows = (
         await session.scalars(
             select(Category).where(Category.is_active.is_(True)).order_by(Category.name)
@@ -236,7 +251,11 @@ async def list_categories(
 
 
 @router.get("/collections")
-async def list_collections(session: AsyncSession = Depends(get_session)) -> list[dict[str, str]]:
+@cached()
+async def list_collections(
+    request: Request, session: AsyncSession = Depends(get_session)
+) -> list[dict[str, str]]:
+    del request
     rows = (
         await session.scalars(
             select(Collection).where(Collection.is_active.is_(True)).order_by(Collection.name)
@@ -250,6 +269,7 @@ async def list_collections(session: AsyncSession = Depends(get_session)) -> list
 
 @admin.post("/products", response_model=ProductOut, status_code=201)
 async def create_product(
+    request: Request,
     payload: ProductCreateIn,
     session: AsyncSession = Depends(get_session),
     actor: User = Depends(admin_user),
@@ -297,6 +317,7 @@ async def create_product(
             )
     session.add(product)
     await session.commit()
+    await invalidate_catalog(request)
     product = await session.scalar(product_statement().where(Product.id == product.id))
     assert product is not None
     return product_payload(product)
@@ -304,6 +325,7 @@ async def create_product(
 
 @admin.patch("/products/{product_id}", response_model=ProductOut)
 async def update_product(
+    request: Request,
     product_id: UUID,
     payload: ProductUpdateIn,
     session: AsyncSession = Depends(get_session),
@@ -317,6 +339,7 @@ async def update_product(
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(product, field, value)
     await session.commit()
+    await invalidate_catalog(request)
     product = await session.scalar(product_statement().where(Product.id == product_id))
     assert product is not None
     return product_payload(product)
@@ -324,6 +347,7 @@ async def update_product(
 
 @admin.post("/categories", status_code=201)
 async def create_category(
+    request: Request,
     payload: CategoryCreateIn,
     session: AsyncSession = Depends(get_session),
     _: User = Depends(admin_user),
@@ -339,11 +363,13 @@ async def create_category(
     category = Category(name=payload.name, slug=payload.slug)
     session.add(category)
     await session.commit()
+    await invalidate_catalog(request)
     return {"id": str(category.id), "name": category.name, "slug": category.slug}
 
 
 @admin.post("/collections", status_code=201)
 async def create_collection(
+    request: Request,
     payload: CollectionCreateIn,
     session: AsyncSession = Depends(get_session),
     _: User = Depends(admin_user),
@@ -359,6 +385,7 @@ async def create_collection(
     collection = Collection(name=payload.name, slug=payload.slug, description=payload.description)
     session.add(collection)
     await session.commit()
+    await invalidate_catalog(request)
     return {
         "id": str(collection.id),
         "name": collection.name,
@@ -369,6 +396,7 @@ async def create_collection(
 
 @admin.post("/inventory/{variant_id}/adjust", status_code=204)
 async def adjust_inventory(
+    request: Request,
     variant_id: UUID,
     payload: InventoryAdjustIn,
     session: AsyncSession = Depends(get_session),
@@ -399,3 +427,4 @@ async def adjust_inventory(
         )
     )
     await session.commit()
+    await invalidate_catalog(request)

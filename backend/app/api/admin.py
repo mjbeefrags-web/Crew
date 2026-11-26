@@ -5,9 +5,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.ai.advisor import advise, tool_manifest
 from app.api.catalog import product_payload
 from app.api.commerce import order_payload
 from app.api.deps import admin_user
+from app.core.config import Settings, get_settings
 from app.db.session import get_session
 from app.models import (
     InventoryAdjustment,
@@ -17,11 +19,33 @@ from app.models import (
     ProductVariant,
     User,
 )
-from app.schemas import AdminOrderStatusIn, AdminProductOut, OrderOut, UserOut
+from app.schemas import (
+    AdminOrderStatusIn,
+    AdminProductOut,
+    AiAdviceOut,
+    AiAdviseIn,
+    OrderOut,
+    UserOut,
+)
 
 router = APIRouter(
     prefix="/api/v1/admin", tags=["administration"], dependencies=[Depends(admin_user)]
 )
+
+
+@router.get("/ai/tools")
+async def ai_tools() -> dict[str, object]:
+    return {"tools": tool_manifest()}
+
+
+@router.post("/ai/advise", response_model=AiAdviceOut)
+async def ai_advise(
+    payload: AiAdviseIn,
+    settings: Settings = Depends(get_settings),
+) -> AiAdviceOut:
+    return AiAdviceOut.model_validate(
+        advise(settings, {"question": payload.question, "signals": payload.signals})
+    )
 
 
 @router.get("/products", response_model=list[AdminProductOut])
@@ -38,9 +62,14 @@ async def admin_products(session: AsyncSession = Depends(get_session)) -> list[A
             .order_by(Product.name)
         )
     ).all()
-    return [
-        AdminProductOut(
-            **product_payload(product).model_dump(),
+
+    def as_admin_product(product: Product) -> AdminProductOut:
+        payload = product_payload(product).model_dump()
+        # product_payload already serialises variants; AdminProductOut expects
+        # the simplified admin variant shape instead.
+        payload.pop("variants", None)
+        return AdminProductOut(
+            **payload,
             variants=[
                 {
                     "id": variant.id,
@@ -53,8 +82,8 @@ async def admin_products(session: AsyncSession = Depends(get_session)) -> list[A
                 for variant in product.variants
             ],
         )
-        for product in rows
-    ]
+
+    return [as_admin_product(product) for product in rows]
 
 
 @router.get("/customers", response_model=list[UserOut])

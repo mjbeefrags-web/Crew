@@ -3,6 +3,7 @@ import type {
   AdminData,
   AdminOrder,
   AdminProduct,
+  AiAdvice,
 } from "../domain/admin";
 import type { AdminService } from "./adminService";
 import { apiRequest } from "./apiClient";
@@ -134,6 +135,12 @@ function normalizeCustomer(raw: RawCustomer): AdminCustomer {
 }
 
 export const apiAdminService: AdminService = {
+  async advise(signals, question = ""): Promise<AiAdvice> {
+    return apiRequest<AiAdvice>("/api/v1/admin/ai/advise", {
+      method: "POST",
+      body: JSON.stringify({ question, signals }),
+    });
+  },
   async load(): Promise<AdminData> {
     const [orders, products, customers] = await Promise.all([
       apiRequest<RawOrder[]>("/api/v1/admin/orders"),
