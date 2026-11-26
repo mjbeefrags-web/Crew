@@ -14,6 +14,20 @@ docker compose down
 
 The first run builds the frontend and backend images, waits for PostgreSQL/Redis health, applies Alembic migrations, seeds the sample hoodie catalog, then starts the API and web services. The seed is idempotent. Routine `down` and `up` preserve named database and Redis volumes.
 
+### Admin login on a fresh clone
+
+`.env.example` ships a local-only bootstrap administrator:
+
+| Email | Password |
+|---|---|
+| `admin@crewww.example.com` | `CrewwwOwner!2026` |
+
+Copying `.env.example` to `.env` and starting the stack creates that account in
+PostgreSQL on the first `migrate` run. Sign in at `http://127.0.0.1:8080/login`,
+then open `/admin`. Change the password (or clear both variables and use
+`python -m app.create_admin`) before sharing the stack. Staging/production
+settings reject a non-empty bootstrap password.
+
 Docker preview opens at `/` by default through `VITE_INITIAL_ROUTE`; set it to another route when the default is not wanted.
 
 ## Services and readiness

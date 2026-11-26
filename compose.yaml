@@ -74,7 +74,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     environment: &api_environment
-      APP_ENV: docker
+      APP_ENV: ${APP_ENV:-docker}
       DEBUG: "false"
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://${POSTGRES_USER:-crewww}:${POSTGRES_PASSWORD:-local-only-change-me-123456}@db:5432/${POSTGRES_DB:-crewww}}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
@@ -88,8 +88,10 @@ services:
       DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
       DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-20}
       DB_POOL_RECYCLE_SECONDS: ${DB_POOL_RECYCLE_SECONDS:-1800}
-      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
-      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+      # Local convenience defaults. Staging/production env files set these
+      # empty, and APP_ENV=production rejects a non-empty bootstrap password.
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL-admin@crewww.example.com}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD-CrewwwOwner!2026}
     command: ["sh", "-c", "alembic upgrade head && python -m app.seed"]
     depends_on:
       db: { condition: service_healthy }
