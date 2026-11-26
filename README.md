@@ -15,28 +15,75 @@ commerce deployment.
 | Delivery | Nginx multi-stage image, Docker Compose |
 | Tests | Vitest + Testing Library, axe, fast-check, Playwright, pytest, Hypothesis |
 
-## Quick start
+## Before you run (checklist)
 
-Requirements: Docker Desktop (or Docker Engine) with Compose v2. No host Node,
-Python, PostgreSQL or Redis is required.
+You only need **Docker Desktop**. Do not install Node, Python, PostgreSQL or
+Redis on the host for this workflow.
+
+| Requirement | Check | If it fails |
+|---|---|---|
+| Docker Desktop installed and **running** | `docker version` prints a `Server` version | Open Docker Desktop and wait for **Engine running** |
+| Compose v2+ | `docker compose version` | Update Docker Desktop |
+| Windows WSL 2 backend | Docker Desktop → Settings → General | Enable **Use the WSL 2 based engine** |
+| 4 GB+ free RAM | Task Manager | Close heavy apps before the first build |
+| Port `8080` free (site) | `Get-NetTCPConnection -LocalPort 8080` returns nothing | Set `WEB_PORT=8081` in `.env` |
+| Port `5433` free (DB tools) | `Get-NetTCPConnection -LocalPort 5433` returns nothing | Set `POSTGRES_PORT=5434` in `.env` |
+
+> **Your installed PostgreSQL is not required and must not be running on `5432`
+> for this stack.** Docker starts its own PostgreSQL 17. The app reaches it on
+> the internal `db:5432`; your `psql`/pgAdmin/DBeaver connect on
+> `127.0.0.1:5433`. A local PostgreSQL can stay on `5432` without conflict.
+
+## Quick start (one command)
 
 ```powershell
 Copy-Item .env.example .env
 docker compose up --build -d
+```
+
+The defaults work for a local demo. First run takes a few minutes (image build);
+later runs take seconds. `migrate` applies Alembic migrations and seeds the
+catalog plus the bootstrap administrator before the API starts.
+
+Wait for every service to report **healthy**:
+
+```powershell
 docker compose ps
 ```
 
-Wait for `db`, `redis`, `api` and `web` to report healthy. The one-shot
-`migrate` service applies Alembic migrations and seeds the demo catalog plus the
-bootstrap administrator before the API starts.
-
-Open:
+Then open:
 
 - Storefront: [http://localhost:8080](http://localhost:8080)
 - Admin: [http://localhost:8080/admin](http://localhost:8080/admin)
 - Login: [http://localhost:8080/login](http://localhost:8080/login)
 - API health: [http://localhost:8080/api/health](http://localhost:8080/api/health)
 - API readiness: [http://localhost:8080/api/ready](http://localhost:8080/api/ready)
+
+### Optional: start + wait in one step
+
+The starter script checks Docker, creates `.env` if missing, starts the stack,
+and waits for `/api/ready`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start.ps1
+```
+
+### What to configure before sharing or deploying
+
+Edit `.env`:
+
+| Variable | Why |
+|---|---|
+| `POSTGRES_PASSWORD` | Replace the local placeholder |
+| `JWT_SECRET` | 40+ random characters; production requires it |
+| `WEB_HOST` | `127.0.0.1` for this laptop only, `0.0.0.0` for LAN clients |
+| `FRONTEND_ORIGINS` | Every exact origin clients use, including port |
+| `COOKIE_SECURE` | `false` for plain HTTP LAN demos, `true` behind HTTPS |
+| `BOOTSTRAP_ADMIN_PASSWORD` | Change it, or clear both `BOOTSTRAP_ADMIN_*` and create an admin with the CLI |
+
+Use `.env.production.example` as the deployment template. Production validates a
+40+ character `JWT_SECRET`, PostgreSQL via asyncpg, `COOKIE_SECURE=true`, Redis,
+explicit origins, and rejects a non-empty bootstrap admin password.
 
 ### Admin login
 
@@ -58,6 +105,18 @@ docker compose exec api python -m app.create_admin `
 
 Staging and production reject a non-empty bootstrap password. See
 [docs/operations/admin-user.md](./docs/operations/admin-user.md).
+
+### If it does not start
+
+| Symptom | Fix |
+|---|---|
+| `failed to connect to the docker API` | Start Docker Desktop and wait for **Engine running** |
+| `port is already allocated` | Change `WEB_PORT` or `POSTGRES_PORT` in `.env`, then `docker compose up -d` |
+| `web` is unhealthy | `docker compose logs web`; rebuild with `docker compose up -d --build web` |
+| `api` is unhealthy | `docker compose logs migrate api`; confirm `migrate` exited `0` |
+| `password authentication failed` | The volume kept an older password. Use the old value, or `docker compose down -v` (destroys data) |
+| Admin login fails after pulling | `docker compose run --rm migrate` to create the bootstrap admin in the existing volume |
+| `psql` is not recognized | Use `docker compose exec db psql -U crewww -d crewww`, or add `C:\Program Files\PostgreSQL\<version>\bin` to `PATH` |
 
 ## Show it to clients on your Wi-Fi
 
