@@ -28,6 +28,14 @@ then open `/admin`. Change the password (or clear both variables and use
 `python -m app.create_admin`) before sharing the stack. Staging/production
 settings reject a non-empty bootstrap password.
 
+### Database access
+
+PostgreSQL runs in the `db` service. From the host, connect with your installed
+`psql` or a GUI client on `127.0.0.1:5433` (override with `POSTGRES_PORT`), or
+use `docker compose exec db psql -U crewww -d crewww`. See
+[`docs/operations/postgres-docker.md`](docs/operations/postgres-docker.md) for
+credentials, migrations, resets, backups, and troubleshooting.
+
 Docker preview opens at `/` by default through `VITE_INITIAL_ROUTE`; set it to another route when the default is not wanted.
 
 ## Services and readiness
