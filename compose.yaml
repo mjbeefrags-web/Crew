@@ -81,6 +81,8 @@ services:
       APP_ENV: ${APP_ENV:-docker}
       DEBUG: "false"
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://${POSTGRES_USER:-crewww}:${POSTGRES_PASSWORD:-local-only-change-me-123456}@db:5432/${POSTGRES_DB:-crewww}}
+      # Neon direct URL. Empty locally; used only by Alembic migrations.
+      DATABASE_URL_UNPOOLED: ${DATABASE_URL_UNPOOLED:-}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       REDIS_REQUIRED: ${REDIS_REQUIRED:-true}
       JWT_SECRET: ${JWT_SECRET:-local-compose-secret-change-this-before-any-shared-environment-123456}

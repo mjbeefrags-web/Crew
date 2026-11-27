@@ -177,7 +177,8 @@ Set these environment variables in the Render dashboard:
 
 | Variable | Value | Source |
 |---|---|---|
-| `DATABASE_URL` | `postgresql+asyncpg://...` | Neon (see below) |
+| `DATABASE_URL` | pooled Neon URL (`...-pooler...`) | Neon (see below) |
+| `DATABASE_URL_UNPOOLED` | direct Neon URL | Neon (see below) |
 | `REDIS_URL` | `redis://...` | Upstash (see below) |
 | `REDIS_REQUIRED` | `true` | — |
 | `JWT_SECRET` | 40+ random characters | Generate with `openssl rand -hex 32` |
@@ -188,8 +189,10 @@ Set these environment variables in the Render dashboard:
 | `BOOTSTRAP_ADMIN_EMAIL` | `admin@crewww.example.com` | First admin |
 | `BOOTSTRAP_ADMIN_PASSWORD` | leave **empty** after first deploy | See below |
 
-> The app reads `DATABASE_URL`, **not** `POSTGRES_URL`. Production validation
-> requires the `postgresql+asyncpg://` driver, `COOKIE_SECURE=true`,
+> The app reads `DATABASE_URL`, **not** `POSTGRES_URL`. The API uses Neon's
+> pooled URL; Alembic migrations use `DATABASE_URL_UNPOOLED`. Both accept
+> Neon's `postgresql://` strings and are normalized to `postgresql+asyncpg://`.
+> Production validation requires that driver, `COOKIE_SECURE=true`,
 > `REDIS_REQUIRED=true` with a `REDIS_URL`, a 40+ character `JWT_SECRET`, and an
 > empty bootstrap password.
 
@@ -200,11 +203,27 @@ an admin later, use `python -m app.create_admin` in the Render shell.
 
 ### Database: Neon
 
-1. Go to neon.tech and create a project (free tier).
-2. Open the connection details and copy the connection string.
-3. Convert it to the asyncpg driver, e.g.:
-   `postgresql+asyncpg://user:pass@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require`
-4. Add it to Render as the `DATABASE_URL` env var.
+Neon is already linked through `neon.ts` and `.neon`. To provision the declared
+services and pull the branch credentials into the existing `.env`:
+
+```powershell
+npx neon@latest login
+npx neon@latest deploy
+```
+
+`neon deploy` writes two values:
+
+| Variable | Use |
+|---|---|
+| `DATABASE_URL` | Pooled connection (`-pooler` host) for the running API |
+| `DATABASE_URL_UNPOOLED` | Direct connection for Alembic migrations |
+
+The backend accepts either Neon's `postgresql://` format or
+`postgresql+asyncpg://` and normalizes both to SQLAlchemy's asyncpg driver.
+Add both values to Render. Never run migrations through the pooled URL.
+
+If you prefer the dashboard, create a free project at neon.tech and copy both
+connection strings from **Connection Details**.
 
 ### Cache: Upstash
 
@@ -218,7 +237,7 @@ an admin later, use `python -m app.create_admin` in the Render shell.
 |---|---|---|
 | Vercel frontend | `https://crewww-xyz.vercel.app` | `VITE_API_BASE_URL` in Vercel = Render URL |
 | Render backend | `https://crewww-api-xyz.onrender.com` | `FRONTEND_ORIGINS` in Render = Vercel URL |
-| Neon PostgreSQL | `postgresql+asyncpg://...` | `DATABASE_URL` in Render |
+| Neon PostgreSQL | pooled + direct URLs | `DATABASE_URL` and `DATABASE_URL_UNPOOLED` in Render |
 | Upstash Redis | `redis://...` | `REDIS_URL` in Render |
 
 After both deploys, open the Vercel URL. The frontend calls the Render API,

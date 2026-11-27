@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, SecretStr, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     debug: bool = False
     api_v1_prefix: str = "/api/v1"
     database_url: str = "sqlite+aiosqlite:///./crewww-dev.db"
+    # Neon writes the pooled URL to DATABASE_URL and the direct URL to
+    # DATABASE_URL_UNPOOLED. Migrations use the direct connection.
+    database_url_unpooled: str = ""
     db_pool_size: int = Field(default=10, ge=1, le=100)
     db_max_overflow: int = Field(default=20, ge=0, le=200)
     db_pool_recycle_seconds: int = Field(default=1800, ge=60)
@@ -39,9 +42,25 @@ class Settings(BaseSettings):
     ai_api_key: SecretStr | None = None
     ai_model: str = "gpt-4o-mini"
 
+    @field_validator("database_url", "database_url_unpooled", mode="before")
+    @classmethod
+    def normalize_asyncpg_url(cls, value: str | None) -> str | None:
+        """Accept Neon's postgres:// strings with SQLAlchemy's asyncpg driver."""
+        if not value:
+            return value
+        for scheme in ("postgres://", "postgresql://"):
+            if value.startswith(scheme):
+                return f"postgresql+asyncpg://{value[len(scheme) :]}"
+        return value
+
     @property
     def allowed_origins(self) -> list[str]:
         return [origin.strip() for origin in self.frontend_origins.split(",") if origin.strip()]
+
+    @property
+    def migration_database_url(self) -> str:
+        """Use Neon's direct URL for DDL; fall back to the pooled URL."""
+        return self.database_url_unpooled or self.database_url
 
     @model_validator(mode="after")
     def production_safety(self) -> "Settings":
