@@ -263,7 +263,7 @@ export function EditorialDetailPage({
           </p>
           <p>
             We keep the shopping route visible: visit product details, review
-            options and save a piece to your preview bag. Prices and
+            options and save a piece to your preview cart. Prices and
             availability are not live.
           </p>
         </div>
@@ -686,7 +686,7 @@ export function PolicyPage({
     ],
     privacy: [
       "Privacy, in draft",
-      "This frontend preview stores demo bag, saved pieces, sample form submissions and simulated account data in local browser storage. No production analytics or backend account service is part of M3.",
+      "This frontend preview stores demo cart, saved pieces, sample form submissions and simulated account data in local browser storage. No production analytics or backend account service is part of M3.",
     ],
     terms: [
       "Terms, in draft",

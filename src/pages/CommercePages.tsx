@@ -50,7 +50,7 @@ export function CartPage() {
       <section className="simple-page-hero">
         <p className="store-eyebrow">CREWWW / YOUR SELECTION</p>
         <h1>
-          The <em>bag.</em>
+          The <em>cart.</em>
         </h1>
         <p className="page-hero-copy">
           Your selection, gathered in one place. Checkout is a preview — no
@@ -59,7 +59,7 @@ export function CartPage() {
       </section>
       {cartLines.length === 0 ? (
         <section className="empty-commerce-state">
-          <span>THE BAG IS OPEN</span>
+          <span>THE CART IS OPEN</span>
           <h2>
             Something good
             <br />
@@ -103,7 +103,13 @@ export function CartPage() {
                     className="cart-preview-image"
                   >
                     {product.imageUrl ? (
-                      <img src={product.imageUrl} alt="" loading="lazy" />
+                      <img
+                        src={product.imageUrl}
+                        alt=""
+                        width={800}
+                        height={1052}
+                        loading="lazy"
+                      />
                     ) : (
                       <span>CREWWW</span>
                     )}
@@ -326,7 +332,7 @@ export function CheckoutPage() {
     event.preventDefault();
     setError("");
     if (!cartLines.length) {
-      setError("Your bag is empty. Add a piece before continuing.");
+      setError("Your cart is empty. Add a piece before continuing.");
       return;
     }
     const form = event.currentTarget;
@@ -385,7 +391,7 @@ export function CheckoutPage() {
             Nothing to <em>check out.</em>
           </h1>
           <p className="page-hero-copy">
-            Your bag is empty. Add a piece to continue.
+            Your cart is empty. Add a piece to continue.
           </p>
           <Link to="/shop" className="primary-store-button">
             RETURN TO THE SHOP ↗

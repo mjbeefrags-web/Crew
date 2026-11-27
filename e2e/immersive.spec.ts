@@ -34,13 +34,13 @@ test('visual captures for the new editorial sections', async ({ page }) => {
   }
 });
 
-test('psychedelic room validates size and colourway before adding to bag', async ({ page }) => {
+test('psychedelic room validates size and colourway before adding to cart', async ({ page }) => {
   await page.goto('/drops/psychedelic-minds');
   await page.getByRole('button', { name: /enter the room/i }).click();
   await page.getByRole('button', { name: 'Select Petrol Blue colourway' }).click();
   await page.getByRole('button', { name: 'Select size L' }).first().click();
-  await page.getByRole('button', { name: /add to bag/i }).click();
-  await expect(page.getByRole('status')).toContainText('Petrol Blue · L added to your bag');
+  await page.getByRole('button', { name: /add to cart/i }).click();
+  await expect(page.getByRole('status')).toContainText('Petrol Blue · L added to your cart');
 });
 
 test('classic drop chamber exposes front, side and back views', async ({ page }) => {

@@ -1,10 +1,11 @@
 import type { PluginOption } from 'vite';
-import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig(async ({ mode }) => {
-  const plugins: PluginOption[] = [react(), tailwindcss()];
+  // The storefront uses handwritten CSS in src/styles; no Tailwind utilities
+  // are used, so the Tailwind Vite plugin is deliberately not loaded.
+  const plugins: PluginOption[] = [react()];
 
   // The Cloudflare plugin eagerly loads workerd, whose native binary is an
   // optional dependency. Docker serves the same static assets through Nginx,
@@ -34,8 +35,9 @@ export default defineConfig(async ({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks(id: string) {
-            if (id.includes('/three/build/')) return 'three';
-            if (id.includes('three')) return 'three';
+            // Scope the chunk to the Three.js package itself. A bare
+            // `includes('three')` also catches unrelated application paths.
+            if (id.includes('/node_modules/three/')) return 'three';
           },
         },
       },

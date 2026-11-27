@@ -146,11 +146,11 @@ export function FoundationPage() {
               <Button
                 onClick={() =>
                   showNotice(
-                    `${product.name} / ${selectedSize} added to your bag preview.`,
+                    `${product.name} / ${selectedSize} added to your cart preview.`,
                   )
                 }
               >
-                ADD TO BAG — {formatCurrency(product.price, product.currency)}
+                ADD TO CART — {formatCurrency(product.price, product.currency)}
               </Button>
             </div>
           </div>

@@ -24,7 +24,7 @@ const CHAPTER_LABELS: Array<[RegExp, string]> = [
   [/^\/products/, "THE OBJECT"],
   [/^\/lookbook|^\/looks/, "THE STORY"],
   [/^\/about/, "THE STORY"],
-  [/^\/cart|^\/checkout|^\/order-confirmation/, "THE BAG"],
+  [/^\/cart|^\/checkout|^\/order-confirmation/, "THE CART"],
   [
     /^\/account|^\/login|^\/register|^\/forgot-password|^\/wishlist/,
     "YOUR CREWWW",

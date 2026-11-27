@@ -1,4 +1,4 @@
-@import "tailwindcss";
+/* Handwritten design system — no utility framework import. */
 
 /* Self-hosted subsets: one request, no third-party render-blocking CSS, and
    the production CSP stays strict (font-src 'self'). */
@@ -78,7 +78,11 @@ a {
 }
 button:focus-visible,
 a:focus-visible,
-input:focus-visible {
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
   outline: 2px solid #6f842e;
   outline-offset: 4px;
 }
@@ -3716,6 +3720,46 @@ body:has(.showroom) {
 }
 .store-wishlist.is-saved {
   color: #f6a8c4;
+}
+/* One-press add-to-cart affordance on every product tile. */
+.store-quick-add-plus {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #f1f0e899;
+  border-radius: 50%;
+  color: #fff;
+  background: #121310cc;
+  font: 24px/1 var(--mono);
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+.store-quick-add-plus > span {
+  margin-top: -2px;
+}
+.store-quick-add-plus:hover,
+.store-quick-add-plus:focus-visible {
+  transform: scale(1.08);
+  background: var(--lichen);
+  color: var(--night);
+}
+@media (hover: none), (pointer: coarse) {
+  .store-quick-add-plus {
+    background: #121310f0;
+  }
+}
+.cart-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+  flex: 0 0 auto;
 }
 .store-product-copy {
   padding: 12px 0 4px;

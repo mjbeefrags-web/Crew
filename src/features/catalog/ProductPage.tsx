@@ -242,7 +242,7 @@ export function ProductPage() {
       productSlug: product.slug,
       sku: selectedVariant?.sku,
     });
-    showNotice(`${product.name} · ${color} · ${size} added to your bag.`);
+    showNotice(`${product.name} · ${color} · ${size} added to your cart.`);
   };
 
   return (
@@ -455,7 +455,7 @@ export function ProductPage() {
               type="button"
               onClick={addToBag}
             >
-              ADD TO BAG —{" "}
+              ADD TO CART —{" "}
               {formatCurrency(displayPrice * quantity, product.currency)} ↗
             </button>
           </div>
@@ -465,7 +465,7 @@ export function ProductPage() {
               <small>{formatCurrency(displayPrice, product.currency)}</small>
             </span>
             <button type="button" onClick={addToBag}>
-              ADD TO BAG ↗
+              ADD TO CART ↗
             </button>
           </div>
           <button

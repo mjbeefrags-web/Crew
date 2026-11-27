@@ -71,3 +71,39 @@ export function isLowEnd(): boolean {
 export function resetDeviceTierCache(): void {
   cachedTier = null;
 }
+
+type TierListener = (tier: DeviceTier) => void;
+const listeners = new Set<TierListener>();
+
+/** Observe runtime capability changes (resize, orientation, reduced motion, context loss). */
+export function subscribeDeviceTier(listener: TierListener): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function invalidateDeviceTier(): void {
+  const previous = cachedTier;
+  cachedTier = null;
+  const next = getDeviceTier();
+  if (next !== previous) listeners.forEach((listener) => listener(next));
+}
+
+if (typeof window !== "undefined") {
+  let resizeFrame = 0;
+  window.addEventListener(
+    "resize",
+    () => {
+      window.cancelAnimationFrame(resizeFrame);
+      resizeFrame = window.requestAnimationFrame(invalidateDeviceTier);
+    },
+    { passive: true },
+  );
+  window.addEventListener("orientationchange", invalidateDeviceTier);
+  window.addEventListener("webglcontextlost", invalidateDeviceTier, true);
+  const reducedMotion = window.matchMedia?.(
+    "(prefers-reduced-motion: reduce)",
+  );
+  reducedMotion?.addEventListener?.("change", invalidateDeviceTier);
+}

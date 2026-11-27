@@ -111,37 +111,37 @@ test('inspection transition preserves selection, handles back and restores focus
   await page.getByRole('button', { name: 'Select Mocha' }).click();
   await page.getByRole('button', { name: /^L$/ }).click();
   await page.getByRole('button', { name: 'Increase quantity' }).click();
-  await page.getByRole('button', { name: /add to bag/i }).click();
+  await page.getByRole('button', { name: /add to cart/i }).click();
   await expect(page.getByRole('status')).toContainText('Mocha · L added');
 
   await page.getByRole('button', { name: /back to collection/i }).click();
   await expect(studio).toHaveCount(0);
   await expect(page).toHaveURL(/\/$/);
   await expect(hoodieCard).toBeFocused();
-  await page.getByRole('button', { name: /^Shopping bag, 2 items$/i }).click();
-  const bag = page.getByRole('dialog', { name: 'Shopping bag' });
+  await page.getByRole('button', { name: /^Shopping cart, 2 items$/i }).click();
+  const bag = page.getByRole('dialog', { name: 'Shopping cart' });
   await expect(bag).toContainText('Mocha / L / QTY 2');
-  await page.getByRole('button', { name: 'Close shopping bag' }).click();
+  await page.getByRole('button', { name: 'Close shopping cart' }).click();
   await hoodieCard.click();
   await page.getByRole('button', { name: 'Select Black' }).click();
   await page.getByRole('button', { name: /^M$/ }).click();
-  await page.getByRole('button', { name: /add to bag/i }).click();
+  await page.getByRole('button', { name: /add to cart/i }).click();
   await page.getByRole('button', { name: /back to collection/i }).click();
-  await page.getByRole('button', { name: /^Shopping bag, 3 items$/i }).click();
-  await expect(page.getByRole('dialog', { name: 'Shopping bag' }).locator('.bag-line')).toHaveCount(2);
-  await expect(page.getByRole('dialog', { name: 'Shopping bag' })).toContainText('Black / M / QTY 1');
+  await page.getByRole('button', { name: /^Shopping cart, 3 items$/i }).click();
+  await expect(page.getByRole('dialog', { name: 'Shopping cart' }).locator('.bag-line')).toHaveCount(2);
+  await expect(page.getByRole('dialog', { name: 'Shopping cart' })).toContainText('Black / M / QTY 1');
   await page.reload();
-  await expect(page.getByRole('link', { name: /shopping bag, 3 items/i })).toBeVisible();
-  await page.getByRole('button', { name: /^Shopping bag, 3 items$/i }).click();
-  await expect(page.getByRole('dialog', { name: 'Shopping bag' }).locator('.bag-line')).toHaveCount(2);
-  const bagDialog = page.getByRole('dialog', { name: 'Shopping bag' });
-  await bagDialog.getByRole('button', { name: /remove joy of outdoors hoodie from bag/i }).first().click();
+  await expect(page.getByRole('link', { name: /shopping cart, 3 items/i })).toBeVisible();
+  await page.getByRole('button', { name: /^Shopping cart, 3 items$/i }).click();
+  await expect(page.getByRole('dialog', { name: 'Shopping cart' }).locator('.bag-line')).toHaveCount(2);
+  const bagDialog = page.getByRole('dialog', { name: 'Shopping cart' });
+  await bagDialog.getByRole('button', { name: /remove joy of outdoors hoodie from cart/i }).first().click();
   await expect(bagDialog.locator('.bag-line')).toHaveCount(1);
-  await bagDialog.getByRole('button', { name: /remove joy of outdoors hoodie from bag/i }).click();
-  await expect(page.getByText('Your bag is waiting for something good.')).toBeVisible();
+  await bagDialog.getByRole('button', { name: /remove joy of outdoors hoodie from cart/i }).click();
+  await expect(page.getByText('Your cart is waiting for something good.')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Close shopping bag' }).click();
-  await expect(page.getByRole('dialog', { name: 'Shopping bag' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Close shopping cart' }).click();
+  await expect(page.getByRole('dialog', { name: 'Shopping cart' })).toHaveCount(0);
   const intervalCard = page.getByRole('button', { name: 'Inspect Vivre La Vie Hoodie' });
   await page.evaluate(() => {
     const target = Array.from(document.querySelectorAll<HTMLButtonElement>('.tile-image-button')).find((button) => button.getAttribute('aria-label') === 'Inspect Vivre La Vie Hoodie');
@@ -242,13 +242,13 @@ test('browser console, local assets and key showroom states are clean', async ({
   await expect.poll(() => inspectionStudio.evaluate((element) => getComputedStyle(element).position)).toBe('fixed');
   await expect(page.locator('.hoodie-viewer canvas')).toBeVisible();
   await page.screenshot({ path: 'docs/visual-checks/m2.1-studio-1440.png' });
-  await page.getByRole('button', { name: /add to bag/i }).click();
+  await page.getByRole('button', { name: /add to cart/i }).click();
   await expect(page.getByRole('status')).toContainText('added');
   await page.getByRole('button', { name: /back to collection/i }).click();
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: /^Shopping bag, 1 items$/i }).click();
-  const bagDialog = page.getByRole('dialog', { name: 'Shopping bag' });
+  await page.getByRole('button', { name: /^Shopping cart, 1 items$/i }).click();
+  const bagDialog = page.getByRole('dialog', { name: 'Shopping cart' });
   await expect(bagDialog).toBeVisible();
   await expect.poll(() => bagDialog.evaluate((element) => getComputedStyle(element.parentElement!).position)).toBe('fixed');
   // Allow the resize/arrival animation to settle before measuring the drawer.

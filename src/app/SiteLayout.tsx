@@ -1,6 +1,7 @@
 import {
   Suspense,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -13,6 +14,8 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { BrandMark } from "../components/BrandMark";
+import { CartIcon } from "../components/CartIcon";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 import { ExperienceLayer } from "../components/ExperienceLayer";
 import { CommandPalette } from "../components/CommandPalette";
 import { SiteSoundToggle } from "../components/SiteSoundToggle";
@@ -22,6 +25,9 @@ import { useUiStore } from "../state/uiStore";
 import { useAuthStore } from "../state/authStore";
 import { API_MODE } from "../config/runtime";
 import { FEATURES } from "../config/features";
+import { routeSeo } from "../config/seo";
+import { useSeo } from "../lib/useSeo";
+import { useDialogFocus } from "../lib/useDialogFocus";
 import { apiCommerceService } from "../services/apiCommerceService";
 import { apiAuthService } from "../services/apiAuthService";
 
@@ -68,13 +74,16 @@ const shopColumns = [
   },
 ] as const;
 
-function worldPaletteStyle(): CSSProperties {
-  // World palette from the active drop object (Phase 4.1); defaults otherwise.
-  const node = document.querySelector<HTMLElement>(".drop-object");
-  const a =
-    node?.style.getPropertyValue("--world-a")?.trim() || "var(--lichen)";
-  const b = node?.style.getPropertyValue("--world-b")?.trim() || "#5e3d4f";
-  const c = node?.style.getPropertyValue("--world-c")?.trim() || "#115054";
+const DEFAULT_WORLD_PALETTE = {
+  a: "var(--lichen)",
+  b: "#5e3d4f",
+  c: "#115054",
+};
+
+type WorldPalette = typeof DEFAULT_WORLD_PALETTE;
+
+function worldPaletteStyle(palette: WorldPalette): CSSProperties {
+  const { a, b, c } = palette;
   return {
     "--world-a": a,
     "--world-b": b,
@@ -88,6 +97,11 @@ export function SiteLayout() {
   const [activeMenu, setActiveMenu] = useState<"shop" | "clothes" | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const drawerRef = useRef<HTMLDivElement | null>(null);
+  const closeMenu = () => {
+    setMenuOpen(false);
+    setActiveMenu(null);
+  };
+  useDialogFocus(menuOpen, closeMenu, drawerRef, menuButtonRef);
   const mainRef = useRef<HTMLElement | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
   const bagLinkRef = useRef<HTMLAnchorElement | null>(null);
@@ -112,6 +126,43 @@ export function SiteLayout() {
   const navigate = useNavigate();
   const isHome = location.pathname === "/";
   const isTrip = location.pathname === "/drops/psychedelic-minds";
+
+  // One metadata claim per route; data-specific pages (product, catalogue)
+  // override it once their content resolves.
+  const seo = useMemo(
+    () => routeSeo(location.pathname, location.search),
+    [location.pathname, location.search],
+  );
+  useSeo({ ...seo, owner: "route", deferTo: "page" });
+
+  // Read the active drop's palette after mount instead of during render,
+  // so the first paint is deterministic and SSR/hydration stay safe.
+  const [worldPalette, setWorldPalette] =
+    useState<WorldPalette>(DEFAULT_WORLD_PALETTE);
+  useEffect(() => {
+    let frame = 0;
+    let tries = 0;
+    const read = () => {
+      const node = document.querySelector<HTMLElement>(".drop-object");
+      if (node) {
+        setWorldPalette({
+          a:
+            node.style.getPropertyValue("--world-a").trim() ||
+            DEFAULT_WORLD_PALETTE.a,
+          b:
+            node.style.getPropertyValue("--world-b").trim() ||
+            DEFAULT_WORLD_PALETTE.b,
+          c:
+            node.style.getPropertyValue("--world-c").trim() ||
+            DEFAULT_WORLD_PALETTE.c,
+        });
+        return;
+      }
+      if (tries++ < 60) frame = window.requestAnimationFrame(read);
+    };
+    frame = window.requestAnimationFrame(read);
+    return () => window.cancelAnimationFrame(frame);
+  }, [location.pathname]);
 
   // Move keyboard focus to the main landmark on later route changes. Skipping
   // the first render keeps the skip-link as the first Tab stop on page load.
@@ -145,7 +196,18 @@ export function SiteLayout() {
       } catch {
         /* Page queries surface connectivity errors where the user needs them. */
       }
-      const user = await apiAuthService.currentUser();
+      let user: Awaited<ReturnType<typeof apiAuthService.currentUser>> = null;
+      try {
+        user = await apiAuthService.currentUser();
+      } catch {
+        if (mounted) {
+          useUiStore
+            .getState()
+            .showNotice(
+              "Your session could not be restored. Please sign in again.",
+            );
+        }
+      }
       if (mounted && user) {
         try {
           useCommerceStore
@@ -236,64 +298,28 @@ export function SiteLayout() {
     );
     const watch = () => nodes().forEach((node) => observer.observe(node));
     watch();
-    const mutations = new MutationObserver(watch);
-    mutations.observe(document.body, { childList: true, subtree: true });
+    // Scope mutations to route content and coalesce bursts into one frame.
+    // Watching all of document.body re-queried the entire page on every
+    // unrelated DOM change (toasts, sound toggle, focus attributes).
+    let frame = 0;
+    const mutations = new MutationObserver(() => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(watch);
+    });
+    const main = mainRef.current;
+    if (main) mutations.observe(main, { childList: true, subtree: true });
     return () => {
+      window.cancelAnimationFrame(frame);
       observer.disconnect();
       mutations.disconnect();
     };
   }, [location.pathname]);
 
+  // Keyboard trapping and focus restoration live in useDialogFocus above.
+  // This effect only owns the swipe-left gesture.
   useEffect(() => {
     if (!menuOpen) return undefined;
     const drawer = drawerRef.current;
-    const focusables = (): HTMLElement[] =>
-      drawer
-        ? Array.from(
-            drawer.querySelectorAll<HTMLElement>(
-              "button, a, input, select, [tabindex]:not([tabindex='-1'])",
-            ),
-          )
-        : [];
-    let enter = true;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMenuOpen(false);
-        setActiveMenu(null);
-        menuButtonRef.current?.focus();
-        return;
-      }
-      const nodes = focusables();
-      if (!nodes.length || !drawer) return;
-      if (event.key === "Tab") {
-        const active = document.activeElement as HTMLElement | null;
-        const inside = drawer.contains(active);
-        if (active && inside) {
-          const current = nodes.indexOf(active);
-          if (event.shiftKey) {
-            if (current <= 0) {
-              event.preventDefault();
-              nodes[nodes.length - 1]?.focus();
-            }
-          } else if (current >= nodes.length - 1) {
-            event.preventDefault();
-            nodes[0].focus();
-          }
-        } else {
-          // Tab from outside the drawer → pull focus in.
-          event.preventDefault();
-          nodes[0].focus();
-        }
-      }
-    };
-    const firstFocusable = () => {
-      const nodes = focusables();
-      if (nodes.length && enter) {
-        enter = false;
-        requestAnimationFrame(() => nodes[0]?.focus());
-      }
-    };
-    // Phase 7.3: swipe-left closes the drawer on touch devices.
     let startX = 0;
     const onTouchStart = (event: TouchEvent) => {
       if (event.touches.length) startX = event.touches[0].clientX;
@@ -303,18 +329,12 @@ export function SiteLayout() {
     };
     const onTouchEnd = (event: TouchEvent) => {
       const touch = event.changedTouches?.[0];
-      if (touch && startX - touch.clientX > 60) {
-        setMenuOpen(false);
-        setActiveMenu(null);
-      }
+      if (touch && startX - touch.clientX > 60) closeMenu();
     };
-    window.addEventListener("keydown", onKeyDown);
     drawer?.addEventListener("touchstart", onTouchStart, { passive: true });
     drawer?.addEventListener("touchmove", onTouchMove, { passive: true });
     drawer?.addEventListener("touchend", onTouchEnd);
-    if (drawer) firstFocusable();
     return () => {
-      window.removeEventListener("keydown", onKeyDown);
       drawer?.removeEventListener("touchstart", onTouchStart);
       drawer?.removeEventListener("touchmove", onTouchMove);
       drawer?.removeEventListener("touchend", onTouchEnd);
@@ -485,10 +505,10 @@ export function SiteLayout() {
           <Link
             ref={bagLinkRef}
             to="/cart"
-            aria-label={`Shopping bag, ${bagCount} items`}
+            aria-label={`Shopping cart, ${bagCount} items`}
             className="header-bag-link"
           >
-            BAG <span className="bag-count">{bagCount}</span>
+            <CartIcon /> CART <span className="bag-count">{bagCount}</span>
           </Link>
         </nav>
         {activeMenu && (
@@ -498,7 +518,7 @@ export function SiteLayout() {
             role="menu"
             aria-label={`${activeMenu === "shop" ? "Shop" : "Clothes"} categories`}
             data-world-a
-            style={worldPaletteStyle()}
+            style={worldPaletteStyle(worldPalette)}
             onMouseEnter={() => setActiveMenu(activeMenu)}
           >
             <div className="mega-menu-heading">
@@ -617,7 +637,7 @@ export function SiteLayout() {
             <div className="mobile-navigation-bottom">
               <Link to="/account">ACCOUNT</Link>
               <Link to="/wishlist">SAVED PIECES</Link>
-              <Link to="/cart">SHOPPING BAG · {bagCount}</Link>
+              <Link to="/cart">SHOPPING CART · {bagCount}</Link>
               {API_MODE && user?.role === "admin" && (
                 <Link to="/admin">ADMIN</Link>
               )}
@@ -626,15 +646,17 @@ export function SiteLayout() {
         </div>
       )}
       <main id="main-content" ref={mainRef} tabIndex={-1}>
-        <Suspense
-          fallback={
-            <div className="catalog-skeleton" role="status">
-              OPENING CREWWW…
-            </div>
-          }
-        >
-          <Outlet />
-        </Suspense>
+        <ErrorBoundary key={location.pathname}>
+          <Suspense
+            fallback={
+              <div className="catalog-skeleton" role="status">
+                OPENING CREWWW…
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
+        </ErrorBoundary>
       </main>
       <footer className="site-footer store-footer">
         <div className="store-footer-top">
@@ -683,7 +705,7 @@ export function SiteLayout() {
             <Link to="/account">Account</Link>
             <Link to="/account/orders">Orders</Link>
             <Link to="/wishlist">Wishlist</Link>
-            <Link to="/cart">Bag</Link>
+            <Link to="/cart">Cart</Link>
             {API_MODE && user?.role === "admin" && (
               <Link to="/admin">Owner console</Link>
             )}

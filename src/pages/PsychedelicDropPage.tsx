@@ -10,6 +10,7 @@ import {
 } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { BrandMark } from "../components/BrandMark";
+import { ScrollVerse } from "../components/ScrollVerse";
 import {
   frequenciesForPiece,
   psychedelicFrontViews,
@@ -243,7 +244,7 @@ export function PsychedelicDropPage() {
     });
     playSound("select");
     showNotice(
-      `${product.name} · ${selectedColor.name} · ${selectedSize} added to your bag.`,
+      `${product.name} · ${selectedColor.name} · ${selectedSize} added to your cart.`,
     );
   };
 
@@ -392,7 +393,7 @@ export function PsychedelicDropPage() {
                   </span>
                 ))}
               </h1>
-              <p className="trip-line">“{piece.line}”</p>
+              <ScrollVerse text={`“${piece.line}”`} className="trip-line" />
               <p className="trip-lore">
                 {piece.lore} <i>{piece.world.realm}.</i>
               </p>
@@ -460,7 +461,7 @@ export function PsychedelicDropPage() {
                   disabled={soldOut}
                   onClick={equip}
                 >
-                  ADD TO BAG · {product.price.toFixed(0)} ↗
+                  ADD TO CART · {product.price.toFixed(0)} ↗
                 </button>
                 <Link to={`/products/${product.slug}`} className="trip-detail">
                   FULL DETAILS ↗
