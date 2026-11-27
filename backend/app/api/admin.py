@@ -1,3 +1,4 @@
+import asyncio
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -43,9 +44,10 @@ async def ai_advise(
     payload: AiAdviseIn,
     settings: Settings = Depends(get_settings),
 ) -> AiAdviceOut:
-    return AiAdviceOut.model_validate(
-        advise(settings, {"question": payload.question, "signals": payload.signals})
+    result = await asyncio.to_thread(
+        advise, settings, {"question": payload.question, "signals": payload.signals}
     )
+    return AiAdviceOut.model_validate(result)
 
 
 @router.get("/products", response_model=list[AdminProductOut])
@@ -60,6 +62,7 @@ async def admin_products(session: AsyncSession = Depends(get_session)) -> list[A
                 selectinload(Product.images),
             )
             .order_by(Product.name)
+            .limit(500)
         )
     ).all()
 
@@ -146,7 +149,11 @@ async def update_order_status(
         raise HTTPException(
             status_code=404, detail={"code": "order_not_found", "message": "Order not found."}
         )
-    allowed = {"processing": {"shipped", "cancelled"}, "shipped": {"delivered"}}
+    allowed = {
+        "pending_payment": {"cancelled"},
+        "processing": {"shipped", "cancelled"},
+        "shipped": {"delivered"},
+    }
     if payload.status not in allowed.get(order.status, set()):
         raise HTTPException(
             status_code=409,

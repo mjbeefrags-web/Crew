@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import and_, func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -343,7 +344,17 @@ async def create_product(
                 )
             )
     session.add(product)
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "product_conflict",
+                "message": "A product with this slug or SKU already exists.",
+            },
+        ) from exc
     await invalidate_catalog(request)
     product = await session.scalar(product_statement().where(Product.id == product.id))
     assert product is not None

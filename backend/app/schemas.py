@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
@@ -273,6 +274,12 @@ class ContactIn(BaseModel):
 class AiAdviseIn(BaseModel):
     question: str = Field(default="", max_length=400)
     signals: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def bounded_signals(self) -> "AiAdviseIn":
+        if len(json.dumps(self.signals, default=str)) > 64_000:
+            raise ValueError("signals payload is too large")
+        return self
 
 
 class AiRecommendation(BaseModel):

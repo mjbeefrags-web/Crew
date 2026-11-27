@@ -54,14 +54,18 @@ class ResponseCache:
         return orjson.loads(payload)
 
     async def set(self, key: str, payload: bytes, ttl: int = DEFAULT_TTL) -> None:
-        self.memory[key] = (time.time() + ttl, payload)
-        if self.redis is not None:
-            try:
-                await self.redis.setex(key, ttl, payload)
-                # Track keys explicitly so invalidation is one DEL, not SCAN.
-                await self.redis.sadd(KEY_SET, key)
-            except Exception:
-                pass
+        if self.redis is None:
+            # Only use the process-local cache when Redis is not configured.
+            # With several Uvicorn workers a local copy cannot be invalidated
+            # by another worker, and unbounded query strings would leak memory.
+            self.memory[key] = (time.time() + ttl, payload)
+            return
+        try:
+            await self.redis.setex(key, ttl, payload)
+            # Track keys explicitly so invalidation is one DEL, not SCAN.
+            await self.redis.sadd(KEY_SET, key)
+        except Exception:
+            pass
 
     async def clear_prefix(self, prefix: str = CACHE_PREFIX) -> None:
         if self.redis is not None:

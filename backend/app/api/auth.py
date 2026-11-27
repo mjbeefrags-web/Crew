@@ -66,6 +66,21 @@ def set_refresh_cookie(response: Response, token: str, settings: Settings) -> No
     )
 
 
+def throttle_key(request: Request, email: str) -> str:
+    return f"auth:attempt:{request.client.host if request.client else 'unknown'}:{email}"
+
+
+async def reset_throttle(
+    request: Request, redis: Redis | None, email: str
+) -> None:
+    if redis is None:
+        return
+    try:
+        await redis.delete(throttle_key(request, email))
+    except Exception:
+        pass
+
+
 async def throttle(request: Request, redis: Redis | None, settings: Settings, email: str) -> None:
     if redis is None:
         if settings.redis_required:
@@ -77,7 +92,7 @@ async def throttle(request: Request, redis: Redis | None, settings: Settings, em
                 },
             )
         return
-    key = f"auth:attempt:{request.client.host if request.client else 'unknown'}:{email}"
+    key = throttle_key(request, email)
     try:
         attempts = await redis.incr(key)
         if attempts == 1:
@@ -176,6 +191,7 @@ async def login(
     )
     await attach_guest_cart(request, user, session)
     await session.commit()
+    await reset_throttle(request, redis, payload.email)
     set_refresh_cookie(response, refresh, settings)
     return AuthOut(
         access_token=create_access_token(user.id, user.role, settings),
