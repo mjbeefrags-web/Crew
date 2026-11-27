@@ -9,6 +9,7 @@ import {
   Vector2,
 } from "three";
 import { createStage } from "./lib/stage";
+import { isLowEnd } from "../lib/deviceTier";
 
 const vertexShader = /* glsl */ `
   varying vec2 vUv;
@@ -127,13 +128,19 @@ export function PsychedelicField({ mood, energy = 1, accent }: Props) {
   const accentRef = useRef(accent ?? mood.a);
   const pointerRef = useRef({ x: 0, y: 0 });
   const [unsupported, setUnsupported] = useState(false);
+  const [staticFallback] = useState(
+    () =>
+      isLowEnd() ||
+      (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ??
+        false),
+  );
   moodRef.current = mood;
   energyRef.current = energy;
   accentRef.current = accent ?? mood.a;
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return undefined;
+    if (!canvas || staticFallback) return undefined;
     const lowPower =
       (window.matchMedia?.("(max-width: 640px), (pointer: coarse)").matches ??
         false) ||
@@ -174,6 +181,7 @@ export function PsychedelicField({ mood, energy = 1, accent }: Props) {
       maxPixelRatio: lowPower ? 0.75 : 0.9,
       antialias: false,
       visibilityTarget: canvas.parentElement ?? undefined,
+      disposables: new Set([geometry, material]),
       onFrame: (delta, elapsed) => {
         const u = material.uniforms;
         const smoothing = 1 - Math.exp(-delta * 3);
@@ -226,10 +234,20 @@ export function PsychedelicField({ mood, energy = 1, accent }: Props) {
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("scroll", onScroll);
       stage.dispose();
-      geometry.dispose();
-      material.dispose();
     };
   }, []);
+
+  if (staticFallback) {
+    return (
+      <div
+        className="psychedelic-field psychedelic-field-static"
+        style={{
+          background: `radial-gradient(circle at 50% 42%, ${mood.b}, ${mood.c} 48%, #0b0a0d 85%)`,
+        }}
+        aria-hidden="true"
+      />
+    );
+  }
 
   return (
     <canvas

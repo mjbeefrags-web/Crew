@@ -18,6 +18,7 @@ import {
 import { crewMark } from "../data/drops";
 import { createStage } from "../scenes/lib/stage";
 import { createHoodieModel } from "../scenes/lib/garment";
+import { isLowEnd } from "../lib/deviceTier";
 
 type HoodieViewerProps = {
   color: string;
@@ -38,6 +39,12 @@ export function HoodieViewer({
 }: HoodieViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [unsupported, setUnsupported] = useState(false);
+  const [staticFallback] = useState(
+    () =>
+      isLowEnd() ||
+      (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ??
+        false),
+  );
   const [autoSpin, setAutoSpin] = useState(false);
   const autoSpinRef = useRef(autoSpin);
   const scrollYawRef = useRef(scrollYaw);
@@ -46,7 +53,8 @@ export function HoodieViewer({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return undefined;
+    if (!canvas || staticFallback) return undefined;
+    let disposed = false;
     const width = Math.max(1, canvas.clientWidth);
     const height = Math.max(1, canvas.clientHeight);
     const scene = new Scene();
@@ -116,6 +124,10 @@ export function HoodieViewer({
     const loader = new TextureLoader();
     if (artworkUrl) {
       loader.load(artworkUrl, (texture) => {
+        if (disposed) {
+          texture.dispose();
+          return;
+        }
         texture.colorSpace = SRGBColorSpace;
         track(texture);
         if (model.backPrint) {
@@ -128,6 +140,10 @@ export function HoodieViewer({
       });
     }
     loader.load(crewMark, (texture) => {
+      if (disposed) {
+        texture.dispose();
+        return;
+      }
       texture.colorSpace = SRGBColorSpace;
       track(texture);
       if (model.chestMark) {
@@ -152,6 +168,7 @@ export function HoodieViewer({
       alpha: true,
       fps: 45,
       maxPixelRatio: 1.5,
+      disposables,
       onResize: (w, h) => {
         camera.aspect = w / Math.max(1, h);
         camera.updateProjectionMatrix();
@@ -174,7 +191,7 @@ export function HoodieViewer({
     });
     if (!stage) {
       setUnsupported(true);
-      return undefined;
+      return () => disposables.forEach((item) => item.dispose());
     }
 
     const onPointerDown = (event: PointerEvent) => {
@@ -218,6 +235,7 @@ export function HoodieViewer({
     window.addEventListener("hoodie:reset", onReset);
 
     return () => {
+      disposed = true;
       canvas.removeEventListener("pointerdown", onPointerDown);
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerup", onPointerUp);
@@ -225,7 +243,6 @@ export function HoodieViewer({
       window.removeEventListener("hoodie:turn", onTurn);
       window.removeEventListener("hoodie:reset", onReset);
       stage.dispose();
-      disposables.forEach((item) => item.dispose());
     };
   }, [color, artworkUrl]);
 
@@ -235,7 +252,7 @@ export function HoodieViewer({
       role="group"
       aria-label={`${label} 3D product viewer`}
     >
-      {!unsupported ? (
+      {!unsupported && !staticFallback ? (
         <canvas
           ref={canvasRef}
           tabIndex={0}
@@ -253,7 +270,7 @@ export function HoodieViewer({
           3D preview is unavailable in this browser.
         </div>
       )}
-      {!unsupported && (
+      {!unsupported && !staticFallback && (
         <div className="viewer-controls">
           <button
             type="button"

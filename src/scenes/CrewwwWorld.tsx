@@ -40,6 +40,7 @@ import {
 import { createStage } from "./lib/stage";
 import { drops } from "../data/drops";
 import { psychedelicPieces } from "../data/psychedelic";
+import { isLowEnd } from "../lib/deviceTier";
 
 export type WorldDestinationId = "graphic" | "outside" | "city" | "essentials";
 export type WorldMode = "cinematic" | "explore";
@@ -270,6 +271,14 @@ export function CrewwwWorld({
   const nearRef = useRef(onNearDestination);
   const progressRef = useRef(progress);
   const [unsupported, setUnsupported] = useState(false);
+  // Phones and reduced-motion visitors get a static poster: the WebGL district
+  // is the most expensive surface on the site and cannot pay for itself there.
+  const [staticFallback] = useState(
+    () =>
+      isLowEnd() ||
+      (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ??
+        false),
+  );
   callbackRef.current = onDestination;
   modeRef.current = mode;
   moveRef.current = moveInput ?? { x: 0, z: 0 };
@@ -278,7 +287,8 @@ export function CrewwwWorld({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return undefined;
+    if (!canvas || staticFallback) return undefined;
+    let disposed = false;
 
     const scene = new Scene();
     scene.background = new Color("#101711");
@@ -467,6 +477,10 @@ export function CrewwwWorld({
         poster.position.set(windowX, 1.72, 2.08);
         facade.add(poster);
         loader.load(windowPoster, (texture) => {
+          if (disposed) {
+            texture.dispose();
+            return;
+          }
           texture.colorSpace = SRGBColorSpace;
           track(texture);
           const previous = poster.material as MeshBasicMaterial;
@@ -486,6 +500,10 @@ export function CrewwwWorld({
       anglePanel.position.set(0, 3.35, 2.08);
       facade.add(anglePanel);
       loader.load(shop.angle, (texture) => {
+        if (disposed) {
+          texture.dispose();
+          return;
+        }
         texture.colorSpace = SRGBColorSpace;
         track(texture);
         const previous = anglePanel.material as MeshBasicMaterial;
@@ -569,8 +587,12 @@ export function CrewwwWorld({
       board.position.z = 0.055;
       group.add(board);
       loader.load(drop.plate, (texture) => {
+        if (disposed) {
+          texture.dispose();
+          return;
+        }
         texture.colorSpace = SRGBColorSpace;
-        texture.anisotropy = 4;
+        texture.anisotropy = 2;
         track(texture);
         boardMaterial.map = texture;
         boardMaterial.needsUpdate = true;
@@ -781,6 +803,7 @@ export function CrewwwWorld({
       fps: lowPower ? 24 : 30,
       toneMapping: ACESFilmicToneMapping,
       visibilityTarget: canvas.parentElement ?? undefined,
+      disposables,
       onResize: (width) => {
         compactView = width < 680;
         root.scale.x = compactView ? 0.78 : 1;
@@ -918,7 +941,7 @@ export function CrewwwWorld({
     });
     if (!stage) {
       setUnsupported(true);
-      return undefined;
+      return () => disposables.forEach((item) => item.dispose());
     }
 
     const hitTest = (event: PointerEvent): WorldDestinationId | null => {
@@ -1061,6 +1084,7 @@ export function CrewwwWorld({
     smoothProgress = scrollProgress;
 
     return () => {
+      disposed = true;
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerdown", onPointerDown);
       canvas.removeEventListener("pointerup", onPointerUp);
@@ -1071,10 +1095,24 @@ export function CrewwwWorld({
       window.clearTimeout(scrollResume);
       window.removeEventListener("scroll", onScroll);
       stage.dispose();
-      disposables.forEach((item) => item.dispose());
       nearRef.current?.(null);
     };
   }, []);
+
+  if (staticFallback) {
+    return (
+      <div className="world-stage world-stage-fallback">
+        <img
+          className="world-static-poster"
+          src={drops[0].plate}
+          alt="Crewww graphic hoodie district preview"
+          width={1600}
+          height={900}
+          decoding="async"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={`world-stage ${unsupported ? "world-stage-fallback" : ""}`}>
