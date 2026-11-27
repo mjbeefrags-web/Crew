@@ -46,7 +46,10 @@ export function useSeo({
     root.dataset.seoOwner = owner;
 
     const fullTitle = title.includes("CREWWW") ? title : `${title} — CREWWW`;
-    const url = new URL(path ?? window.location.pathname, window.location.origin);
+    const url = new URL(
+      path ?? window.location.pathname,
+      window.location.origin,
+    );
     document.title = fullTitle;
     setMeta("name", "description", description);
     setMeta("property", "og:title", fullTitle);

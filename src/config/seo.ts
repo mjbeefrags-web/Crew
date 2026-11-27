@@ -18,7 +18,8 @@ const routes: Record<string, SeoRoute> = {
   },
   "/drops": {
     title: "Current drops",
-    description: "Every active Crewww drop, world and limited run in one place.",
+    description:
+      "Every active Crewww drop, world and limited run in one place.",
     image: "/images/editorial/drop-story.webp",
   },
   "/drops/psychedelic-minds": {
@@ -29,7 +30,8 @@ const routes: Record<string, SeoRoute> = {
   },
   "/lookbook": {
     title: "Lookbook",
-    description: "Stories, styling notes and the world behind each Crewww piece.",
+    description:
+      "Stories, styling notes and the world behind each Crewww piece.",
     image: DEFAULT_IMAGE,
   },
   "/denim/fits": {
@@ -54,7 +56,8 @@ const routes: Record<string, SeoRoute> = {
   },
   "/faq": {
     title: "FAQ",
-    description: "Frequently asked questions about orders, sizing and delivery.",
+    description:
+      "Frequently asked questions about orders, sizing and delivery.",
   },
   "/shipping": {
     title: "Shipping",
@@ -73,10 +76,19 @@ const routes: Record<string, SeoRoute> = {
     description: "The terms that govern use of this storefront.",
   },
   "/cart": { title: "Shopping cart", description: "Your Crewww cart." },
-  "/checkout": { title: "Checkout", description: "Complete your Crewww order." },
-  "/wishlist": { title: "Wishlist", description: "Pieces you saved for later." },
+  "/checkout": {
+    title: "Checkout",
+    description: "Complete your Crewww order.",
+  },
+  "/wishlist": {
+    title: "Wishlist",
+    description: "Pieces you saved for later.",
+  },
   "/search": { title: "Search", description: "Search the Crewww edit." },
-  "/login": { title: "Sign in", description: "Sign in to your Crewww account." },
+  "/login": {
+    title: "Sign in",
+    description: "Sign in to your Crewww account.",
+  },
   "/register": {
     title: "Create an account",
     description: "Join Crewww to save pieces and track orders.",

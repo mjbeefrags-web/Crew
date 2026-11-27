@@ -38,13 +38,12 @@ export function useDialogFocus(
   useEffect(() => {
     if (!open) return undefined;
     const container = containerRef.current;
-    const opener = (restoreRef?.current ?? document.activeElement) as
-      | HTMLElement
-      | null;
+    const opener = (restoreRef?.current ??
+      document.activeElement) as HTMLElement | null;
     const focusables = (): HTMLElement[] =>
-      Array.from(container?.querySelectorAll<HTMLElement>(SELECTOR) ?? []).filter(
-        isFocusable,
-      );
+      Array.from(
+        container?.querySelectorAll<HTMLElement>(SELECTOR) ?? [],
+      ).filter(isFocusable);
 
     // Make everything outside the dialog's top-level branch inert so screen
     // readers and Tab cannot reach the page behind it.
@@ -56,7 +55,11 @@ export function useDialogFocus(
     }
     if (root && branch?.parentElement === root) {
       for (const child of Array.from(root.children)) {
-        if (child === branch || child.contains(branch) || branch.contains(child)) {
+        if (
+          child === branch ||
+          child.contains(branch) ||
+          branch.contains(child)
+        ) {
           continue;
         }
         const element = child as HTMLElement;

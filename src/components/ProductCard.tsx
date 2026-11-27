@@ -35,7 +35,9 @@ export function ProductCard({ product }: { product: Product }) {
   // in-stock variant (or the first size) so shoppers are never blocked by a
   // size picker just to get a piece into the cart.
   const quickAddToCart = () => {
-    const inStock = product.variants?.find((variant) => variant.stockQuantity > 0);
+    const inStock = product.variants?.find(
+      (variant) => variant.stockQuantity > 0,
+    );
     const chosenSize = inStock?.size ?? sizes[0];
     const chosenColor =
       inStock?.color ?? product.colors[0]?.name ?? product.color;

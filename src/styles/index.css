@@ -11382,6 +11382,175 @@ main:has(.drop-experience) {
   }
 }
 
+/* Room fine-tuning: the chamber breathes with the chapter, not against it. */
+.psychedelic-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  background:
+    radial-gradient(
+      ellipse at 32% 42%,
+      rgba(242, 160, 196, 0.32),
+      transparent 58%
+    ),
+    radial-gradient(ellipse at 72% 58%, rgba(123, 32, 38, 0.3), transparent 62%);
+  filter: blur(36px) saturate(1.25);
+  animation: room-breathe 11s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  will-change: transform, opacity;
+}
+@keyframes room-breathe {
+  0%,
+  100% {
+    transform: scale(1) rotate(-2deg);
+    opacity: 0.12;
+  }
+  50% {
+    transform: scale(1.14) rotate(3deg);
+    opacity: 0.28;
+  }
+}
+.trip-copy h1 {
+  text-shadow:
+    2px 0 rgba(46, 127, 142, 0.45),
+    -2px 0 rgba(156, 31, 42, 0.45),
+    0 0 26px rgba(242, 160, 196, 0.18);
+}
+@media (prefers-reduced-motion: reduce) {
+  .psychedelic-backdrop::after {
+    animation: none;
+    opacity: 0.14;
+  }
+}
+
+/* Psychedelic pop-out: a side panel with five colourway worlds. */
+.trip-nav-group {
+  position: relative;
+}
+.trip-popover {
+  position: absolute;
+  top: -14px;
+  left: calc(100% + 18px);
+  z-index: 60;
+  width: min(560px, 44vw);
+  padding: 20px;
+  border: 1px solid rgba(242, 160, 196, 0.32);
+  background:
+    radial-gradient(
+      ellipse at 20% 0%,
+      rgba(182, 156, 255, 0.22),
+      transparent 60%
+    ),
+    linear-gradient(140deg, #24142b, #121017 70%);
+  box-shadow: 0 30px 70px #000a;
+  backdrop-filter: blur(18px);
+  transform-origin: left center;
+  animation: trip-pop 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes trip-pop {
+  from {
+    opacity: 0;
+    transform: translateX(-12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.trip-popover-head {
+  margin-bottom: 14px;
+}
+.trip-popover-head strong {
+  display: block;
+  margin-top: 6px;
+  font: 400 26px/1 var(--store-serif);
+  color: #f2a0c4;
+}
+.trip-popover-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.trip-popover-grid a {
+  display: block;
+  overflow: hidden;
+  padding: 6px;
+  border: 1px solid transparent;
+  color: #f2efe6;
+  text-decoration: none;
+  background: #ffffff08;
+  transition:
+    border-color 0.3s ease,
+    background 0.3s ease,
+    transform 0.3s ease;
+}
+.trip-popover-grid a img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  filter: saturate(0.85);
+  transition:
+    transform 0.5s ease,
+    filter 0.4s ease;
+}
+.trip-popover-grid a span,
+.trip-popover-grid a b {
+  display: block;
+  padding: 4px 2px 0;
+}
+.trip-popover-grid a span {
+  color: #b69cff;
+  font: 7px var(--mono);
+  letter-spacing: 0.1em;
+}
+.trip-popover-grid a b {
+  font: 400 17px/1.1 var(--store-serif);
+}
+.trip-popover-grid a:hover,
+.trip-popover-grid a:focus-visible {
+  border-color: var(--piece-accent);
+  background: color-mix(in srgb, var(--piece-accent) 16%, transparent);
+  transform: translateY(-2px);
+}
+.trip-popover-grid a:hover img,
+.trip-popover-grid a:focus-visible img {
+  transform: scale(1.06);
+  filter: saturate(1.5) hue-rotate(12deg);
+}
+.trip-popover-grid a:hover b,
+.trip-popover-grid a:focus-visible b {
+  color: var(--piece-accent);
+}
+.trip-popover-all {
+  display: inline-block;
+  margin-top: 14px;
+  color: #f2a0c4;
+  font: 8px var(--mono);
+  letter-spacing: 0.12em;
+  text-decoration: none;
+}
+@media (max-width: 1100px) {
+  .trip-popover {
+    left: auto;
+    right: 0;
+    width: min(460px, 56vw);
+  }
+}
+@media (max-width: 900px) {
+  .trip-nav-group .trip-popover {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trip-popover {
+    animation: none;
+  }
+  .trip-popover-grid a:hover img,
+  .trip-popover-grid a:focus-visible img {
+    transform: none;
+  }
+}
+
 /* Server-computed commercial model + catalogue control. */
 .admin-business-metrics,
 .admin-products {

@@ -141,11 +141,11 @@ export function ShowroomPage() {
     };
     if (typeof idleWindow.requestIdleCallback === "function") {
       const handle = idleWindow.requestIdleCallback(() => setWorldReady(true), {
-        timeout: 1200,
+        timeout: 700,
       });
       return () => idleWindow.cancelIdleCallback?.(handle);
     }
-    const timer = window.setTimeout(() => setWorldReady(true), 500);
+    const timer = window.setTimeout(() => setWorldReady(true), 350);
     return () => window.clearTimeout(timer);
   }, []);
   useEffect(() => {

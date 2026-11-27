@@ -54,10 +54,7 @@ function RetryRouteBoundary({
           <>
             {" "}
             Still stuck?{" "}
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-            >
+            <button type="button" onClick={() => window.location.reload()}>
               Reload the store.
             </button>
           </>

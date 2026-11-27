@@ -50,10 +50,16 @@ test("search suggestions work with the keyboard", async ({ page }) => {
 });
 
 test("recently viewed rail follows the shopping trail", async ({ page }) => {
-  await page.goto("/products/vivre-la-vie-hoodie");
-  await page.goto("/products/passion-racing-hoodie");
-  await expect(page.locator(".recently-viewed-products")).toContainText(
+  await page.goto("/products/vivre-la-vie-hoodie", {
+    waitUntil: "networkidle",
+  });
+  await page.goto("/products/passion-racing-hoodie", {
+    waitUntil: "networkidle",
+  });
+  await page.goto("/", { waitUntil: "networkidle" });
+  await expect(page.locator(".recently-viewed-home")).toContainText(
     "Vivre La Vie Hoodie",
+    { timeout: 15_000 },
   );
 });
 

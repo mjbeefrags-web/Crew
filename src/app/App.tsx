@@ -92,9 +92,12 @@ export function App() {
   const initialRoute = import.meta.env.VITE_INITIAL_ROUTE?.trim();
   // `/` is the real showroom, not a redirect target. Only a different path
   // (e.g. a drop preview) should override the index route.
+  // The showroom is always the home page — even if a stale deployment variable
+  // still points at a drop. Drops are reachable from the nav, not via `/`.
   const showInitialRoute =
     initialRoute &&
     initialRoute !== "/" &&
+    !initialRoute.startsWith("/drops") &&
     location.pathname === "/" &&
     !import.meta.env.VITEST;
   // The shell stays mounted while lazy page chunks load; SiteLayout owns the

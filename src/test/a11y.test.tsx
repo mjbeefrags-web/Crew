@@ -116,7 +116,12 @@ describe("modal focus management", () => {
           Open dialog
         </button>
         {open && (
-          <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Test">
+          <div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Test"
+          >
             <button type="button">First</button>
             <button type="button">Second</button>
           </div>

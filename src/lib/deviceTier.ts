@@ -23,7 +23,9 @@ function webglRendererName(): string {
 }
 
 function softwareRenderer(name: string): boolean {
-  return /(swiftshader|llvmpipe|software|mali-4|adreno \(tm\) 3|powervr sgx)/.test(name);
+  return /(swiftshader|llvmpipe|software|mali-4|adreno \(tm\) 3|powervr sgx)/.test(
+    name,
+  );
 }
 
 /** Coarse, cached capability signal used to scale back 3D work on weak devices. */
@@ -102,8 +104,6 @@ if (typeof window !== "undefined") {
   );
   window.addEventListener("orientationchange", invalidateDeviceTier);
   window.addEventListener("webglcontextlost", invalidateDeviceTier, true);
-  const reducedMotion = window.matchMedia?.(
-    "(prefers-reduced-motion: reduce)",
-  );
+  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
   reducedMotion?.addEventListener?.("change", invalidateDeviceTier);
 }

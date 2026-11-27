@@ -30,6 +30,7 @@ import { useSeo } from "../lib/useSeo";
 import { useDialogFocus } from "../lib/useDialogFocus";
 import { apiCommerceService } from "../services/apiCommerceService";
 import { apiAuthService } from "../services/apiAuthService";
+import { psychedelicPieces } from "../data/psychedelic";
 
 const shopColumns = [
   {
@@ -95,6 +96,7 @@ function worldPaletteStyle(palette: WorldPalette): CSSProperties {
 export function SiteLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<"shop" | "clothes" | null>(null);
+  const [tripOpen, setTripOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const drawerRef = useRef<HTMLDivElement | null>(null);
   const closeMenu = () => {
@@ -137,8 +139,9 @@ export function SiteLayout() {
 
   // Read the active drop's palette after mount instead of during render,
   // so the first paint is deterministic and SSR/hydration stay safe.
-  const [worldPalette, setWorldPalette] =
-    useState<WorldPalette>(DEFAULT_WORLD_PALETTE);
+  const [worldPalette, setWorldPalette] = useState<WorldPalette>(
+    DEFAULT_WORLD_PALETTE,
+  );
   useEffect(() => {
     let frame = 0;
     let tries = 0;
@@ -228,6 +231,7 @@ export function SiteLayout() {
   useEffect(() => {
     setMenuOpen(false);
     setActiveMenu(null);
+    setTripOpen(false);
   }, [location.pathname, location.search]);
 
   // Follow-scroll navigation. The header slides out of the way while reading
@@ -454,17 +458,52 @@ export function SiteLayout() {
           >
             DROPS
           </NavLink>
-          <NavLink
-            className="desktop-trip-link"
-            to="/drops/psychedelic-minds"
-            aria-current={
-              location.pathname === "/drops/psychedelic-minds"
-                ? "page"
-                : undefined
-            }
+          <div
+            className={`trip-nav-group${tripOpen ? " is-open" : ""}`}
+            onMouseEnter={() => setTripOpen(true)}
+            onMouseLeave={() => setTripOpen(false)}
           >
-            PSYCHEDELIC
-          </NavLink>
+            <NavLink
+              className="desktop-trip-link"
+              to="/drops/psychedelic-minds"
+              aria-expanded={tripOpen}
+              aria-controls="psychedelic-popover"
+              aria-current={
+                location.pathname === "/drops/psychedelic-minds"
+                  ? "page"
+                  : undefined
+              }
+              onFocus={() => setTripOpen(true)}
+            >
+              PSYCHEDELIC <span aria-hidden="true">⌄</span>
+            </NavLink>
+            <div
+              className="trip-popover"
+              id="psychedelic-popover"
+              hidden={!tripOpen}
+            >
+              <div className="trip-popover-head">
+                <p className="store-eyebrow">CONCEPT 02 / FIVE WORLDS</p>
+                <strong>Pick your frequency.</strong>
+              </div>
+              <div className="trip-popover-grid">
+                {psychedelicPieces.map((piece) => (
+                  <Link
+                    key={piece.id}
+                    to={`/drops/psychedelic-minds?piece=${piece.id}&entered=1`}
+                    style={{ "--piece-accent": piece.accent } as CSSProperties}
+                  >
+                    <img src={piece.artwork} alt="" loading="lazy" />
+                    <span>{piece.world.name}</span>
+                    <b>{piece.name}</b>
+                  </Link>
+                ))}
+              </div>
+              <Link className="trip-popover-all" to="/drops">
+                ALL DROPS ↗
+              </Link>
+            </div>
+          </div>
           <NavLink
             className="desktop-story-link"
             to="/lookbook"

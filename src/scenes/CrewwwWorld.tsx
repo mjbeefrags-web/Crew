@@ -658,8 +658,12 @@ export function CrewwwWorld({
     const lampSpots = [1, -6, -13].flatMap((z) =>
       [-3.15, 3.15].map((x) => [x, z] as const),
     );
-    const poles = track(new InstancedMesh(lampPoleGeo, trimMaterial, lampSpots.length));
-    const bulbs = track(new InstancedMesh(bulbGeo, bulbMaterial, lampSpots.length));
+    const poles = track(
+      new InstancedMesh(lampPoleGeo, trimMaterial, lampSpots.length),
+    );
+    const bulbs = track(
+      new InstancedMesh(bulbGeo, bulbMaterial, lampSpots.length),
+    );
     lampSpots.forEach(([x, z], index) => {
       dummy.position.set(x, 1.55, z);
       dummy.updateMatrix();
@@ -893,7 +897,9 @@ export function CrewwwWorld({
           (scrollProgress - smoothProgress) * (1 - Math.exp(-delta * 4.5));
 
         if (modeRef.current === "explore") {
-          forward.set(0, 0, -1).applyEuler(orientation.set(pitch, yaw, 0, "YXZ"));
+          forward
+            .set(0, 0, -1)
+            .applyEuler(orientation.set(pitch, yaw, 0, "YXZ"));
           forward.y = 0;
           forward.normalize();
           right.set(1, 0, 0).applyAxisAngle(up, yaw);
@@ -993,8 +999,7 @@ export function CrewwwWorld({
               board.baseRotation +
               Math.sin(elapsed * 0.38 + board.phase) * 0.035;
           }
-          poolMaterial.opacity =
-            0.16 + Math.sin(elapsed * 1.7) * 0.055;
+          poolMaterial.opacity = 0.16 + Math.sin(elapsed * 1.7) * 0.055;
           // Distant detail is outside the fog range; skip its draw calls.
           for (const board of artBoards)
             board.group.visible =
