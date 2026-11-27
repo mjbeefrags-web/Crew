@@ -45,6 +45,11 @@ The defaults work for a local demo. First run takes a few minutes (image build);
 later runs take seconds. `migrate` applies Alembic migrations and seeds the
 catalog plus the bootstrap administrator before the API starts.
 
+The `web` image is a plain static Vite build: it skips the Cloudflare Vite
+plugin because Nginx, not Workers, serves the site in Compose. That also keeps
+the Docker build independent of `workerd`, the plugin's optional native binary.
+Cloudflare deploys still use the plugin via `npm run build` on the host or in CI.
+
 Wait for every service to report **healthy**:
 
 ```powershell
@@ -112,9 +117,11 @@ Staging and production reject a non-empty bootstrap password. See
 |---|---|
 | `failed to connect to the docker API` | Start Docker Desktop and wait for **Engine running** |
 | `port is already allocated` | Change `WEB_PORT` or `POSTGRES_PORT` in `.env`, then `docker compose up -d` |
+| `web` build fails with `@cloudflare/workerd-linux-64` not found | An older cached install layer is missing workerd's optional binary; run `docker compose build --no-cache web`, then `docker compose up -d` |
 | `web` is unhealthy | `docker compose logs web`; rebuild with `docker compose up -d --build web` |
 | `api` is unhealthy | `docker compose logs migrate api`; confirm `migrate` exited `0` |
 | `password authentication failed` | The volume kept an older password. Use the old value, or `docker compose down -v` (destroys data) |
+| `migrate` connects to `127.0.0.1:5432` and exits 1 | `DATABASE_URL` in `.env` is overriding Compose. Comment it out (Compose defaults to `db:5432`) or set it to `...@db:5432/crewww`. The host-only URL is for local non-Docker work. |
 | Admin login fails after pulling | `docker compose run --rm migrate` to create the bootstrap admin in the existing volume |
 | `psql` is not recognized | Use `docker compose exec db psql -U crewww -d crewww`, or add `C:\Program Files\PostgreSQL\<version>\bin` to `PATH` |
 
@@ -407,6 +414,42 @@ npm run perf:check
 Set `PERF_BASE_URL` to test a different origin, for example the live
 Cloudflare deployment.
 
+### Performance budgets
+
+`npm run perf:check` now applies CPU throttling (4x) and Slow 4G to the mobile
+profile, records INP, and samples heap growth for 60 seconds after scrolling.
+
+| Metric | Mobile | Desktop |
+|---|---:|---:|
+| FCP | < 1.2 s | < 0.8 s |
+| LCP | < 2.0 s | < 1.5 s |
+| INP | < 200 ms | < 120 ms |
+| Initial JS | < 250 KB | < 300 KB |
+| Heap growth while idle | < 8 MB | < 10 MB |
+
+On phones, low-core devices and reduced-motion sessions the WebGL scenes are
+replaced by static posters; the storefront stays fully usable through the DOM
+controls. `BUILD_TARGET=docker` builds the same static assets without the
+Cloudflare plugin.
+
+Other checks:
+
+```powershell
+npm run build:analyze               # bundle-report.html
+PERF_HEAP_SAMPLES=6 npm run perf:check
+npx playwright test e2e/perf-memory.spec.ts
+k6 run -e BASE_URL=http://127.0.0.1:8080 perf/k6/products-list.js
+k6 run -e BASE_URL=http://127.0.0.1:8080 perf/k6/product-detail.js
+npx lhci autorun                     # Lighthouse CI
+cd backend; pytest -q tests/test_performance.py
+```
+
+The API also supports `GZipMiddleware`, orjson-serialized Redis cache payloads,
+tracked cache-key invalidation, a windowed catalog count query, and optional
+Prometheus metrics with `ENABLE_METRICS=1`. Uvicorn uses `WEB_CONCURRENCY`
+(default `2`) in Docker. The SQLAlchemy async models, Pydantic v2 schemas and
+PostgreSQL/asyncpg connection remain unchanged.
+
 The site is tuned for slow phones and long desktop sessions:
 
 - `public/_headers` gives fingerprinted JS/CSS/font files a year-long immutable
@@ -562,6 +605,8 @@ Copy `.env.example` to `.env`. Important variables:
 | `FRONTEND_ORIGINS` | Comma-separated allowed browser origins | localhost/127.0.0.1 |
 | `COOKIE_SECURE` | Secure refresh cookie flag | `false` locally |
 | `BOOTSTRAP_ADMIN_EMAIL/PASSWORD` | First admin, created by seed | demo admin |
+| `WEB_CONCURRENCY` | Uvicorn workers in the API container | `2` |
+| `ENABLE_METRICS` | Expose `/metrics` on the API | `0` |
 | `VITE_INITIAL_ROUTE` | Default route opened by Docker | `/` |
 | `VITE_FEATURE_*` | Build-time feature flags | all `true` |
 
@@ -653,6 +698,8 @@ k6 run -e BASE_URL=http://127.0.0.1:8080 perf/k6/catalog.js
 | Admin login fails after pulling | Run `docker compose run --rm migrate` to create the bootstrap admin in an existing volume. |
 | Database password/auth errors | The volume keeps the password used at creation. Use the old value or reset with `docker compose down -v` (destructive). |
 | Init SQL did not run | Init scripts only run on an empty volume. |
+| `web` build fails with a `workerd` / `@cloudflare/workerd-linux-64` error | Rebuild without the stale install cache: `docker compose build --no-cache web`, then `docker compose up -d`. Compose serves static assets through Nginx and does not load the Cloudflare plugin. |
+| Host `npm run build` fails with the same `workerd` error | npm skipped workerd's optional native binary during a flaky install. Remove `node_modules` and run `npm ci` again. |
 | API cannot reach PostgreSQL | Inside Compose the host is `db`, not `localhost`. |
 | 3D/showroom is slow on a client laptop | Enable browser hardware acceleration and close heavy tabs; the showroom is the heaviest route. |
 | Docker daemon not running | Start Docker Desktop, then retry. |
