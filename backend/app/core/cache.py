@@ -19,7 +19,9 @@ from fastapi.encoders import jsonable_encoder
 from redis.asyncio import Redis
 
 CACHE_PREFIX = "catalog:"
-DEFAULT_TTL = 45
+# Catalog data changes through admin writes, which invalidate this prefix.
+# A longer TTL keeps repeat visits fast without serving stale data after edits.
+DEFAULT_TTL = 300
 
 
 class ResponseCache:

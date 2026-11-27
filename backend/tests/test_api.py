@@ -100,6 +100,13 @@ async def test_health_ready_and_admin_diagnostics_are_authorized_and_redacted(cl
 
 
 @pytest.mark.asyncio
+async def test_public_catalog_is_browser_cacheable(client):
+    response = await client.get("/api/v1/products")
+    assert response.status_code == 200
+    assert "max-age=60" in response.headers["cache-control"]
+
+
+@pytest.mark.asyncio
 async def test_registration_login_refresh_rotation_and_password_redaction(client):
     registered = await client.post(
         "/api/v1/auth/register",

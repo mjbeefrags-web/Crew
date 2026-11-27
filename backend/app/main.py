@@ -91,7 +91,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         ):
             # Read-through cached in Redis; browsers may hold a short copy too.
-            cache_control = "public, max-age=30, stale-while-revalidate=120"
+            cache_control = "public, max-age=60, stale-while-revalidate=300"
         else:
             cache_control = "no-cache"
         response.headers.setdefault("Cache-Control", cache_control)
