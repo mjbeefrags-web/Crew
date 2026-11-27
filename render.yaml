@@ -24,7 +24,10 @@ services:
       - key: DATABASE_URL_UNPOOLED
         sync: false
       - key: REDIS_URL
-        sync: false
+        fromService:
+          type: keyvalue
+          name: crewww-redis
+          property: connectionString
       - key: REDIS_REQUIRED
         value: "true"
       - key: JWT_SECRET
@@ -43,3 +46,10 @@ services:
         value: local
       - key: AI_MODEL
         value: gpt-4o-mini
+
+  - type: keyvalue
+    name: crewww-redis
+    plan: free
+    region: ohio
+    ipAllowList: [] # Internal access only; the web service connects privately.
+    maxmemoryPolicy: allkeys-lru
