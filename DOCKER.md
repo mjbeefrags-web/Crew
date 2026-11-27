@@ -72,6 +72,7 @@ These commands assume the default database/user. Substitute the configured value
 
 ## Troubleshooting
 
+- `web` build fails with `@cloudflare/workerd-linux-64` not found: a cached install layer is missing workerd's optional binary. Rebuild it with `docker compose build --no-cache web`, then `docker compose up -d`. Compose builds static assets and skips the Cloudflare plugin.
 - `web` stays unhealthy: inspect `docker compose logs web api`; confirm port 8080 is available.
 - Migration fails: inspect `docker compose logs migrate db`; check credentials and DB health. The named DB volume is retained when containers are stopped.
 - API readiness fails: inspect `docker compose logs api redis db` and verify service DNS/config values.
@@ -80,4 +81,7 @@ These commands assume the default database/user. Substitute the configured value
 
 ## Current verification boundary
 
-Docker and Compose CLIs are installed in the current environment, but the Docker Engine is not currently reachable. Container builds, health checks, PostgreSQL persistence and full-stack clean-deployment verification therefore remain unverified until the daemon is available.
+Verified locally with Docker Desktop: image builds, migrations and seed, health
+checks for `db`, `redis`, `api` and `web`, and HTTP responses from `/api/health`,
+`/api/ready` and the storefront root through `http://localhost:8080`. Browser
+end-to-end tests and production deployments are verified separately.
