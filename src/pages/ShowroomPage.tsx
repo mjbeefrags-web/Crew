@@ -632,6 +632,9 @@ export function ShowroomPage() {
                   loading={
                     chapterArt[chapterIndex].id === piece.id ? "eager" : "lazy"
                   }
+                  fetchPriority={
+                    chapterArt[chapterIndex].id === piece.id ? "high" : "auto"
+                  }
                   decoding="async"
                   className={
                     chapterArt[chapterIndex].id === piece.id ? "is-active" : ""

@@ -18,8 +18,10 @@ const vertexShader = /* glsl */ `
   }
 `;
 
-const fragmentShader = /* glsl */ `
-  precision highp float;
+const fragmentShader = (lowPower: boolean) => /* glsl */ `
+  precision ${lowPower ? "mediump" : "highp"} float;
+  #define FBM_STEPS ${lowPower ? 1 : 2}
+  #define WARP_STEPS ${lowPower ? 2 : 3}
   uniform float uTime;
   uniform float uEnergy;
   uniform vec2 uPointer;
@@ -47,7 +49,7 @@ const fragmentShader = /* glsl */ `
   float fbm(vec2 p) {
     float value = 0.0;
     float amplitude = 0.5;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < FBM_STEPS; i++) {
       value += amplitude * noise(p);
       p *= 2.02;
       amplitude *= 0.5;
@@ -74,7 +76,7 @@ const fragmentShader = /* glsl */ `
     p *= breath;
 
     vec2 warp = p;
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < WARP_STEPS; i++) {
       warp += 0.12 * vec2(
         sin(warp.y * 3.4 + t * 1.3 + float(i) * 1.8) + fbm(warp * 2.0 + t) * 0.35,
         cos(warp.x * 3.0 - t * 1.1 + float(i) * 1.4) + fbm(warp * 2.0 - t) * 0.35
@@ -132,12 +134,25 @@ export function PsychedelicField({ mood, energy = 1, accent }: Props) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
+    const lowPower =
+      (window.matchMedia?.("(max-width: 640px), (pointer: coarse)").matches ??
+        false) ||
+      (navigator.hardwareConcurrency ?? 8) <= 4;
+    const reducedMotion =
+      typeof window.matchMedia === "function"
+        ? window.matchMedia("(prefers-reduced-motion: reduce)")
+        : null;
+    const pointerTarget = new Vector2();
+    const targetA = new Color(moodRef.current.a);
+    const targetB = new Color(moodRef.current.b);
+    const targetC = new Color(moodRef.current.c);
+    const targetAccent = new Color(accentRef.current);
     const scene = new Scene();
     const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
     const geometry = new PlaneGeometry(2, 2);
     const material = new ShaderMaterial({
       vertexShader,
-      fragmentShader,
+      fragmentShader: fragmentShader(lowPower),
       uniforms: {
         uTime: { value: 0 },
         uEnergy: { value: energyRef.current },
@@ -155,38 +170,28 @@ export function PsychedelicField({ mood, energy = 1, accent }: Props) {
     const stage = createStage(canvas, {
       scene,
       camera,
-      fps: 60,
-      maxPixelRatio: 1.5,
+      fps: lowPower ? 24 : 30,
+      maxPixelRatio: lowPower ? 0.75 : 0.9,
       antialias: false,
       visibilityTarget: canvas.parentElement ?? undefined,
       onFrame: (delta, elapsed) => {
         const u = material.uniforms;
-        const reduced =
-          window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ??
-          false;
         const smoothing = 1 - Math.exp(-delta * 3);
-        u.uTime.value = reduced ? 0 : elapsed;
+        u.uTime.value = reducedMotion?.matches ? 0 : elapsed;
         u.uEnergy.value += (energyRef.current - u.uEnergy.value) * smoothing;
+        pointerTarget.set(pointerRef.current.x, pointerRef.current.y);
         (u.uPointer.value as Vector2).lerp(
-          new Vector2(pointerRef.current.x, pointerRef.current.y),
+          pointerTarget,
           1 - Math.exp(-delta * 4),
         );
-        (u.uColorA.value as Color).lerp(
-          new Color(moodRef.current.a),
-          smoothing,
-        );
-        (u.uColorB.value as Color).lerp(
-          new Color(moodRef.current.b),
-          smoothing,
-        );
-        (u.uColorC.value as Color).lerp(
-          new Color(moodRef.current.c),
-          smoothing,
-        );
-        (u.uAccent.value as Color).lerp(
-          new Color(accentRef.current),
-          smoothing,
-        );
+        targetA.set(moodRef.current.a);
+        targetB.set(moodRef.current.b);
+        targetC.set(moodRef.current.c);
+        targetAccent.set(accentRef.current);
+        (u.uColorA.value as Color).lerp(targetA, smoothing);
+        (u.uColorB.value as Color).lerp(targetB, smoothing);
+        (u.uColorC.value as Color).lerp(targetC, smoothing);
+        (u.uAccent.value as Color).lerp(targetAccent, smoothing);
       },
     });
     if (!stage) {
@@ -204,11 +209,20 @@ export function PsychedelicField({ mood, energy = 1, accent }: Props) {
       };
       stage.requestRender();
     };
-    const onScroll = () => stage.requestRender();
+    let scrollResume = 0;
+    const onScroll = () => {
+      // Give the scroll thread priority: render one frame, pause the ambient
+      // loop while the page is moving, then resume shortly after it settles.
+      stage.setMotionEnabled(false);
+      stage.requestRender();
+      window.clearTimeout(scrollResume);
+      scrollResume = window.setTimeout(() => stage.setMotionEnabled(true), 200);
+    };
     window.addEventListener("pointermove", onPointerMove, { passive: true });
     window.addEventListener("scroll", onScroll, { passive: true });
 
     return () => {
+      window.clearTimeout(scrollResume);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("scroll", onScroll);
       stage.dispose();

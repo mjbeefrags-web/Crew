@@ -127,8 +127,8 @@ export function PsychedelicDropPage() {
   const entered = searchParams.get("entered") === "1";
 
   const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
-  const [zoom, setZoom] = useState(1);
   const stageRef = useRef<HTMLElement | null>(null);
+  const productRef = useRef<HTMLElement | null>(null);
   const addCartLine = useCommerceStore((state) => state.addCartLine);
   const showNotice = useUiStore((state) => state.showNotice);
 
@@ -167,7 +167,13 @@ export function PsychedelicDropPage() {
             (window.innerHeight + bounds.height),
         ),
       );
-      setZoom(1 + progress * 0.42);
+      // Write the scroll-linked zoom straight to the DOM. Updating React state
+      // here re-rendered the whole room (including the WebGL stage) on every
+      // scroll event and was the main cause of the page slowing down over time.
+      productRef.current?.style.setProperty(
+        "--zoom",
+        String(1 + progress * 0.42),
+      );
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
@@ -286,6 +292,10 @@ export function PsychedelicDropPage() {
               key={item.id}
               src={item.artwork}
               alt=""
+              width={674}
+              height={902}
+              loading={index === active ? "eager" : "lazy"}
+              decoding="async"
               className={index === active ? "is-active" : ""}
               style={{ "--art-index": index } as CSSProperties}
             />
@@ -459,10 +469,10 @@ export function PsychedelicDropPage() {
             </section>
 
             <section
+              ref={productRef}
               className="trip-product"
               key={`${piece.id}-product`}
               aria-label={`${piece.name} hoodie`}
-              style={{ "--zoom": zoom } as CSSProperties}
               onPointerMove={onGarmentPointerMove}
               onPointerLeave={resetGarment}
             >
@@ -482,6 +492,8 @@ export function PsychedelicDropPage() {
                 <img
                   src={view.src}
                   alt={`${piece.name} — ${view.label.toLowerCase()}`}
+                  decoding="async"
+                  fetchPriority="high"
                 />
                 <span className="trip-sheen" aria-hidden="true" />
               </div>
