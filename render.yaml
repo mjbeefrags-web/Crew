@@ -1,0 +1,45 @@
+previews:
+  generation: off
+
+services:
+  - type: web
+    name: crewww-api
+    runtime: docker
+    plan: free
+    region: ohio
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerCommand: 'sh -c "alembic upgrade head && python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT"'
+    healthCheckPath: /api/ready
+    autoDeployTrigger: commit
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_URL_UNPOOLED
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: REDIS_REQUIRED
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_ORIGINS
+        sync: false
+      - key: BOOTSTRAP_ADMIN_EMAIL
+        value: ""
+      - key: BOOTSTRAP_ADMIN_PASSWORD
+        value: ""
+      - key: PAYMENT_MODE
+        value: mock
+      - key: EMAIL_MODE
+        value: console
+      - key: AI_PROVIDER
+        value: local
+      - key: AI_MODEL
+        value: gpt-4o-mini

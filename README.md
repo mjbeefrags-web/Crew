@@ -127,11 +127,15 @@ This project uses a hybrid deployment model:
 - **Database:** Neon (hosted PostgreSQL, free tier)
 - **Cache:** Upstash (hosted Redis, free tier)
 
+The repo includes `vercel.json` for the frontend and `render.yaml` for the
+backend, so both platforms use the correct build settings from GitHub.
+
 ### Frontend: Vercel
 
-Import the GitHub repo in Vercel as a **Vite** project. The build command is
-`npm run build`; the output directory is `dist`. Set these environment variables
-in the Vercel dashboard (Project → Settings → Environment Variables):
+Import the GitHub repo in Vercel as a **Vite** project. `vercel.json` already
+sets the build command (`npm run build`), output directory (`dist`), and SPA
+rewrite. Set these environment variables in the Vercel dashboard
+(Project → Settings → Environment Variables):
 
 | Variable | Value |
 |---|---|
@@ -158,22 +162,15 @@ vercel --prod --confirm dist/
 
 ### Backend: Render
 
-Create a **Web Service** in Render from your GitHub repo:
+Create a **Blueprint** in Render from your GitHub repo. `render.yaml` defines a
+free Docker web service in `ohio`, builds `backend/Dockerfile`, binds Uvicorn to
+Render's injected `$PORT`, and runs the migrations/seed on every deploy. Render
+will prompt for the secret values marked `sync: false` below.
 
-- **Environment:** Docker
-- **Dockerfile Path:** `./backend/Dockerfile`
-- **Build Context:** `./backend`
+The migrations and seed are idempotent. The admin account already exists in
+Neon, so `BOOTSTRAP_ADMIN_PASSWORD` stays empty.
 
-Render injects a `PORT` variable; override the start command so Uvicorn binds to
-it. In the Render dashboard set **Start Command** to:
-
-```bash
-sh -c "alembic upgrade head && python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
-```
-
-The migrations, seed, and admin bootstrap run once on startup and are idempotent.
-
-Set these environment variables in the Render dashboard:
+Set these environment variables when Render prompts (or later in the dashboard):
 
 | Variable | Value | Source |
 |---|---|---|
