@@ -9,6 +9,7 @@ import {
   Vector2,
 } from "three";
 import { createStage } from "./lib/stage";
+import { getDeviceTier, isLowEnd, type DeviceTier } from "../lib/deviceTier";
 
 const vertexShader = /* glsl */ `
   varying vec2 vUv;
@@ -18,10 +19,10 @@ const vertexShader = /* glsl */ `
   }
 `;
 
-const fragmentShader = (lowPower: boolean) => /* glsl */ `
-  precision ${lowPower ? "mediump" : "highp"} float;
-  #define FBM_STEPS ${lowPower ? 1 : 2}
-  #define WARP_STEPS ${lowPower ? 2 : 3}
+const fragmentShader = (tier: DeviceTier) => /* glsl */ `
+  precision ${tier === "high" ? "highp" : "mediump"} float;
+  #define FBM_STEPS ${tier === "high" ? 2 : 1}
+  #define WARP_STEPS ${tier === "high" ? 3 : 2}
   uniform float uTime;
   uniform float uEnergy;
   uniform vec2 uPointer;
@@ -127,17 +128,21 @@ export function PsychedelicField({ mood, energy = 1, accent }: Props) {
   const accentRef = useRef(accent ?? mood.a);
   const pointerRef = useRef({ x: 0, y: 0 });
   const [unsupported, setUnsupported] = useState(false);
+  const [staticFallback] = useState(
+    () =>
+      isLowEnd() ||
+      (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ??
+        false),
+  );
   moodRef.current = mood;
   energyRef.current = energy;
   accentRef.current = accent ?? mood.a;
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return undefined;
-    const lowPower =
-      (window.matchMedia?.("(max-width: 640px), (pointer: coarse)").matches ??
-        false) ||
-      (navigator.hardwareConcurrency ?? 8) <= 4;
+    if (!canvas || staticFallback) return undefined;
+    const tier = getDeviceTier();
+    const lowPower = tier === "low";
     const reducedMotion =
       typeof window.matchMedia === "function"
         ? window.matchMedia("(prefers-reduced-motion: reduce)")
@@ -152,7 +157,7 @@ export function PsychedelicField({ mood, energy = 1, accent }: Props) {
     const geometry = new PlaneGeometry(2, 2);
     const material = new ShaderMaterial({
       vertexShader,
-      fragmentShader: fragmentShader(lowPower),
+      fragmentShader: fragmentShader(tier),
       uniforms: {
         uTime: { value: 0 },
         uEnergy: { value: energyRef.current },
@@ -167,6 +172,11 @@ export function PsychedelicField({ mood, energy = 1, accent }: Props) {
     });
     scene.add(new Mesh(geometry, material));
 
+    let lastA = moodRef.current.a;
+    let lastB = moodRef.current.b;
+    let lastC = moodRef.current.c;
+    let lastAccent = accentRef.current;
+
     const stage = createStage(canvas, {
       scene,
       camera,
@@ -174,6 +184,7 @@ export function PsychedelicField({ mood, energy = 1, accent }: Props) {
       maxPixelRatio: lowPower ? 0.75 : 0.9,
       antialias: false,
       visibilityTarget: canvas.parentElement ?? undefined,
+      disposables: new Set([geometry, material]),
       onFrame: (delta, elapsed) => {
         const u = material.uniforms;
         const smoothing = 1 - Math.exp(-delta * 3);
@@ -184,10 +195,22 @@ export function PsychedelicField({ mood, energy = 1, accent }: Props) {
           pointerTarget,
           1 - Math.exp(-delta * 4),
         );
-        targetA.set(moodRef.current.a);
-        targetB.set(moodRef.current.b);
-        targetC.set(moodRef.current.c);
-        targetAccent.set(accentRef.current);
+        if (moodRef.current.a !== lastA) {
+          lastA = moodRef.current.a;
+          targetA.set(lastA);
+        }
+        if (moodRef.current.b !== lastB) {
+          lastB = moodRef.current.b;
+          targetB.set(lastB);
+        }
+        if (moodRef.current.c !== lastC) {
+          lastC = moodRef.current.c;
+          targetC.set(lastC);
+        }
+        if (accentRef.current !== lastAccent) {
+          lastAccent = accentRef.current;
+          targetAccent.set(lastAccent);
+        }
         (u.uColorA.value as Color).lerp(targetA, smoothing);
         (u.uColorB.value as Color).lerp(targetB, smoothing);
         (u.uColorC.value as Color).lerp(targetC, smoothing);
@@ -226,10 +249,20 @@ export function PsychedelicField({ mood, energy = 1, accent }: Props) {
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("scroll", onScroll);
       stage.dispose();
-      geometry.dispose();
-      material.dispose();
     };
   }, []);
+
+  if (staticFallback) {
+    return (
+      <div
+        className="psychedelic-field psychedelic-field-static"
+        style={{
+          background: `radial-gradient(circle at 50% 42%, ${mood.b}, ${mood.c} 48%, #0b0a0d 85%)`,
+        }}
+        aria-hidden="true"
+      />
+    );
+  }
 
   return (
     <canvas

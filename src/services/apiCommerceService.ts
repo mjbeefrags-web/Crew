@@ -108,7 +108,7 @@ export const apiCommerceService = {
   ): Promise<CartLine[]> {
     if (!line.serverLineId)
       throw new Error(
-        "This bag line is no longer available. Refresh the bag and try again.",
+        "This cart line is no longer available. Refresh the cart and try again.",
       );
     const cart = await apiRequest<ApiCart>(
       `/api/v1/cart/items/${line.serverLineId}`,
@@ -119,7 +119,7 @@ export const apiCommerceService = {
   async removeCartLine(line: CartLine): Promise<CartLine[]> {
     if (!line.serverLineId)
       throw new Error(
-        "This bag line is no longer available. Refresh the bag and try again.",
+        "This cart line is no longer available. Refresh the cart and try again.",
       );
     const cart = await apiRequest<ApiCart>(
       `/api/v1/cart/items/${line.serverLineId}`,

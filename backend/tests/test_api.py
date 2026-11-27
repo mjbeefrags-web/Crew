@@ -390,3 +390,34 @@ async def test_authenticated_checkout_uses_owner_scoped_session_transaction(clie
     assert result.json()["status"] == "processing"
     orders = (await client.get("/api/v1/orders", headers=headers)).json()
     assert orders[0]["id"] == result.json()["id"]
+
+
+@pytest.mark.asyncio
+async def test_session_inspection_does_not_rotate_refresh_token(client):
+    registered = await client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "session-check@example.com",
+            "password": "secure-test-password-123",
+            "first_name": "Session",
+            "last_name": "Check",
+        },
+    )
+    assert registered.status_code == 201
+    before = client.cookies.get("crewww_refresh")
+    inspected = await client.post("/api/v1/auth/session")
+    assert inspected.status_code == 200
+    assert inspected.json()["authenticated"] is True
+    assert inspected.json()["access_token"]
+    assert client.cookies.get("crewww_refresh") == before
+
+
+@pytest.mark.asyncio
+async def test_admin_lists_support_pagination(client):
+    _, admin_token = await create_user(client, role="admin", email="page-admin@example.test")
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    for path in ("products", "orders", "customers"):
+        response = await client.get(
+            f"/api/v1/admin/{path}?page=2&page_size=1", headers=headers
+        )
+        assert response.status_code == 200

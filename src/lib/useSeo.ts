@@ -5,7 +5,15 @@ type SeoOptions = {
   description: string;
   path?: string;
   image?: string;
+  type?: "website" | "product" | "article";
   structuredData?: Record<string, unknown>;
+  /**
+   * Owner key for the document's current metadata claim. Pages that have
+   * data-specific metadata use the default "page"; the route fallback uses
+   * "route" and defers to "page".
+   */
+  owner?: string;
+  deferTo?: string;
 };
 
 function setMeta(attribute: "name" | "property", key: string, content: string) {
@@ -26,21 +34,33 @@ export function useSeo({
   description,
   path,
   image,
+  type = "website",
   structuredData,
+  owner = "page",
+  deferTo,
 }: SeoOptions) {
   useEffect(() => {
+    const root = document.documentElement;
+    // A page with resolved, data-specific metadata wins over the route map.
+    if (deferTo && root.dataset.seoOwner === deferTo) return undefined;
+    root.dataset.seoOwner = owner;
+
     const fullTitle = title.includes("CREWWW") ? title : `${title} — CREWWW`;
+    const url = new URL(path ?? window.location.pathname, window.location.origin);
     document.title = fullTitle;
     setMeta("name", "description", description);
     setMeta("property", "og:title", fullTitle);
     setMeta("property", "og:description", description);
-    setMeta("property", "og:type", "website");
-    if (image)
-      setMeta(
-        "property",
-        "og:image",
-        new URL(image, window.location.origin).toString(),
-      );
+    setMeta("property", "og:type", type);
+    setMeta("property", "og:url", url.toString());
+    setMeta("name", "twitter:card", "summary_large_image");
+    setMeta("name", "twitter:title", fullTitle);
+    setMeta("name", "twitter:description", description);
+    if (image) {
+      const absolute = new URL(image, window.location.origin).toString();
+      setMeta("property", "og:image", absolute);
+      setMeta("name", "twitter:image", absolute);
+    }
 
     let canonical = document.head.querySelector<HTMLLinkElement>(
       'link[rel="canonical"]',
@@ -50,10 +70,7 @@ export function useSeo({
       canonical.rel = "canonical";
       document.head.appendChild(canonical);
     }
-    canonical.href = new URL(
-      path ?? window.location.pathname,
-      window.location.origin,
-    ).toString();
+    canonical.href = url.toString();
 
     const id = "crewww-structured-data";
     document.getElementById(id)?.remove();
@@ -66,6 +83,7 @@ export function useSeo({
     }
     return () => {
       document.getElementById(id)?.remove();
+      if (root.dataset.seoOwner === owner) delete root.dataset.seoOwner;
     };
-  }, [title, description, path, image, structuredData]);
+  }, [title, description, path, image, type, structuredData, owner, deferTo]);
 }

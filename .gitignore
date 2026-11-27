@@ -19,6 +19,7 @@ __pycache__/
 !.env.staging.example
 !.env.production.example
 backups/
+logs/
 
 .neon
 render-deploy-helper.html

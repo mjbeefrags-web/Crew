@@ -69,6 +69,8 @@ async def optional_user(
         return None
     try:
         payload = decode_access_token(credentials.credentials, settings)
+        if payload.get("type") != "access":
+            return None
         user_id = UUID(str(payload["sub"]))
     except Exception:
         return None

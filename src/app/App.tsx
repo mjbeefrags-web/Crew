@@ -1,8 +1,6 @@
 import { lazy } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { catalogRoutes } from "../data/mock/storefront";
-import { CatalogPage } from "../features/catalog/CatalogPage";
-import { ProductPage } from "../features/catalog/ProductPage";
 import { DesignSystemPage } from "../pages/DesignSystemPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { RequireAdmin } from "./RequireAdmin";
@@ -10,6 +8,16 @@ import { SiteLayout } from "./SiteLayout";
 
 // The home experience is heavy (world + editorial sections). Keep it out of
 // the entry chunk so a direct visit to /shop or a product never downloads it.
+const CatalogPage = lazy(() =>
+  import("../features/catalog/CatalogPage").then((module) => ({
+    default: module.CatalogPage,
+  })),
+);
+const ProductPage = lazy(() =>
+  import("../features/catalog/ProductPage").then((module) => ({
+    default: module.ProductPage,
+  })),
+);
 const ShowroomPage = lazy(() =>
   import("../pages/ShowroomPage").then((module) => ({
     default: module.ShowroomPage,

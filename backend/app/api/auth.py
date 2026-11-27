@@ -1,8 +1,9 @@
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from redis.asyncio import Redis
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -66,6 +67,59 @@ def set_refresh_cookie(response: Response, token: str, settings: Settings) -> No
     )
 
 
+def client_ip(request: Request, settings: Settings) -> str:
+    if settings.trust_proxy_headers:
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            return forwarded.split(",")[0].strip() or "unknown"
+        real_ip = request.headers.get("x-real-ip")
+        if real_ip:
+            return real_ip.strip() or "unknown"
+    return request.client.host if request.client else "unknown"
+
+
+def throttle_key(request: Request, settings: Settings, email: str) -> str:
+    return f"auth:attempt:{client_ip(request, settings)}:{email}"
+
+
+def as_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+
+
+async def prune_refresh_sessions(session: AsyncSession, user_id: UUID | None = None) -> None:
+    """Drop expired and long-revoked refresh sessions so the table stays bounded."""
+    now = datetime.now(UTC)
+    revoked_cutoff = now - timedelta(days=1)
+    statement = select(
+        RefreshSession.id, RefreshSession.expires_at, RefreshSession.revoked_at
+    )
+    if user_id is not None:
+        statement = statement.where(RefreshSession.user_id == user_id)
+    expired_ids = [
+        row[0]
+        for row in await session.execute(statement)
+        if (as_utc(row[1]) or now) < now
+        or ((as_utc(row[2]) or now) < revoked_cutoff and row[2] is not None)
+    ]
+    if expired_ids:
+        await session.execute(
+            delete(RefreshSession).where(RefreshSession.id.in_(expired_ids))
+        )
+
+
+async def reset_throttle(
+    request: Request, redis: Redis | None, settings: Settings, email: str
+) -> None:
+    if redis is None:
+        return
+    try:
+        await redis.delete(throttle_key(request, settings, email))
+    except Exception:
+        pass
+
+
 async def throttle(request: Request, redis: Redis | None, settings: Settings, email: str) -> None:
     if redis is None:
         if settings.redis_required:
@@ -77,7 +131,7 @@ async def throttle(request: Request, redis: Redis | None, settings: Settings, em
                 },
             )
         return
-    key = f"auth:attempt:{request.client.host if request.client else 'unknown'}:{email}"
+    key = throttle_key(request, settings, email)
     try:
         attempts = await redis.incr(key)
         if attempts == 1:
@@ -128,6 +182,7 @@ async def register(
             )
         )
         await attach_guest_cart(request, user, session)
+        await prune_refresh_sessions(session, user.id)
         await session.commit()
     except IntegrityError as exc:
         await session.rollback()
@@ -175,7 +230,9 @@ async def login(
         )
     )
     await attach_guest_cart(request, user, session)
+    await prune_refresh_sessions(session, user.id)
     await session.commit()
+    await reset_throttle(request, redis, settings, payload.email)
     set_refresh_cookie(response, refresh, settings)
     return AuthOut(
         access_token=create_access_token(user.id, user.role, settings),
@@ -231,6 +288,7 @@ async def refresh_access(
             expires_at=datetime.now(UTC) + timedelta(days=settings.refresh_token_days),
         )
     )
+    await prune_refresh_sessions(session, user.id)
     await session.commit()
     set_refresh_cookie(response, replacement, settings)
     return AuthOut(
@@ -275,17 +333,8 @@ async def inspect_session(
             samesite="strict",
         )
         return AuthSessionOut(authenticated=False)
-    stored.revoked_at = datetime.now(UTC)
-    replacement = new_refresh_token()
-    session.add(
-        RefreshSession(
-            user_id=user.id,
-            token_hash=digest_token(replacement),
-            expires_at=datetime.now(UTC) + timedelta(days=settings.refresh_token_days),
-        )
-    )
-    await session.commit()
-    set_refresh_cookie(response, replacement, settings)
+    # Inspection is read-only: rotating here made concurrent tabs invalidate
+    # each other's refresh cookie. Rotation happens only on /auth/refresh.
     return AuthSessionOut(
         authenticated=True,
         access_token=create_access_token(user.id, user.role, settings),
@@ -311,6 +360,7 @@ async def logout(
         )
         if stored:
             stored.revoked_at = datetime.now(UTC)
+            await prune_refresh_sessions(session, stored.user_id)
             await session.commit()
     response.delete_cookie(
         COOKIE_NAME,

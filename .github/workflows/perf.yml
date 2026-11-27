@@ -1,0 +1,81 @@
+name: Performance
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: perf-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "24"
+  PYTHON_VERSION: "3.13"
+
+jobs:
+  web-budgets:
+    name: Web budgets (mobile + desktop)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Serve production build
+        run: npx vite preview --host 127.0.0.1 --port 5199 --strictPort &
+      - name: Wait for preview
+        run: npx wait-on http://127.0.0.1:5199
+      - name: Run performance budgets
+        run: PERF_STRICT=1 PERF_HEAP_SAMPLES=6 PERF_HEAP_SAMPLE_MS=5000 npm run perf:check
+
+  memory:
+    name: Long-session memory budget
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: PERF_MEMORY_SAMPLES=6 PERF_MEMORY_SAMPLE_MS=5000 npx playwright test e2e/perf-memory.spec.ts
+
+  api:
+    name: API latency regressions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - run: pip install -e ".[dev]"
+        working-directory: backend
+      - run: pytest -q tests/test_performance.py
+        working-directory: backend
+
+  lighthouse:
+    name: Lighthouse CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx vite preview --host 127.0.0.1 --port 5199 --strictPort &
+      - run: npx wait-on http://127.0.0.1:5199
+      - run: npx lhci autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}

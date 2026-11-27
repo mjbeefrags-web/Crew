@@ -9,8 +9,10 @@ from uuid import uuid4
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from prometheus_fastapi_instrumentator import Instrumentator
 from redis.asyncio import Redis
 
 from app.api import admin as admin_routes
@@ -39,10 +41,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await app.state.redis.aclose()
         logger.info("application_stop")
 
-    app = FastAPI(title=config.app_name, version="0.1.0", debug=config.debug, lifespan=lifespan)
+    app = FastAPI(
+        title=config.app_name,
+        version="0.1.0",
+        debug=config.debug,
+        lifespan=lifespan,
+    )
     app.state.redis = None
     app.state.catalog_cache = ResponseCache(None)
     app.dependency_overrides[get_settings] = lambda: config
+    app.add_middleware(GZipMiddleware, minimum_size=1024)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=config.allowed_origins,
@@ -130,6 +138,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(catalog.admin, prefix=config.api_v1_prefix)
     app.include_router(commerce.router, prefix=config.api_v1_prefix)
     app.include_router(admin_routes.router)
+    if os.getenv("ENABLE_METRICS") == "1":
+        Instrumentator().instrument(app).expose(app, include_in_schema=False)
     return app
 
 

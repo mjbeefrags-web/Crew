@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import os
 from pathlib import Path
@@ -91,13 +92,18 @@ async def ai_advise(
     payload: AiAdviseIn,
     settings: Settings = Depends(get_settings),
 ) -> AiAdviceOut:
-    return AiAdviceOut.model_validate(
-        advise(settings, {"question": payload.question, "signals": payload.signals})
+    result = await asyncio.to_thread(
+        advise, settings, {"question": payload.question, "signals": payload.signals}
     )
+    return AiAdviceOut.model_validate(result)
 
 
 @router.get("/products", response_model=list[AdminProductOut])
-async def admin_products(session: AsyncSession = Depends(get_session)) -> list[AdminProductOut]:
+async def admin_products(
+    session: AsyncSession = Depends(get_session),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=200, ge=1, le=500),
+) -> list[AdminProductOut]:
     rows = (
         await session.scalars(
             select(Product)
@@ -108,6 +114,8 @@ async def admin_products(session: AsyncSession = Depends(get_session)) -> list[A
                 selectinload(Product.images),
             )
             .order_by(Product.name)
+            .offset((page - 1) * page_size)
+            .limit(page_size)
         )
     ).all()
 
@@ -135,8 +143,19 @@ async def admin_products(session: AsyncSession = Depends(get_session)) -> list[A
 
 
 @router.get("/customers", response_model=list[UserOut])
-async def admin_customers(session: AsyncSession = Depends(get_session)) -> list[UserOut]:
-    users = (await session.scalars(select(User).order_by(User.created_at.desc()).limit(200))).all()
+async def admin_customers(
+    session: AsyncSession = Depends(get_session),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=200, ge=1, le=500),
+) -> list[UserOut]:
+    users = (
+        await session.scalars(
+            select(User)
+            .order_by(User.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+    ).all()
     return [UserOut.model_validate(user) for user in users]
 
 
@@ -166,13 +185,18 @@ async def update_customer(
 
 
 @router.get("/orders", response_model=list[OrderOut])
-async def admin_orders(session: AsyncSession = Depends(get_session)) -> list[OrderOut]:
+async def admin_orders(
+    session: AsyncSession = Depends(get_session),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=200, ge=1, le=500),
+) -> list[OrderOut]:
     orders = (
         await session.scalars(
             select(Order)
             .options(selectinload(Order.items), selectinload(Order.payments))
             .order_by(Order.created_at.desc())
-            .limit(200)
+            .offset((page - 1) * page_size)
+            .limit(page_size)
         )
     ).all()
     return [order_payload(order) for order in orders]
@@ -194,7 +218,11 @@ async def update_order_status(
         raise HTTPException(
             status_code=404, detail={"code": "order_not_found", "message": "Order not found."}
         )
-    allowed = {"processing": {"shipped", "cancelled"}, "shipped": {"delivered"}}
+    allowed = {
+        "pending_payment": {"cancelled"},
+        "processing": {"shipped", "cancelled"},
+        "shipped": {"delivered"},
+    }
     if payload.status not in allowed.get(order.status, set()):
         raise HTTPException(
             status_code=409,

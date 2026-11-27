@@ -29,10 +29,11 @@ Redis on the host for this workflow.
 | Port `8080` free (site) | `Get-NetTCPConnection -LocalPort 8080` returns nothing | Set `WEB_PORT=8081` in `.env` |
 | Port `5433` free (DB tools) | `Get-NetTCPConnection -LocalPort 5433` returns nothing | Set `POSTGRES_PORT=5434` in `.env` |
 
-> **Your installed PostgreSQL is not required and must not be running on `5432`
-> for this stack.** Docker starts its own PostgreSQL 17. The app reaches it on
-> the internal `db:5432`; your `psql`/pgAdmin/DBeaver connect on
-> `127.0.0.1:5433`. A local PostgreSQL can stay on `5432` without conflict.
+> **Your installed PostgreSQL is not required for the Docker workflow.** Docker
+> starts its own PostgreSQL 17. The app reaches it on the internal `db:5432`;
+> your `psql`/pgAdmin/DBeaver connect on `127.0.0.1:5433`. A local PostgreSQL
+> can stay on `5432` without conflict — that is also where the optional
+> [live-data mirror](#live-data-mirror-deployed-data-on-this-laptop) lives.
 
 ## Quick start (one command)
 
@@ -44,6 +45,11 @@ docker compose up --build -d
 The defaults work for a local demo. First run takes a few minutes (image build);
 later runs take seconds. `migrate` applies Alembic migrations and seeds the
 catalog plus the bootstrap administrator before the API starts.
+
+The `web` image is a plain static Vite build: it skips the Cloudflare Vite
+plugin because Nginx, not Workers, serves the site in Compose. That also keeps
+the Docker build independent of `workerd`, the plugin's optional native binary.
+Cloudflare deploys still use the plugin via `npm run build` on the host or in CI.
 
 Wait for every service to report **healthy**:
 
@@ -58,6 +64,19 @@ Then open:
 - Login: [http://localhost:8080/login](http://localhost:8080/login)
 - API health: [http://localhost:8080/api/health](http://localhost:8080/api/health)
 - API readiness: [http://localhost:8080/api/ready](http://localhost:8080/api/ready)
+
+## Choose how to run it
+
+| What you want | How | Where it opens |
+|---|---|---|
+| **Whole project** — site, API, DB, cache | `docker compose up --build -d` (see Quick start) | `http://localhost:8080` |
+| **Frontend only** | `npm ci`, then `npm run dev` (see [Local development without Docker](#local-development-without-docker)) | `http://localhost:5173` |
+| **Backend only** | Create `backend\.venv`, install deps, run `uvicorn` (see below) | `http://127.0.0.1:8000` |
+| **Live deployed data on this laptop** | Local mirror `crewww_live`, refreshed automatically (see [Live-data mirror](#live-data-mirror-deployed-data-on-this-laptop)) | pgAdmin or local API |
+
+These can run at the same time: Docker uses port `8080` with its own database on
+`5433`, the host frontend uses `5173`, the host backend uses `8000`, and the
+mirror lives in the installed PostgreSQL on `5432`.
 
 ### Optional: start + wait in one step
 
@@ -112,9 +131,11 @@ Staging and production reject a non-empty bootstrap password. See
 |---|---|
 | `failed to connect to the docker API` | Start Docker Desktop and wait for **Engine running** |
 | `port is already allocated` | Change `WEB_PORT` or `POSTGRES_PORT` in `.env`, then `docker compose up -d` |
+| `web` build fails with `@cloudflare/workerd-linux-64` not found | An older cached install layer is missing workerd's optional binary; run `docker compose build --no-cache web`, then `docker compose up -d` |
 | `web` is unhealthy | `docker compose logs web`; rebuild with `docker compose up -d --build web` |
 | `api` is unhealthy | `docker compose logs migrate api`; confirm `migrate` exited `0` |
 | `password authentication failed` | The volume kept an older password. Use the old value, or `docker compose down -v` (destroys data) |
+| `migrate` connects to `127.0.0.1:5432` and exits 1 | `DATABASE_URL` in the root `.env` is overriding Compose. Comment it out (Compose defaults to `db:5432`) or set it to `...@db:5432/crewww`. For a local non-Docker backend, put the host-only URL in `backend/.env` instead — Compose does not read that file. |
 | Admin login fails after pulling | `docker compose run --rm migrate` to create the bootstrap admin in the existing volume |
 | `psql` is not recognized | Use `docker compose exec db psql -U crewww -d crewww`, or add `C:\Program Files\PostgreSQL\<version>\bin` to `PATH` |
 
@@ -407,6 +428,44 @@ npm run perf:check
 Set `PERF_BASE_URL` to test a different origin, for example the live
 Cloudflare deployment.
 
+### Performance budgets
+
+`npm run perf:check` now applies CPU throttling (4x) and Slow 4G to the mobile
+profile, records INP, and samples heap growth for 60 seconds after scrolling.
+
+| Metric | Mobile | Desktop |
+|---|---:|---:|
+| FCP | < 1.2 s | < 0.8 s |
+| LCP | < 2.0 s | < 1.5 s |
+| INP | < 200 ms | < 120 ms |
+| Script transfer | < 1400 KB | < 1400 KB |
+| Heap growth while idle | < 8 MB | < 10 MB |
+
+The entry chunk is currently ~469 KB (145 KB gzipped) after splitting the
+catalog and product routes; the 250 KB entry target remains a stretch goal.
+On phones, low-core devices and reduced-motion sessions the WebGL scenes are
+replaced by static posters; the storefront stays fully usable through the DOM
+controls. `BUILD_TARGET=docker` builds the same static assets without the
+Cloudflare plugin.
+
+Other checks:
+
+```powershell
+npm run build:analyze               # bundle-report.html
+PERF_HEAP_SAMPLES=6 npm run perf:check
+npx playwright test e2e/perf-memory.spec.ts
+k6 run -e BASE_URL=http://127.0.0.1:8080 perf/k6/products-list.js
+k6 run -e BASE_URL=http://127.0.0.1:8080 perf/k6/product-detail.js
+npx lhci autorun                     # Lighthouse CI
+cd backend; pytest -q tests/test_performance.py
+```
+
+The API also supports `GZipMiddleware`, orjson-serialized Redis cache payloads,
+tracked cache-key invalidation, a windowed catalog count query, and optional
+Prometheus metrics with `ENABLE_METRICS=1`. Uvicorn uses `WEB_CONCURRENCY`
+(default `2`) in Docker. The SQLAlchemy async models, Pydantic v2 schemas and
+PostgreSQL/asyncpg connection remain unchanged.
+
 The site is tuned for slow phones and long desktop sessions:
 
 - `public/_headers` gives fingerprinted JS/CSS/font files a year-long immutable
@@ -536,16 +595,98 @@ and [docs/operations/backup-restore.md](./docs/operations/backup-restore.md).
 
 ### Use your installed PostgreSQL instead
 
-Set `DATABASE_URL` in `.env` and run migrations against it:
+Put `DATABASE_URL` in **`backend\.env`**, not the root `.env`. The root file is
+read by Docker Compose; a host-only URL there overrides the Compose `db:5432`
+default and makes `migrate` fail when the host Postgres is stopped.
 
 ```dotenv
-DATABASE_URL=postgresql+asyncpg://crewww:password@host.docker.internal:5432/crewww
+# backend/.env — for the backend running directly on this laptop
+DATABASE_URL=postgresql+asyncpg://crewww:password@127.0.0.1:5432/crewww
 ```
 
-On Docker Desktop, `host.docker.internal` reaches the host. On Linux use the
-host bridge IP (usually `172.17.0.1`) or add an `extra_hosts` entry. The
-database and role must already exist; see
+If a container really must reach a host database, use
+`host.docker.internal` in place of `127.0.0.1` (Linux: host bridge IP or an
+`extra_hosts` entry). The database and role must already exist; see
 [docs/operations/production-checklist.md](./docs/operations/production-checklist.md#using-an-existing-postgresql-server).
+For the deployed-data mirror, see the next section.
+
+## Live-data mirror (deployed data on this laptop)
+
+The installed PostgreSQL 18 server holds `crewww_live`, a copy of the deployed
+Neon database. A Windows scheduled task refreshes it every 15 minutes while the
+laptop is online. Use it to browse live catalog/orders locally — **do not write
+to it**, because each refresh replaces the whole database.
+
+### Refresh it now
+
+```powershell
+npm run sync:db
+Get-Content logs\sync-neon.log -Tail 10
+```
+
+Check the schedule (task name `Crewww Neon to Local Sync`):
+
+```powershell
+Get-ScheduledTask -TaskName 'Crewww Neon to Local Sync' | Select-Object State
+Get-ScheduledTaskInfo -TaskName 'Crewww Neon to Local Sync' |
+  Select-Object LastRunTime,LastRunResult,NextRunTime
+```
+
+If Wi-Fi is down, the script logs one line and exits successfully; the next
+tick retries. Verified dumps are kept in `backups\neon\` (last 7).
+
+### See the mirror in pgAdmin
+
+pgAdmin 4 is installed with a server already registered:
+
+| Field | Value |
+|---|---|
+| Server name | `Crewww Live Mirror (Neon)` |
+| Host / Port | `127.0.0.1` / `5432` |
+| Database | `crewww_live` |
+| User / Password | `crewww` / `local-only-change-me-123456` |
+| SSL | disabled |
+
+On first connect, enter the password and tick **Save Password**. The same
+details work in DBeaver or `psql`:
+
+```powershell
+& "C:\Program Files\PostgreSQL\18\bin\psql.exe" `
+  "postgresql://crewww:local-only-change-me-123456@127.0.0.1:5432/crewww_live" `
+  -c "select count(*) from products;"
+```
+
+To browse the **Docker** database instead, use port `5433`, database `crewww`,
+and the `POSTGRES_PASSWORD` from the root `.env`.
+
+### Which file configures which database
+
+| File | Read by | Points to |
+|---|---|---|
+| Root `.env` | Docker Compose | Compose defaults (`db:5432`) and `POSTGRES_*` |
+| `backend\.env` | Backend on this laptop, and `npm run sync:db` | `crewww_live` (mirror) on `127.0.0.1:5432` |
+| `%LOCALAPPDATA%\crewww\neon-direct.url` | Sync script only | Encrypted direct URL for Neon (source of the mirror) |
+
+Never move the host-only `DATABASE_URL` into the root `.env`. To point the host
+backend at the Docker database instead, set `backend\.env` to
+`postgresql+asyncpg://crewww:<POSTGRES_PASSWORD>@127.0.0.1:5433/crewww`.
+
+If Neon credentials change, sign in again with the CLI and re-encrypt the
+direct URL:
+
+```powershell
+$env:NODE_OPTIONS = "--dns-result-order=ipv4first"
+npx --yes neon@latest login 2>&1
+$cs = (& npx --yes neon@latest connection-string production `
+  --project-id winter-lake-47657148 --ssl require 2>$null | Out-String).Trim()
+$cs | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString |
+  Set-Content "$env:LOCALAPPDATA\crewww\neon-direct.url" -Encoding UTF8
+```
+
+Full setup, troubleshooting, and the database audit are in
+[docs/operations/local-live-sync.md](./docs/operations/local-live-sync.md),
+[docs/operations/database-handoff.md](./docs/operations/database-handoff.md),
+and [docs/operations/backup-restore.md](./docs/operations/backup-restore.md).
 
 ## Configuration
 
@@ -562,6 +703,9 @@ Copy `.env.example` to `.env`. Important variables:
 | `FRONTEND_ORIGINS` | Comma-separated allowed browser origins | localhost/127.0.0.1 |
 | `COOKIE_SECURE` | Secure refresh cookie flag | `false` locally |
 | `BOOTSTRAP_ADMIN_EMAIL/PASSWORD` | First admin, created by seed | demo admin |
+| `WEB_CONCURRENCY` | Uvicorn workers in the API container | `2` |
+| `ENABLE_METRICS` | Expose `/metrics` on the API | `0` |
+| `TRUST_PROXY_HEADERS` | Use `X-Forwarded-For`/`X-Real-IP` for auth throttling behind Nginx/edge | `true` in Compose |
 | `VITE_INITIAL_ROUTE` | Default route opened by Docker | `/` |
 | `VITE_FEATURE_*` | Build-time feature flags | all `true` |
 
@@ -603,8 +747,10 @@ python -m app.seed
 uvicorn app.main:app --reload
 ```
 
-The backend reads the root `.env` as well as `backend/.env`, so the bootstrap
-admin and other settings work from either directory.
+The backend reads the root `.env` as well as `backend\.env`, so the bootstrap
+admin and other settings work from either directory. For the database URL, use
+`backend\.env` for host runs — the root `.env` belongs to Compose (see
+[Live-data mirror](#live-data-mirror-deployed-data-on-this-laptop)).
 
 ### Tests
 
@@ -653,6 +799,8 @@ k6 run -e BASE_URL=http://127.0.0.1:8080 perf/k6/catalog.js
 | Admin login fails after pulling | Run `docker compose run --rm migrate` to create the bootstrap admin in an existing volume. |
 | Database password/auth errors | The volume keeps the password used at creation. Use the old value or reset with `docker compose down -v` (destructive). |
 | Init SQL did not run | Init scripts only run on an empty volume. |
+| `web` build fails with a `workerd` / `@cloudflare/workerd-linux-64` error | Rebuild without the stale install cache: `docker compose build --no-cache web`, then `docker compose up -d`. Compose serves static assets through Nginx and does not load the Cloudflare plugin. |
+| Host `npm run build` fails with the same `workerd` error | npm skipped workerd's optional native binary during a flaky install. Remove `node_modules` and run `npm ci` again. |
 | API cannot reach PostgreSQL | Inside Compose the host is `db`, not `localhost`. |
 | 3D/showroom is slow on a client laptop | Enable browser hardware acceleration and close heavy tabs; the showroom is the heaviest route. |
 | Docker daemon not running | Start Docker Desktop, then retry. |

@@ -92,15 +92,15 @@ describe("foundation routes", () => {
     ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Select Mocha" }));
     await user.click(screen.getByRole("button", { name: /^L$/ }));
-    await user.click(screen.getByRole("button", { name: /add to bag/i }));
+    await user.click(screen.getByRole("button", { name: /add to cart/i }));
     await user.click(
       screen.getByRole("button", { name: /back to collection/i }),
     );
     await user.click(
-      screen.getByRole("button", { name: /^Shopping bag, 1 items$/i }),
+      screen.getByRole("button", { name: /^Shopping cart, 1 items$/i }),
     );
     expect(
-      screen.getByRole("dialog", { name: /shopping bag/i }),
+      screen.getByRole("dialog", { name: /shopping cart/i }),
     ).toHaveTextContent("Mocha / L / QTY 1");
     expect(window.localStorage.getItem("arcfield-bag")).toContain("product-03");
   }, 20000);

@@ -76,9 +76,16 @@ async def get_or_create_cart(
         )
         if cart is None:
             cart = Cart(user_id=user.id)
-            session.add(cart)
-            await session.commit()
-            await session.refresh(cart)
+            try:
+                session.add(cart)
+                await session.commit()
+                await session.refresh(cart)
+            except IntegrityError:
+                # Another concurrent request created the cart first.
+                await session.rollback()
+                cart = await session.scalar(select(Cart).where(Cart.user_id == user.id))
+                if cart is None:
+                    raise
         return cart
     token = request.cookies.get(COOKIE_NAME)
     cart = None
@@ -95,9 +102,17 @@ async def get_or_create_cart(
     if cart is None:
         token = secrets.token_urlsafe(32)
         cart = Cart(guest_token_hash=digest_token(token))
-        session.add(cart)
-        await session.commit()
-        await session.refresh(cart)
+        try:
+            session.add(cart)
+            await session.commit()
+            await session.refresh(cart)
+        except IntegrityError:
+            await session.rollback()
+            cart = await session.scalar(
+                select(Cart).where(Cart.guest_token_hash == digest_token(token))
+            )
+            if cart is None:
+                raise
         response.set_cookie(
             COOKIE_NAME,
             token,

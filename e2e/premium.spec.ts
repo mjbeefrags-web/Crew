@@ -17,7 +17,7 @@ test("fit finder suggests a size, applies it and records a fit check", async ({
   expect(events).toContain("fit_check");
 });
 
-test("product browsing and add-to-bag appear in the owner console", async ({
+test("product browsing and add-to-cart appear in the owner console", async ({
   page,
 }) => {
   await page.goto("/products/cherry-blossom-hoodie");
@@ -57,12 +57,12 @@ test("recently viewed rail follows the shopping trail", async ({ page }) => {
   );
 });
 
-test("mobile product page keeps add-to-bag reachable", async ({ page }) => {
+test("mobile product page keeps add-to-cart reachable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/products/crew-script-hoodie");
   await expect(page.locator(".mobile-buy-bar")).toBeVisible();
   await page.locator(".mobile-buy-bar button").click();
   await expect(
-    page.getByRole("link", { name: /Shopping bag, 1 items/i }),
+    page.getByRole("link", { name: /Shopping cart, 1 items/i }),
   ).toBeVisible();
 });

@@ -49,6 +49,12 @@ test('category and product routes expose shareable metadata', async ({ page }) =
   await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /Vivre La Vie/);
 });
 
+test('the + on a product card adds it to the cart in one press', async ({ page }) => {
+  await page.goto('/shop');
+  await page.locator('.store-quick-add-plus').first().click();
+  await expect(page.getByRole('link', { name: /Shopping cart, 1 items/i })).toBeVisible();
+});
+
 test('active filter chips remove only their own URL parameter', async ({ page }) => {
   await page.goto('/shop?size=M&color=Black');
   await expect(page.locator('.active-filter')).toHaveCount(2);

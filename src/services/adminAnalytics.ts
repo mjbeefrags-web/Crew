@@ -408,7 +408,7 @@ export function computeAdminMetrics(
     insights.push({
       tone: "watch",
       title: `${outOfStockSkus} variants have no stock`,
-      body: "Hide or back-in-stock these sizes so shoppers never hit a dead add-to-bag.",
+      body: "Hide or back-in-stock these sizes so shoppers never hit a dead add-to-cart.",
     });
   if (conversionProxy < 0.35 && activeCarts)
     insights.push({
@@ -438,7 +438,7 @@ export function computeAdminMetrics(
     insights.push({
       tone: "action",
       title: `${productInterest[0].label} is getting attention, not orders`,
-      body: "Add clearer fit guidance and a stronger add-to-bag path on the product page to turn views into sales.",
+      body: "Add clearer fit guidance and a stronger add-to-cart path on the product page to turn views into sales.",
     });
 
   return {

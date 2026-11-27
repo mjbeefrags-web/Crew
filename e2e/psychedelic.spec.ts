@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('psychedelic room is entered, changes piece and mood, and adds to bag', async ({ page }) => {
+test('psychedelic room is entered, changes piece and mood, and adds to cart', async ({ page }) => {
   await page.goto('/drops/psychedelic-minds');
   await expect(page.getByRole('heading', { name: /put on the frequency/i })).toBeVisible();
   await page.getByRole('button', { name: /enter the room/i }).click();
@@ -8,8 +8,8 @@ test('psychedelic room is entered, changes piece and mood, and adds to bag', asy
   await page.getByRole('button', { name: /Life in Scroll/i }).click();
   await expect(page.getByRole('heading', { name: 'Life in Scroll', exact: true })).toBeVisible();
   await page.getByRole('button', { name: /BLOOM/i }).click();
-  await page.getByRole('button', { name: /add to bag/i }).click();
-  await expect(page.getByText(/added to your bag/i)).toBeVisible();
+  await page.getByRole('button', { name: /add to cart/i }).click();
+  await expect(page.getByText(/added to your cart/i)).toBeVisible();
 });
 
 test('psychedelic room visual captures', async ({ page }) => {

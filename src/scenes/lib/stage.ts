@@ -16,6 +16,8 @@ export type StageOptions = {
   antialias?: boolean;
   toneMapping?: ToneMapping;
   visibilityTarget?: HTMLElement;
+  /** Geometries, materials and textures owned by the scene. */
+  disposables?: Set<{ dispose(): void }>;
   onFrame?: (delta: number, elapsed: number) => void;
   onResize?: (width: number, height: number) => void;
 };
@@ -70,7 +72,8 @@ export function createStage(
       ? window.matchMedia("(prefers-reduced-motion: reduce)")
       : null;
   let motionEnabled = !(motionQuery?.matches ?? false);
-  let visible = true;
+  let onscreen = true;
+  let offscreenTimer = 0;
   let contextLost = false;
   let disposed = false;
   let needsRender = true;
@@ -116,16 +119,26 @@ export function createStage(
   };
 
   const updateVisibility = () => {
-    const active = visible && !document.hidden;
+    const active = onscreen && !document.hidden;
     if (!active) {
-      window.cancelAnimationFrame(frameId);
+      if (frameId) window.cancelAnimationFrame(frameId);
       frameId = 0;
+      lastFrame = 0;
       return;
     }
     if (!frameId) {
       lastFrame = 0;
       frameId = window.requestAnimationFrame(loop);
     }
+  };
+
+  // Keep rendering briefly after the canvas leaves the viewport (smoother
+  // scroll), then stop the rAF loop until it comes back or the tab is shown.
+  const onIntersection = (entries: IntersectionObserverEntry[]) => {
+    onscreen = entries.some((entry) => entry.isIntersecting);
+    window.clearTimeout(offscreenTimer);
+    if (onscreen) updateVisibility();
+    else offscreenTimer = window.setTimeout(updateVisibility, 2000);
   };
 
   const onMotionChange = () => {
@@ -152,13 +165,9 @@ export function createStage(
     observer.observe(canvas);
   }
   if (typeof IntersectionObserver !== "undefined" && options.visibilityTarget) {
-    intersection = new IntersectionObserver(
-      (entries) => {
-        visible = entries.some((entry) => entry.isIntersecting);
-        updateVisibility();
-      },
-      { rootMargin: "120px" },
-    );
+    intersection = new IntersectionObserver(onIntersection, {
+      rootMargin: "120px",
+    });
     intersection.observe(options.visibilityTarget);
   }
   window.addEventListener("resize", resize);
@@ -180,6 +189,7 @@ export function createStage(
     resize,
     dispose: () => {
       disposed = true;
+      window.clearTimeout(offscreenTimer);
       window.cancelAnimationFrame(frameId);
       window.removeEventListener("resize", resize);
       document.removeEventListener("visibilitychange", onVisibilityChange);
@@ -188,6 +198,7 @@ export function createStage(
       motionQuery?.removeEventListener?.("change", onMotionChange);
       observer?.disconnect();
       intersection?.disconnect();
+      options.disposables?.forEach((item) => item.dispose());
       renderer.dispose();
     },
   };

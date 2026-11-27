@@ -28,15 +28,25 @@ export function ProductCard({ product }: { product: Product }) {
       quantity: 1,
     });
     setSizeOpen(false);
-    showNotice(`${product.name} · ${chosenSize} added to your preview bag.`);
+    showNotice(`${product.name} · ${chosenSize} added to your preview cart.`);
   };
 
-  const quickAdd = () => {
-    if (sizes.length === 1) {
-      addSize(sizes[0]);
-      return;
-    }
-    setSizeOpen((open) => !open);
+  // The `+` on the product image is a one-press add. It uses the first
+  // in-stock variant (or the first size) so shoppers are never blocked by a
+  // size picker just to get a piece into the cart.
+  const quickAddToCart = () => {
+    const inStock = product.variants?.find((variant) => variant.stockQuantity > 0);
+    const chosenSize = inStock?.size ?? sizes[0];
+    const chosenColor =
+      inStock?.color ?? product.colors[0]?.name ?? product.color;
+    addCartLine({
+      productId: product.id,
+      size: chosenSize,
+      color: chosenColor,
+      quantity: 1,
+    });
+    setSizeOpen(false);
+    showNotice(`${product.name} · ${chosenSize} added to your cart.`);
   };
 
   return (
@@ -96,6 +106,14 @@ export function ProductCard({ product }: { product: Product }) {
         >
           {saved ? "♥" : "♡"}
         </button>
+        <button
+          className="store-quick-add-plus"
+          type="button"
+          aria-label={`Add ${product.name} to cart`}
+          onClick={quickAddToCart}
+        >
+          <span aria-hidden="true">+</span>
+        </button>
       </div>
       <div className="store-product-copy">
         <p>{product.collection.replace("CREWWW / ", "")}</p>
@@ -124,10 +142,10 @@ export function ProductCard({ product }: { product: Product }) {
         type="button"
         aria-expanded={sizeOpen}
         aria-controls={`quick-add-${product.id}`}
-        onClick={quickAdd}
+        onClick={() => setSizeOpen((open) => !open)}
       >
-        {sizeOpen ? "CHOOSE A SIZE" : "QUICK ADD"}{" "}
-        <span>{sizeOpen ? "−" : "+"}</span>
+        {sizeOpen ? "HIDE SIZES" : "PICK A SIZE"}{" "}
+        <span>{sizeOpen ? "−" : "⌄"}</span>
       </button>
       {sizeOpen && (
         <div

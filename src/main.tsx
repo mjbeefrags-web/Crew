@@ -7,12 +7,16 @@ import "./styles/index.css";
 import "./styles/experience.css";
 import "./styles/drop-object.css";
 import "./styles/command-palette.css";
+import "./styles/verse.css";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      staleTime: 60_000,
+      gcTime: 300_000,
     },
   },
 });

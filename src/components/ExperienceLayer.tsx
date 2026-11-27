@@ -24,7 +24,7 @@ const CHAPTER_LABELS: Array<[RegExp, string]> = [
   [/^\/products/, "THE OBJECT"],
   [/^\/lookbook|^\/looks/, "THE STORY"],
   [/^\/about/, "THE STORY"],
-  [/^\/cart|^\/checkout|^\/order-confirmation/, "THE BAG"],
+  [/^\/cart|^\/checkout|^\/order-confirmation/, "THE CART"],
   [
     /^\/account|^\/login|^\/register|^\/forgot-password|^\/wishlist/,
     "YOUR CREWWW",
@@ -78,6 +78,26 @@ export function ExperienceLayer() {
     let lastLabel = "";
     let pointerSeen = false;
     let chapterAt = 0;
+    let sections = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-chapter]"),
+    );
+    let sectionRefresh = 0;
+    let resizeTimer = 0;
+    const sectionObserver =
+      typeof MutationObserver !== "undefined"
+        ? new MutationObserver(() => {
+            window.clearTimeout(sectionRefresh);
+            sectionRefresh = window.setTimeout(() => {
+              sections = Array.from(
+                document.querySelectorAll<HTMLElement>("[data-chapter]"),
+              );
+            }, 200);
+          })
+        : null;
+    sectionObserver?.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
 
     const clearTilt = () => {
       if (!tiltElement) return;
@@ -96,17 +116,16 @@ export function ExperienceLayer() {
     };
 
     const findChapter = (): string => {
-      const sections = document.querySelectorAll<HTMLElement>("[data-chapter]");
       if (!sections.length) return routeLabel(location.pathname);
       const line = window.innerHeight * 0.42;
       let current = "";
-      sections.forEach((section) => {
+      for (const section of sections) {
         const bounds = section.getBoundingClientRect();
         if (bounds.top <= line && bounds.bottom > line)
           current = section.dataset.chapter ?? "";
         else if (bounds.top <= line)
           current = section.dataset.chapter ?? current;
-      });
+      }
       return current || routeLabel(location.pathname);
     };
 
@@ -226,8 +245,13 @@ export function ExperienceLayer() {
     };
     const onPointerUp = () => cursorRef.current?.classList.remove("is-pressed");
 
+    const onResize = () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(onScroll, 120);
+    };
+
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+    window.addEventListener("resize", onResize);
     window.addEventListener("pointermove", onPointerMove, { passive: true });
     window.addEventListener("pointerdown", onPointerDown, { passive: true });
     window.addEventListener("pointerup", onPointerUp, { passive: true });
@@ -237,9 +261,12 @@ export function ExperienceLayer() {
 
     return () => {
       disposed = true;
+      sectionObserver?.disconnect();
+      window.clearTimeout(sectionRefresh);
+      window.clearTimeout(resizeTimer);
       if (scrollFrame) window.cancelAnimationFrame(scrollFrame);
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("resize", onResize);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("pointerup", onPointerUp);

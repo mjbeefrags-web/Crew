@@ -21,6 +21,8 @@ const profiles = [
       totalKB: 5000,
       longTasks: 10,
       heapGrowthMB: 24,
+      idleHeapGrowthMB: 8,
+      inpMs: 200,
     },
   },
   {
@@ -36,6 +38,8 @@ const profiles = [
       totalKB: 5500,
       longTasks: 12,
       heapGrowthMB: 32,
+      idleHeapGrowthMB: 10,
+      inpMs: 120,
     },
   },
 ];
@@ -53,6 +57,8 @@ const routes = [
 
 const browser = await chromium.launch();
 const failures = [];
+const heapSamples = Number(process.env.PERF_HEAP_SAMPLES ?? 12);
+const heapSampleMs = Number(process.env.PERF_HEAP_SAMPLE_MS ?? 5000);
 
 const heapMB = async (page) =>
   page.evaluate(() =>
@@ -64,7 +70,7 @@ const heapMB = async (page) =>
 for (const profile of profiles) {
   const context = await browser.newContext(profile.context);
   await context.addInitScript(() => {
-    window.__perf = { lcp: 0, cls: 0, longTasks: 0 };
+    window.__perf = { lcp: 0, cls: 0, longTasks: 0, inp: 0 };
     try {
       new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
@@ -84,10 +90,28 @@ for (const profile of profiles) {
         window.__perf.longTasks += list.getEntries().length;
       }).observe({ type: "longtask", buffered: true });
     } catch {}
+    try {
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          if (entry.interactionId && entry.duration > window.__perf.inp)
+            window.__perf.inp = entry.duration;
+        }
+      }).observe({ type: "event", buffered: true, durationThreshold: 16 });
+    } catch {}
   });
 
   for (const route of routes) {
     const page = await context.newPage();
+    if (profile.name === "mobile") {
+      const cdp = await context.newCDPSession(page);
+      await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+      await cdp.send("Network.emulateNetworkConditions", {
+        offline: false,
+        latency: 150,
+        downloadThroughput: (1.6 * 1024 * 1024) / 8,
+        uploadThroughput: (750 * 1024) / 8,
+      });
+    }
     await page.goto(base + route.path, {
       waitUntil: "networkidle",
       timeout: 60000,
@@ -115,6 +139,7 @@ for (const profile of profiles) {
         lcpMs: Math.round(window.__perf?.lcp ?? -1),
         cls: Number((window.__perf?.cls ?? 0).toFixed(3)),
         longTasks: window.__perf?.longTasks ?? 0,
+        inpMs: Math.round(window.__perf?.inp ?? 0),
         domContentLoadedMs: Math.round(nav?.domContentLoadedEventEnd ?? -1),
         loadMs: Math.round(nav?.loadEventEnd ?? -1),
         requests: resources.length,
@@ -135,6 +160,14 @@ for (const profile of profiles) {
     }));
     const heapAfter = await heapMB(page);
     const heapGrowthMB = Math.max(0, heapAfter - heapBefore);
+    // Long-session check: idle on the page and sample heap growth. A rising
+    // trend here is the signature of leaked textures, listeners or timers.
+    let idleHeap = heapAfter;
+    for (let index = 0; index < heapSamples; index += 1) {
+      await page.waitForTimeout(heapSampleMs);
+      idleHeap = Math.max(idleHeap, await heapMB(page));
+    }
+    const idleHeapGrowthMB = Math.max(0, idleHeap - heapAfter);
 
     const result = {
       ...initial,
@@ -142,6 +175,7 @@ for (const profile of profiles) {
       heapBefore,
       heapAfter,
       heapGrowthMB,
+      idleHeapGrowthMB,
     };
 
     const checks = [
@@ -151,6 +185,8 @@ for (const profile of profiles) {
       ["totalKB", result.totalKB, profile.budgets.totalKB],
       ["sustainedLongTasks", result.sustainedLongTasks, profile.budgets.longTasks],
       ["heapGrowthMB", result.heapGrowthMB, profile.budgets.heapGrowthMB],
+      ["idleHeapGrowthMB", result.idleHeapGrowthMB, profile.budgets.idleHeapGrowthMB],
+      ["inpMs", result.inpMs, profile.budgets.inpMs],
     ];
     const failed = checks.filter(([, value, budget]) => value > budget);
     const status = failed.length ? "FAIL" : "PASS";
@@ -162,8 +198,9 @@ for (const profile of profiles) {
       `${status.padEnd(4)} ${profile.name.padEnd(7)} ${route.name.padEnd(17)} ` +
         `FCP ${String(result.fcpMs).padStart(4)}ms  LCP ${String(result.lcpMs).padStart(4)}ms  ` +
         `JS ${String(result.scriptKB).padStart(4)}KB  total ${String(result.totalKB).padStart(5)}KB  ` +
-        `cold ${String(result.longTasks).padStart(2)}  long ` +
-        `${String(result.sustainedLongTasks).padStart(2)}  heap +${result.heapGrowthMB}MB`,
+        `INP ${String(result.inpMs).padStart(4)}ms  long ` +
+        `${String(result.sustainedLongTasks).padStart(2)}  heap +${result.heapGrowthMB}MB ` +
+        `idle +${result.idleHeapGrowthMB}MB`,
     );
     await page.close();
   }

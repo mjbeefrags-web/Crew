@@ -1,11 +1,12 @@
 import { Component, type ReactNode } from "react";
 
 type Props = { children: ReactNode };
+type State = { failed: boolean; attempts: number };
 
-export class ErrorBoundary extends Component<Props, { failed: boolean }> {
-  state = { failed: false };
+export class ErrorBoundary extends Component<Props, State> {
+  state: State = { failed: false, attempts: 0 };
 
-  static getDerivedStateFromError() {
+  static getDerivedStateFromError(): Partial<State> {
     return { failed: true };
   }
 
@@ -18,17 +19,30 @@ export class ErrorBoundary extends Component<Props, { failed: boolean }> {
     );
   }
 
+  private retry = () => {
+    this.setState((state) => ({ failed: false, attempts: state.attempts + 1 }));
+  };
+
   render() {
     if (this.state.failed) {
       return (
-        <RetryRouteBoundary onRetry={() => this.setState({ failed: false })} />
+        <RetryRouteBoundary
+          attempts={this.state.attempts}
+          onRetry={this.retry}
+        />
       );
     }
     return this.props.children;
   }
 }
 
-function RetryRouteBoundary({ onRetry }: { onRetry: () => void }) {
+function RetryRouteBoundary({
+  attempts,
+  onRetry,
+}: {
+  attempts: number;
+  onRetry: () => void;
+}) {
   return (
     <div className="catalog-skeleton" role="alert">
       <p>
@@ -36,6 +50,18 @@ function RetryRouteBoundary({ onRetry }: { onRetry: () => void }) {
         <button type="button" onClick={onRetry}>
           Retry.
         </button>
+        {attempts > 0 && (
+          <>
+            {" "}
+            Still stuck?{" "}
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+            >
+              Reload the store.
+            </button>
+          </>
+        )}
       </p>
     </div>
   );

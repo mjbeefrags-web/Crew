@@ -9,6 +9,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { Button } from "../components/Button";
+import { CartIcon } from "../components/CartIcon";
 import { ColorwayMatrix } from "../components/ColorwayMatrix";
 import { ConceptWorlds } from "../components/ConceptWorlds";
 import { DropTransmissionRail } from "../components/DropTransmissionRail";
@@ -601,7 +602,7 @@ export function ShowroomPage() {
     };
     addCartLine(line);
     showToast(
-      `${activeProduct.name} · ${activeColor} · ${activeSize} added to your bag.`,
+      `${activeProduct.name} · ${activeColor} · ${activeSize} added to your cart.`,
     );
   };
 
@@ -1504,7 +1505,7 @@ export function ShowroomPage() {
                 </div>
               </div>
               <Button className="studio-add" onClick={addToBag}>
-                ADD TO BAG —{" "}
+                ADD TO CART —{" "}
                 {formatCurrency(
                   activeProduct.price * quantity,
                   activeProduct.currency,
@@ -1569,7 +1570,7 @@ export function ShowroomPage() {
             className="cart-drawer"
             role="dialog"
             aria-modal="true"
-            aria-label="Shopping bag"
+            aria-label="Shopping cart"
             tabIndex={-1}
             onClick={(event) => event.stopPropagation()}
           >
@@ -1577,7 +1578,7 @@ export function ShowroomPage() {
               ref={cartCloseRef}
               className="cart-close"
               type="button"
-              aria-label="Close shopping bag"
+              aria-label="Close shopping cart"
               onClick={closeCart}
             >
               ×
@@ -1585,7 +1586,7 @@ export function ShowroomPage() {
             <span className="showroom-eyebrow">
               YOUR SELECTION / {cartCount}
             </span>
-            <h2>The bag.</h2>
+            <h2>The cart.</h2>
             {cartLines.length ? (
               <div className="bag-lines">
                 {cartLines.map((line, index) => {
@@ -1598,7 +1599,12 @@ export function ShowroomPage() {
                       className="bag-line"
                       key={`${line.productId}-${line.size}-${line.color}`}
                     >
-                      <img src={product.imageUrl} alt="" />
+                      <img
+                        src={product.imageUrl}
+                        alt=""
+                        width={800}
+                        height={1052}
+                      />
                       <div>
                         <strong>{product.name}</strong>
                         <span>
@@ -1615,7 +1621,7 @@ export function ShowroomPage() {
                       </div>
                       <button
                         type="button"
-                        aria-label={`Remove ${product.name} from bag`}
+                        aria-label={`Remove ${product.name} from cart`}
                         onClick={() => removeCartLine(index)}
                       >
                         ×
@@ -1630,7 +1636,7 @@ export function ShowroomPage() {
                 </p>
               </div>
             ) : (
-              <p>Your bag is waiting for something good.</p>
+              <p>Your cart is waiting for something good.</p>
             )}
             <button
               type="button"
@@ -1661,10 +1667,10 @@ export function ShowroomPage() {
       <button
         className="floating-bag"
         type="button"
-        aria-label={`Shopping bag, ${cartCount} items`}
+        aria-label={`Shopping cart, ${cartCount} items`}
         onClick={(event) => openCart(event.currentTarget)}
       >
-        BAG <span>{cartCount}</span>
+        <CartIcon /> CART <span>{cartCount}</span>
       </button>
     </div>
   );

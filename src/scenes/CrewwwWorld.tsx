@@ -6,6 +6,8 @@ import {
   BufferAttribute,
   BufferGeometry,
   CanvasTexture,
+  InstancedMesh,
+  Object3D,
   CatmullRomCurve3,
   CircleGeometry,
   Color,
@@ -37,9 +39,11 @@ import {
   Vector2,
   Vector3,
 } from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { createStage } from "./lib/stage";
 import { drops } from "../data/drops";
 import { psychedelicPieces } from "../data/psychedelic";
+import { getDeviceTier, isLowEnd } from "../lib/deviceTier";
 
 export type WorldDestinationId = "graphic" | "outside" | "city" | "essentials";
 export type WorldMode = "cinematic" | "explore";
@@ -110,6 +114,11 @@ const storefronts: Storefront[] = [
     accent: psychedelicPieces[4].accent,
   },
 ];
+
+/** Mid-tier phones get fewer segments without losing the silhouette. */
+function segments(high: number, mid: number): number {
+  return getDeviceTier() === "mid" ? mid : high;
+}
 
 function makeSignTexture(name: string, accent = "#c9ef68") {
   const canvas = document.createElement("canvas");
@@ -231,7 +240,7 @@ function makeWorldGarment(color: string) {
   body.position.z = -0.06;
   garment.add(body);
   const hood = new Mesh(
-    new SphereGeometry(0.42, 14, 10),
+    new SphereGeometry(0.42, segments(14, 10), segments(10, 8)),
     new MeshStandardMaterial({
       color: new Color(color).multiplyScalar(0.82),
       roughness: 0.92,
@@ -270,6 +279,14 @@ export function CrewwwWorld({
   const nearRef = useRef(onNearDestination);
   const progressRef = useRef(progress);
   const [unsupported, setUnsupported] = useState(false);
+  // Phones and reduced-motion visitors get a static poster: the WebGL district
+  // is the most expensive surface on the site and cannot pay for itself there.
+  const [staticFallback] = useState(
+    () =>
+      isLowEnd() ||
+      (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ??
+        false),
+  );
   callbackRef.current = onDestination;
   modeRef.current = mode;
   moveRef.current = moveInput ?? { x: 0, z: 0 };
@@ -278,7 +295,8 @@ export function CrewwwWorld({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return undefined;
+    if (!canvas || staticFallback) return undefined;
+    let disposed = false;
 
     const scene = new Scene();
     scene.background = new Color("#101711");
@@ -290,6 +308,7 @@ export function CrewwwWorld({
     const root = new Group();
     scene.add(root);
 
+    const dummy = new Object3D();
     const disposables = new Set<{ dispose(): void }>();
     const track = <T extends { dispose(): void }>(item: T): T => {
       disposables.add(item);
@@ -351,17 +370,29 @@ export function CrewwwWorld({
     road.rotation.x = -Math.PI / 2;
     road.position.set(0, -0.44, -8);
     root.add(road);
-    for (const x of [-4.9, 4.9]) {
-      const pavement = new Mesh(pavementGeo, curbMaterial);
-      pavement.rotation.x = -Math.PI / 2;
-      pavement.position.set(x, -0.42, -8);
-      root.add(pavement);
-    }
+    // Static pavements and road dashes share a material: merge each group into
+    // one buffer so they cost one draw call instead of eight or more.
+    const pavementParts = [-4.9, 4.9].map((x) => {
+      const part = pavementGeo.clone();
+      part.rotateX(-Math.PI / 2);
+      part.translate(x, -0.42, -8);
+      return part;
+    });
+    const mergedPavement = track(
+      mergeGeometries(pavementParts) ?? pavementGeo.clone(),
+    );
+    pavementParts.forEach((part) => part.dispose());
+    root.add(new Mesh(mergedPavement, curbMaterial));
+
+    const dashParts: BufferGeometry[] = [];
     for (let z = 3; z > -26; z -= 4) {
-      const dash = new Mesh(dashGeo, trimMaterial);
-      dash.position.set(0, -0.42, z);
-      root.add(dash);
+      const part = dashGeo.clone();
+      part.translate(0, -0.42, z);
+      dashParts.push(part);
     }
+    const mergedDashes = track(mergeGeometries(dashParts) ?? dashGeo.clone());
+    dashParts.forEach((part) => part.dispose());
+    root.add(new Mesh(mergedDashes, trimMaterial));
     const centreLight = new Mesh(
       track(new PlaneGeometry(0.12, 40)),
       track(
@@ -380,28 +411,33 @@ export function CrewwwWorld({
     root.add(centreLight);
     const glowTexture = makeGlowTexture();
     if (glowTexture) track(glowTexture);
-    const lightPools: Mesh[] = [];
-    for (const z of [1, -6, -13, -20])
-      for (const x of [-3.15, 3.15]) {
-        const pool = new Mesh(
-          track(new PlaneGeometry(3.2, 3.2)),
-          track(
-            new MeshBasicMaterial({
-              map: glowTexture ?? undefined,
-              color: "#d9f0a5",
-              transparent: true,
-              opacity: 0.2,
-              blending: AdditiveBlending,
-              depthWrite: false,
-              toneMapped: false,
-            }),
-          ),
-        );
-        pool.rotation.x = -Math.PI / 2;
-        pool.position.set(x, -0.412, z);
-        root.add(pool);
-        lightPools.push(pool);
-      }
+    const poolGeo = track(new PlaneGeometry(3.2, 3.2));
+    const poolMaterial = track(
+      new MeshBasicMaterial({
+        map: glowTexture ?? undefined,
+        color: "#d9f0a5",
+        transparent: true,
+        opacity: 0.2,
+        blending: AdditiveBlending,
+        depthWrite: false,
+        toneMapped: false,
+      }),
+    );
+    const poolSpots = [1, -6, -13, -20].flatMap((z) =>
+      [-3.15, 3.15].map((x) => [x, z] as const),
+    );
+    const lightPools = track(
+      new InstancedMesh(poolGeo, poolMaterial, poolSpots.length),
+    );
+    poolSpots.forEach(([x, z], index) => {
+      dummy.position.set(x, -0.412, z);
+      dummy.rotation.set(-Math.PI / 2, 0, 0);
+      dummy.updateMatrix();
+      lightPools.setMatrixAt(index, dummy.matrix);
+    });
+    lightPools.instanceMatrix.needsUpdate = true;
+    dummy.rotation.set(0, 0, 0);
+    root.add(lightPools);
 
     const hotspots: Mesh[] = [];
     const signs: Mesh[] = [];
@@ -415,14 +451,31 @@ export function CrewwwWorld({
     const posterGeo = track(new PlaneGeometry(0.92, 1.36));
     const roofGeo = track(new BoxGeometry(5.35, 0.22, 3.85));
 
+    // Buildings and roofs repeat with identical geometry/material: one draw
+    // call each instead of one per storefront.
+    const buildings = track(
+      new InstancedMesh(buildingGeo, buildingMaterial, storefronts.length),
+    );
+    const roofs = track(
+      new InstancedMesh(roofGeo, trimMaterial, storefronts.length),
+    );
+    storefronts.forEach((shop, index) => {
+      dummy.position.set(shop.x, 2.35, shop.z);
+      dummy.updateMatrix();
+      buildings.setMatrixAt(index, dummy.matrix);
+      dummy.position.set(shop.x, 5.29, shop.z);
+      dummy.updateMatrix();
+      roofs.setMatrixAt(index, dummy.matrix);
+    });
+    buildings.instanceMatrix.needsUpdate = true;
+    roofs.instanceMatrix.needsUpdate = true;
+    root.add(buildings, roofs);
+
     for (let i = 0; i < storefronts.length; i += 1) {
       const shop = storefronts[i];
       const facade = new Group();
       facade.position.set(shop.x, 0, shop.z);
       root.add(facade);
-      const building = new Mesh(buildingGeo, buildingMaterial);
-      building.position.y = 2.35;
-      facade.add(building);
       const signTexture = makeSignTexture(shop.world, shop.accent);
       let signMesh: Mesh | null = null;
       if (signTexture) {
@@ -467,6 +520,10 @@ export function CrewwwWorld({
         poster.position.set(windowX, 1.72, 2.08);
         facade.add(poster);
         loader.load(windowPoster, (texture) => {
+          if (disposed) {
+            texture.dispose();
+            return;
+          }
           texture.colorSpace = SRGBColorSpace;
           track(texture);
           const previous = poster.material as MeshBasicMaterial;
@@ -486,6 +543,10 @@ export function CrewwwWorld({
       anglePanel.position.set(0, 3.35, 2.08);
       facade.add(anglePanel);
       loader.load(shop.angle, (texture) => {
+        if (disposed) {
+          texture.dispose();
+          return;
+        }
         texture.colorSpace = SRGBColorSpace;
         track(texture);
         const previous = anglePanel.material as MeshBasicMaterial;
@@ -496,9 +557,6 @@ export function CrewwwWorld({
         disposables.delete(previous);
         stage?.requestRender();
       });
-      const roof = new Mesh(roofGeo, trimMaterial);
-      roof.position.y = 5.29;
-      facade.add(roof);
       const glow = new PointLight(shop.accent, 2, 10);
       glow.position.set(shop.x > 0 ? -1 : 1, 2.5, 2.7);
       facade.add(glow);
@@ -569,8 +627,12 @@ export function CrewwwWorld({
       board.position.z = 0.055;
       group.add(board);
       loader.load(drop.plate, (texture) => {
+        if (disposed) {
+          texture.dispose();
+          return;
+        }
         texture.colorSpace = SRGBColorSpace;
-        texture.anisotropy = 4;
+        texture.anisotropy = 2;
         track(texture);
         boardMaterial.map = texture;
         boardMaterial.needsUpdate = true;
@@ -584,38 +646,63 @@ export function CrewwwWorld({
       });
     });
 
-    const lampPoleGeo = track(new CylinderGeometry(0.045, 0.075, 4.1, 8));
-    const bulbGeo = track(new SphereGeometry(0.16, 12, 10));
+    const lampPoleGeo = track(
+      new CylinderGeometry(0.045, 0.075, 4.1, segments(8, 6)),
+    );
+    const bulbGeo = track(
+      new SphereGeometry(0.16, segments(12, 8), segments(10, 6)),
+    );
     const bulbMaterial = track(
       new MeshBasicMaterial({ color: "#d9f0a5", toneMapped: false }),
     );
-    for (const z of [1, -6, -13])
-      for (const x of [-3.15, 3.15]) {
-        const pole = new Mesh(lampPoleGeo, trimMaterial);
-        pole.position.set(x, 1.55, z);
-        root.add(pole);
-        const bulb = new Mesh(bulbGeo, bulbMaterial);
-        bulb.position.set(x, 3.7, z);
-        root.add(bulb);
-      }
-    const trunkGeo = track(new CylinderGeometry(0.17, 0.23, 1.6, 8));
-    const crownGeo = track(new SphereGeometry(0.9, 12, 10));
+    const lampSpots = [1, -6, -13].flatMap((z) =>
+      [-3.15, 3.15].map((x) => [x, z] as const),
+    );
+    const poles = track(new InstancedMesh(lampPoleGeo, trimMaterial, lampSpots.length));
+    const bulbs = track(new InstancedMesh(bulbGeo, bulbMaterial, lampSpots.length));
+    lampSpots.forEach(([x, z], index) => {
+      dummy.position.set(x, 1.55, z);
+      dummy.updateMatrix();
+      poles.setMatrixAt(index, dummy.matrix);
+      dummy.position.set(x, 3.7, z);
+      dummy.updateMatrix();
+      bulbs.setMatrixAt(index, dummy.matrix);
+    });
+    poles.instanceMatrix.needsUpdate = true;
+    bulbs.instanceMatrix.needsUpdate = true;
+    root.add(poles, bulbs);
+    const trunkGeo = track(
+      new CylinderGeometry(0.17, 0.23, 1.6, segments(8, 6)),
+    );
+    const crownGeo = track(
+      new SphereGeometry(0.9, segments(12, 8), segments(10, 6)),
+    );
     const crownMaterial = track(
       new MeshStandardMaterial({ color: "#334b38", roughness: 1 }),
     );
-    for (const [x, z] of [
+    const treeSpots = [
       [-8.5, -4],
       [8.5, -5],
       [-8.4, -13],
       [8.3, -14],
-    ]) {
-      const trunk = new Mesh(trunkGeo, buildingMaterial);
-      trunk.position.set(x, 0.25, z);
-      root.add(trunk);
-      const crown = new Mesh(crownGeo, crownMaterial);
-      crown.position.set(x, 1.45, z);
-      root.add(crown);
-    }
+    ] as const;
+    const trunks = track(
+      new InstancedMesh(trunkGeo, buildingMaterial, treeSpots.length),
+    );
+    const crowns = track(
+      new InstancedMesh(crownGeo, crownMaterial, treeSpots.length),
+    );
+    treeSpots.forEach(([x, z], index) => {
+      dummy.position.set(x, 0.25, z);
+      dummy.updateMatrix();
+      trunks.setMatrixAt(index, dummy.matrix);
+      dummy.position.set(x, 1.45, z);
+      dummy.updateMatrix();
+      crowns.setMatrixAt(index, dummy.matrix);
+    });
+    trunks.instanceMatrix.needsUpdate = true;
+    crowns.instanceMatrix.needsUpdate = true;
+    root.add(trunks, crowns);
     const displayHoodie = makeWorldGarment("#53674e");
     displayHoodie.traverse((object) => {
       if (object instanceof Mesh) {
@@ -662,7 +749,7 @@ export function CrewwwWorld({
       }),
     );
     const portal = new Mesh(
-      track(new TorusGeometry(1.55, 0.07, 10, 48)),
+      track(new TorusGeometry(1.55, 0.07, segments(10, 6), segments(48, 28))),
       portalMaterial,
     );
     portal.position.set(0, 2.3, -20.5);
@@ -670,7 +757,7 @@ export function CrewwwWorld({
     const portalTexture = makePortalTexture("✦");
     if (portalTexture) track(portalTexture);
     const portalDisc = new Mesh(
-      track(new CircleGeometry(1.47, 48)),
+      track(new CircleGeometry(1.47, segments(48, 28))),
       track(
         new MeshBasicMaterial({
           map: portalTexture ?? undefined,
@@ -700,7 +787,7 @@ export function CrewwwWorld({
       root.add(farSign);
     }
 
-    const particleCount = 150;
+    const particleCount = getDeviceTier() === "mid" ? 100 : 150;
     const particlePositions = new Float32Array(particleCount * 3);
     const particleSpeeds = new Float32Array(particleCount);
     for (let i = 0; i < particleCount; i += 1) {
@@ -769,6 +856,12 @@ export function CrewwwWorld({
     let pointerStartY = 0;
     let pointerLastX = 0;
     let pointerLastY = 0;
+    // Scratch objects: the render loop must not allocate per frame.
+    const forward = new Vector3();
+    const right = new Vector3();
+    const nextPosition = new Vector3();
+    const orientation = new Euler();
+    const up = new Vector3(0, 1, 0);
 
     const lowPower =
       (window.matchMedia?.("(max-width: 640px), (pointer: coarse)").matches ??
@@ -781,6 +874,7 @@ export function CrewwwWorld({
       fps: lowPower ? 24 : 30,
       toneMapping: ACESFilmicToneMapping,
       visibilityTarget: canvas.parentElement ?? undefined,
+      disposables,
       onResize: (width) => {
         compactView = width < 680;
         root.scale.x = compactView ? 0.78 : 1;
@@ -799,15 +893,10 @@ export function CrewwwWorld({
           (scrollProgress - smoothProgress) * (1 - Math.exp(-delta * 4.5));
 
         if (modeRef.current === "explore") {
-          const forward = new Vector3(0, 0, -1).applyEuler(
-            new Euler(pitch, yaw, 0, "YXZ"),
-          );
+          forward.set(0, 0, -1).applyEuler(orientation.set(pitch, yaw, 0, "YXZ"));
           forward.y = 0;
           forward.normalize();
-          const right = new Vector3(1, 0, 0).applyAxisAngle(
-            new Vector3(0, 1, 0),
-            yaw,
-          );
+          right.set(1, 0, 0).applyAxisAngle(up, yaw);
           const xInput =
             (keys.has("d") || keys.has("arrowright") ? 1 : 0) -
             (keys.has("a") || keys.has("arrowleft") ? 1 : 0) +
@@ -854,7 +943,7 @@ export function CrewwwWorld({
             MathUtils.clamp(smoothProgress, 0, 1),
           );
           const breathe = reduced ? 0 : Math.sin(elapsed * 0.45) * 0.09;
-          const nextPosition = new Vector3(
+          nextPosition.set(
             position.x + breathe,
             position.y + breathe * 0.4,
             position.z,
@@ -904,10 +993,15 @@ export function CrewwwWorld({
               board.baseRotation +
               Math.sin(elapsed * 0.38 + board.phase) * 0.035;
           }
-          lightPools.forEach((pool, index) => {
-            (pool.material as MeshBasicMaterial).opacity =
-              0.16 + Math.sin(elapsed * 1.7 + index * 0.8) * 0.055;
-          });
+          poolMaterial.opacity =
+            0.16 + Math.sin(elapsed * 1.7) * 0.055;
+          // Distant detail is outside the fog range; skip its draw calls.
+          for (const board of artBoards)
+            board.group.visible =
+              Math.abs(camera.position.z - board.group.position.z) < 32;
+          for (const floater of floaters)
+            floater.group.visible =
+              Math.abs(camera.position.z - floater.group.position.z) < 28;
           portalDisc.rotation.z -= delta * 0.035;
           portal.rotation.z += delta * 0.08;
           portalMaterial.emissiveIntensity =
@@ -918,7 +1012,7 @@ export function CrewwwWorld({
     });
     if (!stage) {
       setUnsupported(true);
-      return undefined;
+      return () => disposables.forEach((item) => item.dispose());
     }
 
     const hitTest = (event: PointerEvent): WorldDestinationId | null => {
@@ -1061,6 +1155,7 @@ export function CrewwwWorld({
     smoothProgress = scrollProgress;
 
     return () => {
+      disposed = true;
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerdown", onPointerDown);
       canvas.removeEventListener("pointerup", onPointerUp);
@@ -1071,10 +1166,24 @@ export function CrewwwWorld({
       window.clearTimeout(scrollResume);
       window.removeEventListener("scroll", onScroll);
       stage.dispose();
-      disposables.forEach((item) => item.dispose());
       nearRef.current?.(null);
     };
   }, []);
+
+  if (staticFallback) {
+    return (
+      <div className="world-stage world-stage-fallback">
+        <img
+          className="world-static-poster"
+          src={drops[0].plate}
+          alt="Crewww graphic hoodie district preview"
+          width={1600}
+          height={900}
+          decoding="async"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={`world-stage ${unsupported ? "world-stage-fallback" : ""}`}>

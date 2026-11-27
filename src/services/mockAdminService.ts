@@ -325,7 +325,7 @@ export const mockAdminService: AdminService = {
           ? `Review the full edit for “${question}”`
           : "Instrument the next drop",
         detail:
-          "Connect real stock and drop events so this advisor can separate views, add-to-bag and purchases for every drop.",
+          "Connect real stock and drop events so this advisor can separate views, add-to-cart and purchases for every drop.",
         priority: "medium" as const,
         horizon: "Before launch",
         evidence: "Demo mode uses sample data",
