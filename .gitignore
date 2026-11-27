@@ -22,3 +22,4 @@ backups/
 
 .neon
 render-deploy-helper.html
+.railway-deploy-secrets.json

@@ -118,17 +118,18 @@ Staging and production reject a non-empty bootstrap password. See
 | Admin login fails after pulling | `docker compose run --rm migrate` to create the bootstrap admin in the existing volume |
 | `psql` is not recognized | Use `docker compose exec db psql -U crewww -d crewww`, or add `C:\Program Files\PostgreSQL\<version>\bin` to `PATH` |
 
-## Deploy to Vercel + Render + Neon + Upstash
+## Deploy to Vercel + Railway + Neon + Upstash
 
 This project uses a hybrid deployment model:
 
 - **Frontend:** Vercel (React 19 + Vite, free Hobby tier)
-- **Backend:** Render (FastAPI in Docker, free Web Service tier)
+- **Backend:** Railway (FastAPI in Docker, no card required for the trial)
 - **Database:** Neon (hosted PostgreSQL, free tier)
 - **Cache:** Upstash (hosted Redis, free tier)
 
-The repo includes `vercel.json` for the frontend and `render.yaml` for the
-backend, so both platforms use the correct build settings from GitHub.
+The repo includes `vercel.json` for the frontend. `render.yaml` is kept as an
+alternative blueprint, but Railway is the documented path because it does not
+require payment information.
 
 ### Frontend: Vercel
 
@@ -140,7 +141,7 @@ rewrite. Set these environment variables in the Vercel dashboard
 | Variable | Value |
 |---|---|
 | `VITE_DATA_MODE` | `api` |
-| `VITE_API_BASE_URL` | `https://your-app.onrender.com` (your Render URL) |
+| `VITE_API_BASE_URL` | `https://crewww-api-production.up.railway.app` |
 | `VITE_INITIAL_ROUTE` | `/` |
 | `VITE_FEATURE_RECENTLY_VIEWED` | `true` |
 | `VITE_FEATURE_COMMAND_PALETTE` | `true` |
@@ -160,31 +161,52 @@ npm run build
 vercel --prod --confirm dist/
 ```
 
-### Backend: Render
+### Backend: Railway
 
-Create a **Blueprint** in Render from your GitHub repo. `render.yaml` defines a
-free Docker web service in `ohio`, builds `backend/Dockerfile`, binds Uvicorn to
-Render's injected `$PORT`, and runs the migrations/seed on every deploy. Render
-will prompt for the secret values marked `sync: false` below.
+Install the CLI and sign in. Railway opens your browser for GitHub OAuth; no
+card is required for the trial.
 
-The migrations and seed are idempotent. The admin account already exists in
-Neon, so `BOOTSTRAP_ADMIN_PASSWORD` stays empty.
+```powershell
+npm i -g @railway/cli
+railway login
+cd backend
+railway init --name crewww-api
+railway up --detach
+railway domain
+```
 
-Set these environment variables when Render prompts (or later in the dashboard):
+`railway up` detects `backend/Dockerfile`. Set `PORT=8000` because the Dockerfile
+binds Uvicorn to port 8000. Then set the service variables:
 
 | Variable | Value | Source |
 |---|---|---|
-| `DATABASE_URL` | pooled Neon URL (`...-pooler...`) | Neon (see below) |
-| `DATABASE_URL_UNPOOLED` | direct Neon URL | Neon (see below) |
-| `REDIS_URL` | `redis://...` | Upstash (see below) |
-| `REDIS_REQUIRED` | `true` | — |
-| `JWT_SECRET` | 40+ random characters | Generate with `openssl rand -hex 32` |
 | `APP_ENV` | `production` | — |
 | `DEBUG` | `false` | — |
 | `COOKIE_SECURE` | `true` | — |
+| `DATABASE_URL` | pooled Neon URL (`...-pooler...`) | Neon (see below) |
+| `DATABASE_URL_UNPOOLED` | direct Neon URL | Neon (see below) |
+| `REDIS_URL` | `rediss://default:<token>@<host>.upstash.io:6379` | Upstash (see below) |
+| `REDIS_REQUIRED` | `true` | — |
+| `JWT_SECRET` | 40+ random characters | Generate with `openssl rand -hex 32` |
 | `FRONTEND_ORIGINS` | `https://your-vercel-url.vercel.app` | Your Vercel URL |
-| `BOOTSTRAP_ADMIN_EMAIL` | `admin@crewww.example.com` | First admin |
-| `BOOTSTRAP_ADMIN_PASSWORD` | leave **empty** after first deploy | See below |
+| `PAYMENT_MODE` | `mock` | — |
+| `EMAIL_MODE` | `console` | — |
+| `AI_PROVIDER` | `local` | — |
+| `AI_MODEL` | `gpt-4o-mini` | — |
+| `PORT` | `8000` | Matches Dockerfile |
+
+Example with the CLI (repeat for each variable):
+
+```powershell
+railway variable set APP_ENV=production
+railway variable set DATABASE_URL="<pooled-url>"
+railway redeploy --yes
+```
+
+The admin account already exists in Neon, so no bootstrap password is needed.
+The migrations were applied directly to Neon with Alembic before the first
+deploy. To create or reset an admin later, use `python -m app.create_admin` in
+`railway ssh`.
 
 > The app reads `DATABASE_URL`, **not** `POSTGRES_URL`. The API uses Neon's
 > pooled URL; Alembic migrations use `DATABASE_URL_UNPOOLED`. Both accept
@@ -194,11 +216,6 @@ Set these environment variables when Render prompts (or later in the dashboard):
 > Production validation requires that driver, `COOKIE_SECURE=true`,
 > `REDIS_REQUIRED=true` with a `REDIS_URL`, a 40+ character `JWT_SECRET`, and an
 > empty bootstrap password.
-
-**First deploy only:** set `BOOTSTRAP_ADMIN_PASSWORD` to a strong value so the
-seed creates the first admin. On the next deploy, remove it (or set it empty),
-because production rejects a non-empty bootstrap password. To create or reset
-an admin later, use `python -m app.create_admin` in the Render shell.
 
 ### Database: Neon
 
@@ -219,27 +236,36 @@ npx neon@latest deploy
 
 The backend accepts either Neon's `postgresql://` format or
 `postgresql+asyncpg://` and normalizes both to SQLAlchemy's asyncpg driver.
-Add both values to Render. Never run migrations through the pooled URL.
+Add both values to Railway. Never run migrations through the pooled URL.
 
 If you prefer the dashboard, create a free project at neon.tech and copy both
 connection strings from **Connection Details**.
 
 ### Cache: Upstash
 
-1. Go to upstash.com and create a Redis database (free tier).
-2. Copy the Redis URL (`redis://...` or `rediss://...` for TLS).
-3. Add it to Render as the `REDIS_URL` env var, and set `REDIS_REQUIRED=true`.
+1. Create a Redis database at upstash.com (free tier, no card), or create a
+   temporary one without signing in:
+
+   ```powershell
+   Invoke-RestMethod -Method Post -Uri 'https://upstash.com/start-redis' `
+     -Headers @{ 'Idempotency-Key' = [guid]::NewGuid().ToString() }
+   ```
+
+   The response includes a console URL to claim the database. Temporary
+   databases expire after 3 days, so claim it for long-term use.
+2. Copy the Redis URL (`rediss://...` for TLS).
+3. Add it to Railway as the `REDIS_URL` env var, and set `REDIS_REQUIRED=true`.
 
 ### Wiring it all together
 
 | Service | URL | Where to configure |
 |---|---|---|
-| Vercel frontend | `https://crewww-xyz.vercel.app` | `VITE_API_BASE_URL` in Vercel = Render URL |
-| Render backend | `https://crewww-api-xyz.onrender.com` | `FRONTEND_ORIGINS` in Render = Vercel URL |
-| Neon PostgreSQL | pooled + direct URLs | `DATABASE_URL` and `DATABASE_URL_UNPOOLED` in Render |
-| Upstash Redis | `redis://...` | `REDIS_URL` in Render |
+| Vercel frontend | `https://crewww-xyz.vercel.app` | `VITE_API_BASE_URL` in Vercel = Railway URL |
+| Railway backend | `https://crewww-api-production.up.railway.app` | `FRONTEND_ORIGINS` in Railway = Vercel URL |
+| Neon PostgreSQL | pooled + direct URLs | `DATABASE_URL` and `DATABASE_URL_UNPOOLED` in Railway |
+| Upstash Redis | `rediss://...` | `REDIS_URL` in Railway |
 
-After both deploys, open the Vercel URL. The frontend calls the Render API,
+After both deploys, open the Vercel URL. The frontend calls the Railway API,
 which reads Neon PostgreSQL and caches through Upstash Redis.
 
 ## Show it to clients on your Wi-Fi
