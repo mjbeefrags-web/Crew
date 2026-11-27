@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run typecheck && vite build",
+    "build:analyze": "node scripts/build-analyze.mjs",
     "preview": "npm run build && wrangler dev",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -16,7 +17,8 @@
     "perf": "node perf/check-perf.mjs",
     "perf:check": "node perf/check-perf.mjs --strict",
     "deploy": "npm run build && wrangler deploy",
-    "refresh:all": "node scripts/refresh-all.mjs"
+    "refresh:all": "node scripts/refresh-all.mjs",
+    "sync:db": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-from-neon.ps1"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.7",
@@ -51,6 +53,7 @@
     "jest-axe": "^11.0.0",
     "jsdom": "^31.0.1",
     "prettier": "^3.3.3",
+    "rollup-plugin-visualizer": "^6.0.11",
     "tailwindcss": "^4.3.5",
     "typescript": "^7.0.2",
     "typescript-eslint": "^8.74.0",
