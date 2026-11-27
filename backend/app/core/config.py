@@ -1,5 +1,6 @@
 from functools import lru_cache
 from typing import Literal
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -50,7 +51,20 @@ class Settings(BaseSettings):
             return value
         for scheme in ("postgres://", "postgresql://"):
             if value.startswith(scheme):
-                return f"postgresql+asyncpg://{value[len(scheme) :]}"
+                value = f"postgresql+asyncpg://{value[len(scheme) :]}"
+                break
+        parsed = urlparse(value)
+        if parsed.scheme == "postgresql+asyncpg" and parsed.query:
+            # Neon's libpq-style params need translating for asyncpg:
+            # channel_binding is unsupported; sslmode becomes ssl.
+            query: list[tuple[str, str]] = []
+            for key, val in parse_qsl(parsed.query, keep_blank_values=True):
+                if key == "channel_binding":
+                    continue
+                if key == "sslmode":
+                    key = "ssl"
+                query.append((key, val))
+            value = urlunparse(parsed._replace(query=urlencode(query)))
         return value
 
     @property

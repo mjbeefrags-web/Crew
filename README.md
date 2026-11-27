@@ -192,6 +192,8 @@ Set these environment variables in the Render dashboard:
 > The app reads `DATABASE_URL`, **not** `POSTGRES_URL`. The API uses Neon's
 > pooled URL; Alembic migrations use `DATABASE_URL_UNPOOLED`. Both accept
 > Neon's `postgresql://` strings and are normalized to `postgresql+asyncpg://`.
+> Neon's `sslmode` is translated to asyncpg's `ssl`, and `channel_binding` is
+> removed because asyncpg does not support it.
 > Production validation requires that driver, `COOKIE_SECURE=true`,
 > `REDIS_REQUIRED=true` with a `REDIS_URL`, a 40+ character `JWT_SECRET`, and an
 > empty bootstrap password.

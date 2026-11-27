@@ -4,22 +4,28 @@ from app.core.config import Settings
 def test_neon_urls_are_normalized_and_split(monkeypatch):
     monkeypatch.setenv(
         "DATABASE_URL",
-        "postgresql://user:pass@ep-test-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require",
+        (
+            "postgresql://user:pass@ep-test-pooler.us-east-2.aws.neon.tech/neondb"
+            "?sslmode=require&channel_binding=require"
+        ),
     )
     monkeypatch.setenv(
         "DATABASE_URL_UNPOOLED",
-        "postgres://user:pass@ep-test.us-east-2.aws.neon.tech/neondb?sslmode=require",
+        (
+            "postgres://user:pass@ep-test.us-east-2.aws.neon.tech/neondb"
+            "?sslmode=require&channel_binding=require"
+        ),
     )
 
     settings = Settings(_env_file=None)
 
     assert settings.database_url == (
         "postgresql+asyncpg://user:pass@ep-test-pooler.us-east-2.aws.neon.tech/neondb"
-        "?sslmode=require"
+        "?ssl=require"
     )
     assert settings.migration_database_url == (
         "postgresql+asyncpg://user:pass@ep-test.us-east-2.aws.neon.tech/neondb"
-        "?sslmode=require"
+        "?ssl=require"
     )
 
 
