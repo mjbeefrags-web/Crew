@@ -149,7 +149,7 @@ for (const profile of profiles) {
       ["lcpMs", result.lcpMs, profile.budgets.lcpMs],
       ["scriptKB", result.scriptKB, profile.budgets.scriptKB],
       ["totalKB", result.totalKB, profile.budgets.totalKB],
-      ["longTasks", result.longTasks, profile.budgets.longTasks],
+      ["sustainedLongTasks", result.sustainedLongTasks, profile.budgets.longTasks],
       ["heapGrowthMB", result.heapGrowthMB, profile.budgets.heapGrowthMB],
     ];
     const failed = checks.filter(([, value, budget]) => value > budget);
@@ -162,7 +162,8 @@ for (const profile of profiles) {
       `${status.padEnd(4)} ${profile.name.padEnd(7)} ${route.name.padEnd(17)} ` +
         `FCP ${String(result.fcpMs).padStart(4)}ms  LCP ${String(result.lcpMs).padStart(4)}ms  ` +
         `JS ${String(result.scriptKB).padStart(4)}KB  total ${String(result.totalKB).padStart(5)}KB  ` +
-        `long ${String(result.sustainedLongTasks).padStart(2)}  heap +${result.heapGrowthMB}MB`,
+        `cold ${String(result.longTasks).padStart(2)}  long ` +
+        `${String(result.sustainedLongTasks).padStart(2)}  heap +${result.heapGrowthMB}MB`,
     );
     await page.close();
   }

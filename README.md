@@ -360,6 +360,9 @@ profile (390×844, 3× DPR) and a desktop profile (1440×900). It checks first
 contentful paint, largest contentful paint, JavaScript/transfer weight, long
 tasks during a sustained scroll, and heap growth on `/`, `/shop`, and the
 Psychedelic Minds room. `npm run perf:check` fails if any budget is exceeded.
+The `cold` column reports first-load long tasks (mostly CDN transfer and shader
+compilation); budgets apply to `long`, the tasks measured during the sustained
+scroll.
 
 ```powershell
 npm run build

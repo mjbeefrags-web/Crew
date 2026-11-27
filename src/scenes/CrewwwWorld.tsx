@@ -770,11 +770,15 @@ export function CrewwwWorld({
     let pointerLastX = 0;
     let pointerLastY = 0;
 
+    const lowPower =
+      (window.matchMedia?.("(max-width: 640px), (pointer: coarse)").matches ??
+        false) ||
+      (navigator.hardwareConcurrency ?? 8) <= 4;
     const stage = createStage(canvas, {
       scene,
       camera,
-      maxPixelRatio: 1.35,
-      fps: 45,
+      maxPixelRatio: lowPower ? 0.75 : 1,
+      fps: lowPower ? 24 : 30,
       toneMapping: ACESFilmicToneMapping,
       visibilityTarget: canvas.parentElement ?? undefined,
       onResize: (width) => {
@@ -998,7 +1002,13 @@ export function CrewwwWorld({
       onScroll();
       stage.requestRender();
     };
+    let scrollResume = 0;
     const onScroll = () => {
+      // Sustained scrolling gets the main thread: pause the ambient render loop
+      // briefly, draw a single frame, then resume once scrolling settles.
+      stage.setMotionEnabled(false);
+      window.clearTimeout(scrollResume);
+      scrollResume = window.setTimeout(() => stage.setMotionEnabled(true), 200);
       if (modeRef.current !== "cinematic" || progressRef.current !== undefined)
         return;
       const bounds = canvas.getBoundingClientRect();
@@ -1058,6 +1068,7 @@ export function CrewwwWorld({
       canvas.removeEventListener("keydown", onKeyDown);
       canvas.removeEventListener("keyup", onKeyUp);
       canvas.removeEventListener("blur", onBlur);
+      window.clearTimeout(scrollResume);
       window.removeEventListener("scroll", onScroll);
       stage.dispose();
       disposables.forEach((item) => item.dispose());
