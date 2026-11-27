@@ -1,7 +1,7 @@
 import asyncio
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -51,7 +51,11 @@ async def ai_advise(
 
 
 @router.get("/products", response_model=list[AdminProductOut])
-async def admin_products(session: AsyncSession = Depends(get_session)) -> list[AdminProductOut]:
+async def admin_products(
+    session: AsyncSession = Depends(get_session),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=200, ge=1, le=500),
+) -> list[AdminProductOut]:
     rows = (
         await session.scalars(
             select(Product)
@@ -62,7 +66,8 @@ async def admin_products(session: AsyncSession = Depends(get_session)) -> list[A
                 selectinload(Product.images),
             )
             .order_by(Product.name)
-            .limit(500)
+            .offset((page - 1) * page_size)
+            .limit(page_size)
         )
     ).all()
 
@@ -90,8 +95,19 @@ async def admin_products(session: AsyncSession = Depends(get_session)) -> list[A
 
 
 @router.get("/customers", response_model=list[UserOut])
-async def admin_customers(session: AsyncSession = Depends(get_session)) -> list[UserOut]:
-    users = (await session.scalars(select(User).order_by(User.created_at.desc()).limit(200))).all()
+async def admin_customers(
+    session: AsyncSession = Depends(get_session),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=200, ge=1, le=500),
+) -> list[UserOut]:
+    users = (
+        await session.scalars(
+            select(User)
+            .order_by(User.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+    ).all()
     return [UserOut.model_validate(user) for user in users]
 
 
@@ -121,13 +137,18 @@ async def update_customer(
 
 
 @router.get("/orders", response_model=list[OrderOut])
-async def admin_orders(session: AsyncSession = Depends(get_session)) -> list[OrderOut]:
+async def admin_orders(
+    session: AsyncSession = Depends(get_session),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=200, ge=1, le=500),
+) -> list[OrderOut]:
     orders = (
         await session.scalars(
             select(Order)
             .options(selectinload(Order.items), selectinload(Order.payments))
             .order_by(Order.created_at.desc())
-            .limit(200)
+            .offset((page - 1) * page_size)
+            .limit(page_size)
         )
     ).all()
     return [order_payload(order) for order in orders]

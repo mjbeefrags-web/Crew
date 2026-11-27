@@ -49,6 +49,13 @@ class ResponseCache:
                     payload = None
         if payload is None:
             self.misses += 1
+            if self.redis is not None:
+                # The value expired (or was evicted); do not keep its tracking
+                # member forever. A re-set re-adds it via sadd().
+                try:
+                    await self.redis.srem(KEY_SET, key)
+                except Exception:
+                    pass
             return None
         self.hits += 1
         return orjson.loads(payload)
