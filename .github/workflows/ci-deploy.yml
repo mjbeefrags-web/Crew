@@ -1,0 +1,148 @@
+name: CI and deploy
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crewww-production
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "22"
+  PYTHON_VERSION: "3.13"
+  VITE_DATA_MODE: api
+  VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || 'https://crewww-api-production.up.railway.app' }}
+  VITE_INITIAL_ROUTE: /
+  VITE_FEATURE_RECENTLY_VIEWED: "true"
+  VITE_FEATURE_COMMAND_PALETTE: "true"
+  VITE_FEATURE_AMBIENT_SOUND: "true"
+  VITE_FEATURE_WORLD_WALK: "true"
+  LIVE_API_URL: ${{ vars.LIVE_API_URL || 'https://crewww-api-production.up.railway.app' }}
+  FRONTEND_ORIGIN: ${{ vars.FRONTEND_ORIGIN || 'https://crewww-storefront.crewww-storefront.workers.dev' }}
+  LIVE_FRONTEND_URL: ${{ vars.LIVE_FRONTEND_URL || vars.FRONTEND_ORIGIN || 'https://crewww-storefront.crewww-storefront.workers.dev' }}
+
+jobs:
+  frontend-checks:
+    name: Frontend checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  backend-checks:
+    name: Backend checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - run: python -m pip install -e '.[dev]'
+      - run: python -m pytest -q
+      - run: python -m ruff check .
+
+  deploy-backend:
+    name: Deploy API to Railway
+    needs: [frontend-checks, backend-checks]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_SERVICE_ID: ${{ vars.RAILWAY_SERVICE_ID || '148a2a29-5828-42ad-9ebb-1fc4905f9161' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - run: npm i -g @railway/cli
+
+      - name: Deploy backend
+        working-directory: backend
+        run: railway up --service "$RAILWAY_SERVICE_ID" --environment production --ci
+
+  deploy-frontend:
+    name: Deploy storefront to Cloudflare
+    needs: [frontend-checks, backend-checks]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Deploy frontend
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          wranglerVersion: "4"
+          command: deploy
+
+  verify-live:
+    name: Verify live communication
+    needs: [deploy-backend, deploy-frontend]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      LIVE_ADMIN_EMAIL: ${{ secrets.LIVE_ADMIN_EMAIL }}
+      LIVE_ADMIN_PASSWORD: ${{ secrets.LIVE_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - run: python -m pip install -e '.[dev]'
+
+      - name: Wait for Railway API
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS "$LIVE_API_URL/api/ready" > /dev/null; then
+              echo "API is ready"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "API did not become ready in time"
+          exit 1
+
+      - name: Run live communication tests
+        run: python -m pytest -q tests/test_live_communication.py

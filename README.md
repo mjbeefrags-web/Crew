@@ -275,6 +275,71 @@ connection strings from **Connection Details**.
 After both deploys, open the Cloudflare URL. The frontend calls the Railway
 API, which reads Neon PostgreSQL and caches through Upstash Redis.
 
+## GitHub auto-deploy and service communication
+
+Every push to `main` runs `.github/workflows/ci-deploy.yml`:
+
+1. Frontend checks: `npm ci`, typecheck, Vitest, production build.
+2. Backend checks: pytest and Ruff.
+3. Deploys: `railway up` for the API, `wrangler deploy` for the storefront.
+4. Live verification: smoke tests against the deployed API and frontend.
+
+Pull requests run checks only; they never deploy.
+
+```text
+Browser
+  -> Cloudflare Worker (static React app + hashed JS bundle)
+  -> fetch(VITE_API_BASE_URL) with credentials
+  -> Railway FastAPI
+  -> SQLAlchemy/asyncpg -> Neon PostgreSQL
+  -> redis asyncio      -> Upstash Redis
+
+GitHub Actions
+  -> Railway CLI  -> deploy backend
+  -> Wrangler     -> deploy frontend
+```
+
+`VITE_*` values are compiled into the frontend bundle at build time, so the
+workflow sets `VITE_API_BASE_URL` before `npm run build`. The API only accepts
+browser calls from the comma-separated origins in `FRONTEND_ORIGINS`. The
+Cloudflare URL is set there so CORS and credentialed cookies work.
+
+### GitHub secrets to add
+
+In the GitHub repo, go to **Settings → Secrets and variables → Actions → New
+repository secret**:
+
+| Secret | Purpose |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | Wrangler deploy permission. Create it in Cloudflare → My Profile → API Tokens → **Edit Cloudflare Workers**. |
+| `RAILWAY_TOKEN` | Railway **project token** for the production environment. Create it in Railway project → Settings → Tokens. |
+| `LIVE_ADMIN_EMAIL` | Optional: enables the live admin-login test. |
+| `LIVE_ADMIN_PASSWORD` | Optional: enables the live admin-login test. |
+
+Optional repository variables with safe defaults are `VITE_API_BASE_URL`,
+`LIVE_API_URL`, `FRONTEND_ORIGIN`, `LIVE_FRONTEND_URL`, and
+`RAILWAY_SERVICE_ID`. The Cloudflare account ID is already in
+`wrangler.jsonc`.
+
+### Communication tests
+
+- `src/config/runtime.test.ts` verifies the frontend strips trailing slashes
+  from the API URL and defaults to mock mode.
+- `backend/tests/test_contract.py` verifies API payloads match the frontend
+  types without needing hosted services.
+- `backend/tests/test_live_communication.py` verifies the deployed boundaries:
+  health, catalog, CORS, admin login (when secrets exist), and that the live
+  Cloudflare bundle points at the live Railway API.
+
+Run the live tests locally with:
+
+```powershell
+$env:LIVE_API_URL = 'https://crewww-api-production.up.railway.app'
+$env:FRONTEND_ORIGIN = 'https://crewww-storefront.crewww-storefront.workers.dev'
+cd backend
+python -m pytest -q tests/test_live_communication.py
+```
+
 ## Show it to clients on your Wi-Fi
 
 By default the site is bound to `127.0.0.1`, so only this laptop can open it.

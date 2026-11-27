@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "crewww-storefront",
+  "account_id": "cf2a340cb65e9e9f0dc50264c2269e06",
   "compatibility_date": "2026-11-23",
   "observability": {
     "enabled": true
