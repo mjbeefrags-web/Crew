@@ -118,6 +118,112 @@ Staging and production reject a non-empty bootstrap password. See
 | Admin login fails after pulling | `docker compose run --rm migrate` to create the bootstrap admin in the existing volume |
 | `psql` is not recognized | Use `docker compose exec db psql -U crewww -d crewww`, or add `C:\Program Files\PostgreSQL\<version>\bin` to `PATH` |
 
+## Deploy to Vercel + Render + Neon + Upstash
+
+This project uses a hybrid deployment model:
+
+- **Frontend:** Vercel (React 19 + Vite, free Hobby tier)
+- **Backend:** Render (FastAPI in Docker, free Web Service tier)
+- **Database:** Neon (hosted PostgreSQL, free tier)
+- **Cache:** Upstash (hosted Redis, free tier)
+
+### Frontend: Vercel
+
+Import the GitHub repo in Vercel as a **Vite** project. The build command is
+`npm run build`; the output directory is `dist`. Set these environment variables
+in the Vercel dashboard (Project → Settings → Environment Variables):
+
+| Variable | Value |
+|---|---|
+| `VITE_DATA_MODE` | `api` |
+| `VITE_API_BASE_URL` | `https://your-app.onrender.com` (your Render URL) |
+| `VITE_INITIAL_ROUTE` | `/` |
+| `VITE_FEATURE_RECENTLY_VIEWED` | `true` |
+| `VITE_FEATURE_COMMAND_PALETTE` | `true` |
+| `VITE_FEATURE_AMBIENT_SOUND` | `true` |
+| `VITE_FEATURE_WORLD_WALK` | `true` |
+
+Then deploy:
+
+```powershell
+vercel --prod --confirm
+```
+
+Alternatively, deploy the prebuilt `dist/` folder directly:
+
+```powershell
+npm run build
+vercel --prod --confirm dist/
+```
+
+### Backend: Render
+
+Create a **Web Service** in Render from your GitHub repo:
+
+- **Environment:** Docker
+- **Dockerfile Path:** `./backend/Dockerfile`
+- **Build Context:** `./backend`
+
+Render injects a `PORT` variable; override the start command so Uvicorn binds to
+it. In the Render dashboard set **Start Command** to:
+
+```bash
+sh -c "alembic upgrade head && python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+```
+
+The migrations, seed, and admin bootstrap run once on startup and are idempotent.
+
+Set these environment variables in the Render dashboard:
+
+| Variable | Value | Source |
+|---|---|---|
+| `DATABASE_URL` | `postgresql+asyncpg://...` | Neon (see below) |
+| `REDIS_URL` | `redis://...` | Upstash (see below) |
+| `REDIS_REQUIRED` | `true` | — |
+| `JWT_SECRET` | 40+ random characters | Generate with `openssl rand -hex 32` |
+| `APP_ENV` | `production` | — |
+| `DEBUG` | `false` | — |
+| `COOKIE_SECURE` | `true` | — |
+| `FRONTEND_ORIGINS` | `https://your-vercel-url.vercel.app` | Your Vercel URL |
+| `BOOTSTRAP_ADMIN_EMAIL` | `admin@crewww.example.com` | First admin |
+| `BOOTSTRAP_ADMIN_PASSWORD` | leave **empty** after first deploy | See below |
+
+> The app reads `DATABASE_URL`, **not** `POSTGRES_URL`. Production validation
+> requires the `postgresql+asyncpg://` driver, `COOKIE_SECURE=true`,
+> `REDIS_REQUIRED=true` with a `REDIS_URL`, a 40+ character `JWT_SECRET`, and an
+> empty bootstrap password.
+
+**First deploy only:** set `BOOTSTRAP_ADMIN_PASSWORD` to a strong value so the
+seed creates the first admin. On the next deploy, remove it (or set it empty),
+because production rejects a non-empty bootstrap password. To create or reset
+an admin later, use `python -m app.create_admin` in the Render shell.
+
+### Database: Neon
+
+1. Go to neon.tech and create a project (free tier).
+2. Open the connection details and copy the connection string.
+3. Convert it to the asyncpg driver, e.g.:
+   `postgresql+asyncpg://user:pass@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require`
+4. Add it to Render as the `DATABASE_URL` env var.
+
+### Cache: Upstash
+
+1. Go to upstash.com and create a Redis database (free tier).
+2. Copy the Redis URL (`redis://...` or `rediss://...` for TLS).
+3. Add it to Render as the `REDIS_URL` env var, and set `REDIS_REQUIRED=true`.
+
+### Wiring it all together
+
+| Service | URL | Where to configure |
+|---|---|---|
+| Vercel frontend | `https://crewww-xyz.vercel.app` | `VITE_API_BASE_URL` in Vercel = Render URL |
+| Render backend | `https://crewww-api-xyz.onrender.com` | `FRONTEND_ORIGINS` in Render = Vercel URL |
+| Neon PostgreSQL | `postgresql+asyncpg://...` | `DATABASE_URL` in Render |
+| Upstash Redis | `redis://...` | `REDIS_URL` in Render |
+
+After both deploys, open the Vercel URL. The frontend calls the Render API,
+which reads Neon PostgreSQL and caches through Upstash Redis.
+
 ## Show it to clients on your Wi-Fi
 
 By default the site is bound to `127.0.0.1`, so only this laptop can open it.
