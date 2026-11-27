@@ -33,10 +33,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             Redis.from_url(config.redis_url, decode_responses=True) if config.redis_url else None
         )
         app.state.catalog_cache = ResponseCache(app.state.redis)
+        await app.state.catalog_cache.start()
         logger.info(
             "application_start env=%s redis_configured=%s", config.app_env, bool(config.redis_url)
         )
         yield
+        await app.state.catalog_cache.close()
         if app.state.redis is not None:
             await app.state.redis.aclose()
         logger.info("application_stop")

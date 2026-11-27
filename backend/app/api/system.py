@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from time import monotonic
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import text
@@ -11,6 +12,9 @@ from app.models import User
 
 router = APIRouter(tags=["system"])
 admin = APIRouter(prefix="/api/admin", tags=["administration"])
+# Dependency checks cross the network twice. Cache a successful result briefly
+# so health polls do not add a database and Redis round trip to every request.
+READY_TTL_SECONDS = 5.0
 
 
 @router.get("/health")
@@ -24,6 +28,9 @@ async def ready(
     session: AsyncSession = Depends(get_session),
     settings: Settings = Depends(get_settings),
 ) -> dict[str, str]:
+    checked_at: float = getattr(request.app.state, "ready_checked_at", 0.0)
+    if monotonic() - checked_at < READY_TTL_SECONDS:
+        return {"status": "ready"}
     try:
         await session.execute(text("SELECT 1"))
     except Exception as exc:
@@ -49,6 +56,7 @@ async def ready(
                         "message": "Redis readiness check failed.",
                     },
                 ) from exc
+    request.app.state.ready_checked_at = monotonic()
     return {"status": "ready"}
 
 
