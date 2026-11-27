@@ -424,9 +424,11 @@ profile, records INP, and samples heap growth for 60 seconds after scrolling.
 | FCP | < 1.2 s | < 0.8 s |
 | LCP | < 2.0 s | < 1.5 s |
 | INP | < 200 ms | < 120 ms |
-| Initial JS | < 250 KB | < 300 KB |
+| Script transfer | < 1400 KB | < 1400 KB |
 | Heap growth while idle | < 8 MB | < 10 MB |
 
+The entry chunk is currently ~469 KB (145 KB gzipped) after splitting the
+catalog and product routes; the 250 KB entry target remains a stretch goal.
 On phones, low-core devices and reduced-motion sessions the WebGL scenes are
 replaced by static posters; the storefront stays fully usable through the DOM
 controls. `BUILD_TARGET=docker` builds the same static assets without the

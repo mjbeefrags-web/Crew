@@ -5,11 +5,12 @@ const sampleMs = Number(process.env.PERF_MEMORY_SAMPLE_MS ?? 5000);
 const budgetMB = Number(process.env.PERF_MEMORY_BUDGET_MB ?? 12);
 
 const heapMB = async (page: import("@playwright/test").Page) =>
-  page.evaluate(() =>
-    performance.memory
-      ? Math.round(performance.memory.usedJSHeapSize / 1048576)
-      : 0,
-  );
+  page.evaluate(() => {
+    const memory = (performance as Performance & {
+      memory?: { usedJSHeapSize: number };
+    }).memory;
+    return memory ? Math.round(memory.usedJSHeapSize / 1048576) : 0;
+  });
 
 test.describe("long-session memory budget", () => {
   for (const path of ["/", "/drops/psychedelic-minds"]) {
