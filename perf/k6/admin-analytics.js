@@ -17,8 +17,9 @@ export const options = {
 export default function () {
   const token = __ENV.ACCESS_TOKEN;
   if (!token) return;
-  const res = http.get(`${base}/api/v1/admin/analytics`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  check(res, { "analytics 200": (r) => r.status === 200 || r.status === 404 });
+  const headers = { Authorization: `Bearer ${token}` };
+  const orders = http.get(`${base}/api/v1/admin/orders`, { headers });
+  const products = http.get(`${base}/api/v1/admin/products`, { headers });
+  check(orders, { "admin orders 200": (r) => r.status === 200 });
+  check(products, { "admin products 200": (r) => r.status === 200 });
 }

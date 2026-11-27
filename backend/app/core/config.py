@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     refresh_token_days: int = Field(default=14, ge=1, le=60)
     frontend_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     cookie_secure: bool = False
+    # Trust X-Forwarded-For / X-Real-IP for rate limiting when the API sits
+    # behind our own Nginx or a known edge proxy. Never enable for a directly
+    # exposed API, where clients could spoof the header.
+    trust_proxy_headers: bool = False
     bootstrap_admin_email: str = ""
     bootstrap_admin_password: SecretStr | None = None
     payment_mode: Literal["mock"] = "mock"

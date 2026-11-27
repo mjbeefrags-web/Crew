@@ -121,7 +121,7 @@ Staging and production reject a non-empty bootstrap password. See
 | `web` is unhealthy | `docker compose logs web`; rebuild with `docker compose up -d --build web` |
 | `api` is unhealthy | `docker compose logs migrate api`; confirm `migrate` exited `0` |
 | `password authentication failed` | The volume kept an older password. Use the old value, or `docker compose down -v` (destroys data) |
-| `migrate` connects to `127.0.0.1:5432` and exits 1 | `DATABASE_URL` in `.env` is overriding Compose. Comment it out (Compose defaults to `db:5432`) or set it to `...@db:5432/crewww`. The host-only URL is for local non-Docker work. |
+| `migrate` connects to `127.0.0.1:5432` and exits 1 | `DATABASE_URL` in the root `.env` is overriding Compose. Comment it out (Compose defaults to `db:5432`) or set it to `...@db:5432/crewww`. For a local non-Docker backend, put the host-only URL in `backend/.env` instead — Compose does not read that file. |
 | Admin login fails after pulling | `docker compose run --rm migrate` to create the bootstrap admin in the existing volume |
 | `psql` is not recognized | Use `docker compose exec db psql -U crewww -d crewww`, or add `C:\Program Files\PostgreSQL\<version>\bin` to `PATH` |
 
@@ -609,6 +609,7 @@ Copy `.env.example` to `.env`. Important variables:
 | `BOOTSTRAP_ADMIN_EMAIL/PASSWORD` | First admin, created by seed | demo admin |
 | `WEB_CONCURRENCY` | Uvicorn workers in the API container | `2` |
 | `ENABLE_METRICS` | Expose `/metrics` on the API | `0` |
+| `TRUST_PROXY_HEADERS` | Use `X-Forwarded-For`/`X-Real-IP` for auth throttling behind Nginx/edge | `true` in Compose |
 | `VITE_INITIAL_ROUTE` | Default route opened by Docker | `/` |
 | `VITE_FEATURE_*` | Build-time feature flags | all `true` |
 

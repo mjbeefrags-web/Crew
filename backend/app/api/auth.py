@@ -66,17 +66,28 @@ def set_refresh_cookie(response: Response, token: str, settings: Settings) -> No
     )
 
 
-def throttle_key(request: Request, email: str) -> str:
-    return f"auth:attempt:{request.client.host if request.client else 'unknown'}:{email}"
+def client_ip(request: Request, settings: Settings) -> str:
+    if settings.trust_proxy_headers:
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            return forwarded.split(",")[0].strip() or "unknown"
+        real_ip = request.headers.get("x-real-ip")
+        if real_ip:
+            return real_ip.strip() or "unknown"
+    return request.client.host if request.client else "unknown"
+
+
+def throttle_key(request: Request, settings: Settings, email: str) -> str:
+    return f"auth:attempt:{client_ip(request, settings)}:{email}"
 
 
 async def reset_throttle(
-    request: Request, redis: Redis | None, email: str
+    request: Request, redis: Redis | None, settings: Settings, email: str
 ) -> None:
     if redis is None:
         return
     try:
-        await redis.delete(throttle_key(request, email))
+        await redis.delete(throttle_key(request, settings, email))
     except Exception:
         pass
 
@@ -92,7 +103,7 @@ async def throttle(request: Request, redis: Redis | None, settings: Settings, em
                 },
             )
         return
-    key = throttle_key(request, email)
+    key = throttle_key(request, settings, email)
     try:
         attempts = await redis.incr(key)
         if attempts == 1:
@@ -191,7 +202,7 @@ async def login(
     )
     await attach_guest_cart(request, user, session)
     await session.commit()
-    await reset_throttle(request, redis, payload.email)
+    await reset_throttle(request, redis, settings, payload.email)
     set_refresh_cookie(response, refresh, settings)
     return AuthOut(
         access_token=create_access_token(user.id, user.role, settings),
