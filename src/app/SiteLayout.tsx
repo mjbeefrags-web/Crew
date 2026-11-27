@@ -174,6 +174,9 @@ export function SiteLayout() {
     const previous = previousPathRef.current;
     previousPathRef.current = location.pathname;
     if (previous === null || previous === location.pathname) return undefined;
+    // Leaving an immersive room can leave the page deep-scrolled with focus on
+    // a canvas that has just unmounted. Reset both before handing focus over.
+    window.scrollTo({ top: 0, behavior: "auto" });
     const id = window.setTimeout(
       () => mainRef.current?.focus({ preventScroll: true }),
       50,

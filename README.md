@@ -1,5 +1,19 @@
 # Crewww storefront
 
+## Deploy with `!deploy`
+
+After making changes, run:
+
+```powershell
+.\!deploy.ps1 "feat: describe the change"
+```
+
+or in OpenCode use the `/!deploy` command (the `!deploy` method). It stages
+changes, commits with your message, pushes the current branch, then watches the
+GitHub Actions `CI and deploy` workflow until Railway + Cloudflare finish.
+
+See `docs/operations/deployment-refresh.md` for the live endpoints.
+
 React 19 + Vite storefront with a FastAPI commerce API, PostgreSQL, Redis,
 Nginx, Docker Compose, migrations and an idempotent demo seed. Payments and
 email are intentionally mocked; this is a production-shaped demo, not a live
