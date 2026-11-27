@@ -353,6 +353,37 @@ cd backend
 python -m pytest -q tests/test_live_communication.py
 ```
 
+## Performance and mobile smoothness
+
+`perf/check-perf.mjs` measures the production build in Chromium with a phone
+profile (390×844, 3× DPR) and a desktop profile (1440×900). It checks first
+contentful paint, largest contentful paint, JavaScript/transfer weight, long
+tasks during a sustained scroll, and heap growth on `/`, `/shop`, and the
+Psychedelic Minds room. `npm run perf:check` fails if any budget is exceeded.
+
+```powershell
+npm run build
+npx vite preview --host 127.0.0.1 --port 5199 --strictPort
+# In a second terminal:
+npm run perf:check
+```
+
+Set `PERF_BASE_URL` to test a different origin, for example the live
+Cloudflare deployment.
+
+The site is tuned for slow phones and long desktop sessions:
+
+- `public/_headers` gives fingerprinted JS/CSS/font files a year-long immutable
+  browser cache on Cloudflare while keeping HTML revalidated.
+- The five psychedelic print plates and hoodie photos are re-encoded WebP,
+  and off-screen collage images are lazy-loaded.
+- Scroll-linked zoom writes a CSS variable directly instead of re-rendering the
+  whole React tree on every scroll event.
+- The full-screen WebGL field uses a lower shader/pixel/frame budget on coarse
+  pointers or low-core devices, and pauses its animation loop while scrolling.
+- Catalog responses stay in Redis for five minutes and in the browser for one
+  minute; admin writes invalidate the Redis prefix immediately.
+
 ## Show it to clients on your Wi-Fi
 
 By default the site is bound to `127.0.0.1`, so only this laptop can open it.

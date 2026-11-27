@@ -13,6 +13,8 @@
     "test:e2e": "playwright test",
     "lint": "prettier --check src",
     "format": "prettier --check src",
+    "perf": "node perf/check-perf.mjs",
+    "perf:check": "node perf/check-perf.mjs --strict",
     "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
