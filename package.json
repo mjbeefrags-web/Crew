@@ -15,7 +15,8 @@
     "format": "prettier --check src",
     "perf": "node perf/check-perf.mjs",
     "perf:check": "node perf/check-perf.mjs --strict",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "npm run build && wrangler deploy",
+    "refresh:all": "node scripts/refresh-all.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.7",

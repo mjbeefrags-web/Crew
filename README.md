@@ -322,6 +322,39 @@ Optional repository variables with safe defaults are `VITE_API_BASE_URL`,
 `RAILWAY_PROJECT_ID`, and `RAILWAY_SERVICE_ID`. The Cloudflare account ID is
 already in `wrangler.jsonc`.
 
+### Manual refresh command (until a VPS replaces this stack)
+
+After committing and pushing, one command refreshes the current commit across
+Cloudflare, Railway, Neon, and Redis, then runs the live checks:
+
+```bash
+npm run refresh:all
+```
+
+It requires clean local Wrangler and Railway CLI logins and a clean git working
+tree. The script:
+
+1. Builds and deploys the storefront to Cloudflare with the production
+   `VITE_*` values.
+2. Runs Alembic migrations and the idempotent seed against Neon through
+   `railway run`; the seed also clears `catalog:*` in Redis.
+3. Deploys the API with `railway up --ci`.
+4. Waits for `/api/ready`, runs the live communication tests, confirms the
+   catalog `Cache-Control` header, and runs the strict mobile/desktop
+   performance budget.
+
+It temporarily sets the git-ignored root `.env` aside while `railway run`
+executes, so a stale `BOOTSTRAP_ADMIN_PASSWORD` cannot block migrations; the
+file is restored afterward and its values are never read or printed. Preview
+the steps without changing anything with:
+
+```bash
+npm run refresh:all -- --dry-run
+```
+
+Add `--allow-dirty` to that dry run if you still have uncommitted work you want
+to preview. The real refresh always requires a clean tree.
+
 The seed is idempotent: it creates the eight core products and the five
 Psychedelic Minds products with their five colourways, then adds any missing
 variants. The psychedelic room sends its canonical slug (for example,
