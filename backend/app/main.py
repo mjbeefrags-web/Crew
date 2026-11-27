@@ -19,6 +19,7 @@ from app.api import admin as admin_routes
 from app.api import auth, catalog, commerce, system
 from app.core.cache import ResponseCache
 from app.core.config import Settings, get_settings
+from app.db.session import SessionFactory
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger("crewww.api")
@@ -34,6 +35,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         app.state.catalog_cache = ResponseCache(app.state.redis)
         await app.state.catalog_cache.start()
+        if app.state.redis is not None:
+            try:
+                async with SessionFactory() as session:
+                    await catalog.warm_catalog(app, session)
+                logger.info("catalog_warm_complete")
+            except Exception:
+                logger.warning("catalog_warm_failed", exc_info=True)
         logger.info(
             "application_start env=%s redis_configured=%s", config.app_env, bool(config.redis_url)
         )

@@ -1,6 +1,7 @@
+from types import SimpleNamespace
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query, Request
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -507,3 +508,36 @@ async def adjust_inventory(
     )
     await session.commit()
     await invalidate_catalog(request)
+
+
+def _warm_request(app: FastAPI, path: str, query: str) -> Request:
+    """Minimal request used only to reuse the public handlers' cache keys."""
+    return SimpleNamespace(  # type: ignore[return-value]
+        app=app, url=SimpleNamespace(path=path, query=query)
+    )
+
+
+async def warm_catalog(app: FastAPI, session: AsyncSession) -> None:
+    """Fill each worker's local cache before it serves its first visitor."""
+    await list_products(
+        _warm_request(app, "/api/v1/products", "page=1&page_size=24"), session,
+        category=None,
+        collection=None,
+        size=None,
+        color=None,
+        fit=None,
+        wash=None,
+        min_price=None,
+        max_price=None,
+        available=None,
+        new_only=None,
+        featured=None,
+        best_seller=None,
+        term=None,
+        sort="featured",
+        page=1,
+        page_size=24,
+    )
+    await featured_products(_warm_request(app, "/api/v1/products/featured", ""), session)
+    await list_collections(_warm_request(app, "/api/v1/collections", ""), session)
+    await list_categories(_warm_request(app, "/api/v1/categories", ""), session)
