@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { catalogService, commerceService } from "../app/services";
@@ -140,10 +140,14 @@ export function HomepageIntroSections() {
               key={item.route}
               className={`home-category-tile category-tone-${item.tone}`}
               to={item.route}
-              style={
-                { "--category-image": `url("${item.image}")` } as CSSProperties
-              }
             >
+              <img
+                className="home-category-image"
+                src={item.image}
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
               <span>0{index + 1} / CREWWW</span>
               <h3>{item.label.split(" / ")[0]}</h3>
               <i>{item.label.split(" / ")[1]}</i>
@@ -218,14 +222,14 @@ export function HomepageStorySections() {
           <span>MINI CREW / FIRST LOOK</span>
         </div>
       </section>
-      <section
-        className="home-drop-feature"
-        data-reveal
-        style={{
-          backgroundImage:
-            "linear-gradient(90deg,rgba(14,17,14,.91),rgba(14,17,14,.28)),url(/images/editorial/drop-story.webp)",
-        }}
-      >
+      <section className="home-drop-feature" data-reveal>
+        <img
+          className="home-drop-feature-image"
+          src="/images/editorial/drop-story.webp"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
         <div>
           <p className="store-eyebrow">DROP 01 / THE FIRST RUN</p>
           <h2>

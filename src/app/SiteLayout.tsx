@@ -404,7 +404,7 @@ export function SiteLayout() {
               key={piece.id}
               style={
                 {
-                  "--rail-art": `url(${piece.artwork})`,
+                  "--rail-art": `url(${piece.artwork.replace("/print-plates/", "/print-plates/thumbs/")})`,
                   "--rail-accent": piece.accent,
                 } as CSSProperties
               }

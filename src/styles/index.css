@@ -4527,11 +4527,23 @@ body:has(.showroom) {
   justify-content: flex-end;
   overflow: hidden;
   padding: 19px;
-  background-image:
-    linear-gradient(0deg, #111210e8, transparent 78%), var(--category-image);
-  background-position: center;
-  background-size: cover;
+  background: linear-gradient(0deg, #111210e8, transparent 78%), #1a1714;
   transition: background-size 0.4s;
+}
+.home-category-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.9);
+  transition:
+    transform 0.5s ease,
+    filter 0.4s ease;
+}
+.home-category-tile:hover .home-category-image {
+  transform: scale(1.05);
+  filter: saturate(1.1);
 }
 .home-category-tile:before {
   position: absolute;
@@ -4543,7 +4555,7 @@ body:has(.showroom) {
 .home-category-tile:hover:before {
   opacity: 0.3;
 }
-.home-category-tile > * {
+.home-category-tile > :not(img) {
   position: relative;
   z-index: 1;
 }
@@ -4625,10 +4637,30 @@ body:has(.showroom) {
   display: flex;
   align-items: center;
   padding: 8vw;
-  background-position: center;
-  background-size: cover;
+  background: #111210;
+}
+.home-drop-feature-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.5;
+}
+.home-drop-feature::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(14, 17, 14, 0.94),
+    rgba(14, 17, 14, 0.28)
+  );
+  pointer-events: none;
 }
 .home-drop-feature > div {
+  position: relative;
+  z-index: 1;
   max-width: 500px;
 }
 .home-drop-feature h2 {
@@ -4646,6 +4678,7 @@ body:has(.showroom) {
 }
 .home-drop-feature > span {
   position: absolute;
+  z-index: 1;
   right: 5vw;
   bottom: 20px;
   color: #f0eee7;
@@ -12247,6 +12280,43 @@ main:has(.drop-experience) {
 .pdp-trust-strip button:hover {
   transform: translateY(-1px);
   text-shadow: 0 0 12px #f2a0c4;
+}
+
+/* Fill the whole viewport so wide screens never show dead side space. */
+.art-universe::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse at 8% 20%,
+      rgba(182, 156, 255, 0.16),
+      transparent 42%
+    ),
+    radial-gradient(
+      ellipse at 92% 76%,
+      rgba(242, 160, 196, 0.13),
+      transparent 46%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 158px,
+      rgba(182, 156, 255, 0.035) 158px 159px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 158px,
+      rgba(242, 160, 196, 0.028) 158px 159px
+    );
+  pointer-events: none;
+}
+.scroll-breath {
+  height: clamp(70px, 10vh, 120px);
+}
+@media (min-width: 1200px) {
+  .art-node {
+    width: clamp(300px, 24vw, 440px);
+  }
 }
 
 /* Navbar wears the artwork, not a flat bar. */

@@ -42,13 +42,17 @@ export function ArtUniverse() {
       <div className="universe-horizon" aria-hidden="true" />
       {psychedelicPieces.map((piece, index) => {
         const position = positions[index];
+        const thumb = piece.artwork.replace(
+          "/print-plates/",
+          "/print-plates/thumbs/",
+        );
         const style = {
           "--node-x": `${position.x}%`,
           "--node-y": `${position.y}%`,
           "--node-z": `${position.z}px`,
           "--node-delay": `${position.delay}s`,
           "--piece-accent": piece.accent,
-          "--art": `url(${piece.artwork})`,
+          "--art": `url(${thumb})`,
         } as CSSProperties;
         return (
           <Link
@@ -82,11 +86,11 @@ export function ArtUniverse() {
             </span>
             <span className="art-plate">
               <img
-                src={piece.artwork}
+                src={thumb}
                 alt=""
-                width={957}
-                height={452}
-                loading={index < 2 ? "eager" : "lazy"}
+                width={420}
+                height={198}
+                loading="lazy"
                 decoding="async"
               />
               <span className="art-plate-glow" />
