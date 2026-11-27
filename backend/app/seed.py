@@ -2,8 +2,10 @@ import asyncio
 import re
 from dataclasses import dataclass
 
+from redis.asyncio import Redis
 from sqlalchemy import select
 
+from app.core.cache import CACHE_PREFIX
 from app.core.config import get_settings
 from app.core.security import hash_password
 from app.db.session import SessionFactory, engine
@@ -344,6 +346,15 @@ async def seed() -> None:
                     )
                 )
         await session.commit()
+    if settings.redis_url:
+        redis = Redis.from_url(settings.redis_url, decode_responses=True)
+        try:
+            async for key in redis.scan_iter(match=f"{CACHE_PREFIX}*"):
+                await redis.delete(key)
+        except Exception:
+            pass
+        finally:
+            await redis.aclose()
     await engine.dispose()
 
 

@@ -277,7 +277,7 @@ API, which reads Neon PostgreSQL and caches through Upstash Redis.
 
 ## GitHub auto-deploy and service communication
 
-Every push to `main` runs `.github/workflows/ci-deploy.yml`:
+Every push to `main` or `tier1-perf-smoothness` runs `.github/workflows/ci-deploy.yml`:
 
 1. Frontend checks: `npm ci`, typecheck, Vitest, production build.
 2. Backend checks: pytest and Ruff.
