@@ -398,6 +398,19 @@ export function SiteLayout() {
           <i />
           <i />
         </div>
+        <div className="header-art-rail" aria-hidden="true">
+          {psychedelicPieces.map((piece) => (
+            <i
+              key={piece.id}
+              style={
+                {
+                  "--rail-art": `url(${piece.artwork})`,
+                  "--rail-accent": piece.accent,
+                } as CSSProperties
+              }
+            />
+          ))}
+        </div>
         <button
           ref={menuButtonRef}
           className="menu-toggle"

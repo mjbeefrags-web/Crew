@@ -370,6 +370,19 @@ export function ProductPage() {
                 : " · SAMPLE INVENTORY"}
             </span>
           </p>
+          <div className="pdp-trust-strip">
+            <span>
+              {product.bestSeller
+                ? "CREW FAVOURITE"
+                : product.isNew
+                  ? "JUST LANDED"
+                  : "STUDIO PICK"}
+            </span>
+            <span>FREE PREVIEW DELIVERY OVER $100</span>
+            <button type="button" onClick={() => setSizeGuideOpen(true)}>
+              CHECK YOUR SIZE ↗
+            </button>
+          </div>
           <div className="product-option-block">
             <div className="product-option-heading">
               <span>COLOR</span>

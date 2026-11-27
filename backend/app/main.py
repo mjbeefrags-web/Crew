@@ -127,7 +127,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ]
         return JSONResponse(status_code=422, content={"detail": errors})
 
-    upload_dir = Path(os.getenv("UPLOAD_DIR", "/app/uploads"))
+    # Default to a project-local directory; Docker sets UPLOAD_DIR=/app/uploads.
+    upload_dir = Path(os.getenv("UPLOAD_DIR", "uploads"))
     upload_dir.mkdir(parents=True, exist_ok=True)
     app.mount("/api/uploads", StaticFiles(directory=upload_dir), name="uploads")
 

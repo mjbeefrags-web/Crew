@@ -11842,3 +11842,533 @@ main:has(.drop-experience) {
     opacity: 0.16;
   }
 }
+
+/* Universe of arts — CSS-3D portals, no WebGL and no walk mode. */
+.art-universe {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  perspective: 900px;
+  transform-style: preserve-3d;
+  background:
+    radial-gradient(
+      ellipse at 50% 120%,
+      rgba(123, 32, 38, 0.45),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse at 20% 20%,
+      rgba(92, 43, 110, 0.35),
+      transparent 55%
+    ),
+    #0a0810;
+}
+.universe-stars {
+  position: absolute;
+  inset: -20%;
+  background-image:
+    radial-gradient(1px 1px at 12% 24%, #fff9, transparent),
+    radial-gradient(1px 1px at 78% 16%, #f2a0c488, transparent),
+    radial-gradient(1.5px 1.5px at 43% 71%, #b69cff99, transparent),
+    radial-gradient(1px 1px at 88% 62%, #fff6, transparent),
+    radial-gradient(1px 1px at 28% 86%, #fff5, transparent);
+  background-size: 220px 220px;
+  opacity: 0.75;
+  animation: star-drift 46s linear infinite;
+}
+.universe-horizon {
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  bottom: -34%;
+  height: 72%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    rgba(182, 156, 255, 0.22),
+    transparent 68%
+  );
+  filter: blur(30px);
+  animation: horizon-breathe 12s ease-in-out infinite;
+}
+@keyframes star-drift {
+  to {
+    transform: translate3d(-220px, 110px, 0);
+  }
+}
+@keyframes horizon-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 0.85;
+  }
+}
+.art-node {
+  position: absolute;
+  left: var(--node-x);
+  top: var(--node-y);
+  width: clamp(180px, 21vw, 320px);
+  transform: translate3d(-50%, -50%, var(--node-z));
+  transform-style: preserve-3d;
+  color: #f2efe6;
+  text-decoration: none;
+  /* The node stays stable for hover/click; life comes from the world layers. */
+  transition:
+    transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 0.5s ease;
+}
+.art-world {
+  position: absolute;
+  inset: -58% -46%;
+  display: block;
+  transform: translateZ(-90px) scale(0.7);
+  opacity: 0.45;
+  transition:
+    transform 0.7s ease,
+    opacity 0.6s ease;
+  pointer-events: none;
+}
+.world-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 22px,
+      color-mix(in srgb, var(--piece-accent) 48%, transparent) 22px 23px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 22px,
+      color-mix(in srgb, var(--piece-accent) 32%, transparent) 22px 23px
+    );
+  mask-image: radial-gradient(ellipse at 50% 60%, #000 0%, transparent 72%);
+  transform: perspective(420px) rotateX(66deg);
+  transform-origin: 50% 100%;
+}
+.world-buildings {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 34%;
+  height: 42%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 4px;
+  transform: perspective(500px) rotateX(12deg);
+}
+.world-buildings i {
+  flex: 1;
+  height: calc(28% + (var(--i, 1) * 6%));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--piece-accent) 70%, #1a1024),
+    #0b0710
+  );
+  box-shadow: 0 0 18px color-mix(in srgb, var(--piece-accent) 40%, transparent);
+  opacity: 0.75;
+  transform-origin: bottom;
+  animation: building-rise 5s ease-in-out infinite;
+}
+.world-buildings i:nth-child(2n) {
+  animation-delay: -1.2s;
+}
+.world-buildings i:nth-child(3n) {
+  animation-delay: -2.6s;
+}
+.world-buildings i:nth-child(4n) {
+  animation-delay: -3.8s;
+}
+@keyframes building-rise {
+  0%,
+  100% {
+    transform: scaleY(0.82);
+  }
+  50% {
+    transform: scaleY(1.06);
+  }
+}
+.world-blackhole {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 36%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    #000 0 34%,
+    var(--piece-accent) 36% 40%,
+    transparent 62%
+  );
+  box-shadow: 0 0 60px color-mix(in srgb, var(--piece-accent) 45%, transparent);
+  animation: blackhole-spin 14s linear infinite;
+}
+@keyframes blackhole-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+.world-road {
+  position: absolute;
+  left: 50%;
+  bottom: 18%;
+  width: 12%;
+  height: 46%;
+  transform: translateX(-50%) perspective(360px) rotateX(72deg);
+  background: linear-gradient(
+    0deg,
+    transparent,
+    color-mix(in srgb, var(--piece-accent) 65%, transparent),
+    transparent
+  );
+  filter: blur(4px);
+}
+.art-plate {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--piece-accent) 55%, transparent);
+  background: #120d17;
+  box-shadow:
+    0 18px 44px #000a,
+    0 0 0 rgba(0, 0, 0, 0);
+  transform: translateZ(20px);
+  transition:
+    box-shadow 0.5s ease,
+    border-color 0.5s ease;
+}
+.art-plate img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 957 / 452;
+  object-fit: cover;
+  filter: saturate(0.92) contrast(1.05);
+  transition:
+    transform 0.7s ease,
+    filter 0.5s ease;
+}
+.art-plate-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    transparent 30%,
+    color-mix(in srgb, var(--piece-accent) 32%, transparent)
+  );
+  mix-blend-mode: screen;
+  opacity: 0.25;
+  animation: plate-breathe 6s ease-in-out infinite;
+  animation-delay: var(--node-delay);
+  transition: opacity 0.5s ease;
+}
+@keyframes plate-breathe {
+  0%,
+  100% {
+    opacity: 0.16;
+  }
+  50% {
+    opacity: 0.34;
+  }
+}
+.art-caption {
+  display: block;
+  padding: 9px 2px 0;
+  transform: translateZ(30px);
+}
+.art-caption b {
+  display: block;
+  font: 400 17px/1 var(--store-serif);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--piece-accent) 60%, transparent);
+}
+.art-caption small {
+  color: var(--piece-accent);
+  font: 7px var(--mono);
+  letter-spacing: 0.14em;
+}
+.art-node:hover,
+.art-node:focus-visible,
+.art-node.is-focused {
+  z-index: 5;
+  animation-play-state: paused;
+  transform: translate3d(-50%, -50%, 160px) scale(1.22);
+  filter: saturate(1.25);
+}
+.art-universe.has-focus .art-node:not(.is-focused) {
+  opacity: 0.28;
+  filter: blur(2px) saturate(0.6);
+}
+.art-node:hover .art-world,
+.art-node:focus-visible .art-world,
+.art-node.is-focused .art-world {
+  transform: translateZ(-40px) scale(1.35);
+  opacity: 0.95;
+}
+.art-node:hover .art-plate img,
+.art-node:focus-visible .art-plate img,
+.art-node.is-focused .art-plate img {
+  transform: scale(1.08);
+  filter: saturate(1.4) contrast(1.12);
+}
+.art-node:hover .art-plate,
+.art-node:focus-visible .art-plate,
+.art-node.is-focused .art-plate {
+  border-color: var(--piece-accent);
+  box-shadow:
+    0 24px 70px #000c,
+    0 0 42px color-mix(in srgb, var(--piece-accent) 55%, transparent);
+}
+.art-node:hover .art-plate-glow,
+.art-node.is-focused .art-plate-glow {
+  opacity: 0.6;
+}
+.universe-warp {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-content: center;
+  gap: 16px;
+  background: radial-gradient(circle, #2b1b4d, #05040a 72%);
+  animation: warp-in 0.42s ease both;
+  text-align: center;
+}
+.universe-warp span {
+  width: min(50vw, 420px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid #f2a0c4;
+  box-shadow:
+    0 0 80px #b69cff88 inset,
+    0 0 80px #f2a0c466;
+  animation: warp-spin 0.5s linear infinite;
+}
+.universe-warp b {
+  color: #f2a0c4;
+  font: 9px var(--mono);
+  letter-spacing: 0.3em;
+}
+@keyframes warp-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes warp-spin {
+  to {
+    transform: scale(0.3) rotate(180deg);
+    opacity: 0.2;
+  }
+}
+@media (max-width: 760px) {
+  .art-node {
+    width: clamp(150px, 44vw, 220px);
+  }
+  .art-node:nth-child(6),
+  .art-node:nth-child(7) {
+    display: none;
+  }
+  .art-world {
+    inset: -40% -30%;
+  }
+  .world-buildings i {
+    animation: none;
+  }
+  .art-caption b {
+    font-size: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .art-universe *,
+  .art-node {
+    animation: none !important;
+  }
+  .art-node {
+    transform: translate3d(-50%, -50%, var(--node-z));
+  }
+}
+
+@media (max-width: 520px) {
+  [data-sound-toggle] span {
+    display: none;
+  }
+}
+
+/* The headline sits above the universe visually but must not swallow hovers. */
+.showroom-hero-copy {
+  pointer-events: none;
+}
+.showroom-hero-copy a,
+.showroom-hero-copy button {
+  pointer-events: auto;
+}
+
+/* PDP trust strip — signals that remove size and delivery hesitation. */
+.pdp-trust-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: 4px 0 18px;
+  padding: 10px 0;
+  border-top: 1px solid var(--store-line);
+  border-bottom: 1px solid var(--store-line);
+}
+.pdp-trust-strip span {
+  color: #b69cff;
+  font: 7px var(--mono);
+  letter-spacing: 0.11em;
+}
+.pdp-trust-strip span:nth-child(2) {
+  color: #9a9d91;
+}
+.pdp-trust-strip button {
+  margin-left: auto;
+  border: 0;
+  padding: 0;
+  color: #f2a0c4;
+  background: transparent;
+  font: 7px var(--mono);
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition:
+    text-shadow 0.3s ease,
+    transform 0.3s ease;
+}
+.pdp-trust-strip button:hover {
+  transform: translateY(-1px);
+  text-shadow: 0 0 12px #f2a0c4;
+}
+
+/* Navbar wears the artwork, not a flat bar. */
+.header-art-rail {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.2;
+}
+.header-art-rail i {
+  position: absolute;
+  top: -70%;
+  height: 240%;
+  width: 18%;
+  background: var(--rail-art) center / cover;
+  filter: blur(16px) saturate(1.5);
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 35%,
+    #000 65%,
+    transparent
+  );
+  animation: rail-drift 22s ease-in-out infinite alternate;
+}
+.header-art-rail i:nth-child(1) {
+  left: 2%;
+}
+.header-art-rail i:nth-child(2) {
+  left: 23%;
+  animation-delay: -4s;
+}
+.header-art-rail i:nth-child(3) {
+  left: 48%;
+  animation-delay: -9s;
+}
+.header-art-rail i:nth-child(4) {
+  left: 71%;
+  animation-delay: -14s;
+}
+.header-art-rail i:nth-child(5) {
+  left: 88%;
+  animation-delay: -19s;
+}
+@keyframes rail-drift {
+  from {
+    transform: translate3d(-14px, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(18px, 12px, 0) scale(1.12);
+  }
+}
+.site-header .primary-navigation a:hover,
+.site-header .primary-navigation button:hover {
+  text-shadow: 0 0 14px
+    color-mix(in srgb, var(--piece-accent, #f2a0c4) 70%, transparent);
+}
+
+/* Professional button transitions: lift, glow and a light sweep. */
+.primary-store-button,
+.hero-cta,
+.quick-add,
+.admin-ai-form button,
+.admin-product-form button,
+.trip-popover-all {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.32s ease,
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+.primary-store-button::after,
+.hero-cta::after,
+.admin-ai-form button::after,
+.admin-product-form button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 24%,
+    #ffffff9c 50%,
+    transparent 76%
+  );
+  transform: translateX(-130%);
+  transition: transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+.primary-store-button:hover,
+.hero-cta:hover,
+.admin-ai-form button:hover,
+.admin-product-form button:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 28px rgba(242, 160, 196, 0.35),
+    0 0 0 1px rgba(242, 160, 196, 0.55);
+}
+.primary-store-button:hover::after,
+.hero-cta:hover::after,
+.admin-ai-form button:hover::after,
+.admin-product-form button:hover::after {
+  transform: translateX(130%);
+}
+.quick-add:hover,
+.quick-add:focus-visible {
+  color: #f2a0c4;
+  box-shadow: inset 0 -1px #f2a0c4;
+}
+@media (prefers-reduced-motion: reduce) {
+  .header-art-rail i,
+  .primary-store-button,
+  .hero-cta,
+  .quick-add {
+    animation: none;
+    transition: none;
+  }
+  .primary-store-button::after,
+  .hero-cta::after {
+    display: none;
+  }
+}

@@ -8,6 +8,7 @@ import {
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
+import { ArtUniverse } from "../components/ArtUniverse";
 import { Button } from "../components/Button";
 import { CartIcon } from "../components/CartIcon";
 import { ColorwayMatrix } from "../components/ColorwayMatrix";
@@ -25,7 +26,6 @@ import {
 import { formatCurrency } from "../utils/formatCurrency";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import type { WorldDestinationId, WorldMode } from "../scenes/CrewwwWorld";
 import { catalogService } from "../app/services";
 import { API_MODE } from "../config/runtime";
 import { FEATURES } from "../config/features";
@@ -37,26 +37,6 @@ const HoodieViewer = lazy(() =>
     default: module.HoodieViewer,
   })),
 );
-const CrewwwWorld = lazy(() =>
-  import("../scenes/CrewwwWorld").then((module) => ({
-    default: module.CrewwwWorld,
-  })),
-);
-
-function WorldStageFallback() {
-  return (
-    <div
-      className="world-stage world-stage-fallback"
-      aria-label="Crewww district"
-    >
-      <div className="world-fallback-scene">
-        <span>CREWWW</span>
-        <b>THE BLOCK / FIRST RUN</b>
-      </div>
-    </div>
-  );
-}
-
 const worldCollections = {
   graphic: "CREWWW / GRAPHIC HOODIES",
   outside: "CREWWW / OUTSIDE HOURS",
@@ -126,49 +106,6 @@ export function ShowroomPage() {
   const [quantity, setQuantity] = useState(1);
   const [details, setDetails] = useState("");
   const [toast, setToast] = useState("");
-  const [worldMode, setWorldMode] = useState<WorldMode>("cinematic");
-  const [walkHint, setWalkHint] = useState(false);
-  // The hero poster paints immediately; the WebGL block is mounted once the
-  // browser is idle so Three.js never competes with the first render.
-  const [worldReady, setWorldReady] = useState(false);
-  useEffect(() => {
-    const idleWindow = window as Window & {
-      requestIdleCallback?: (
-        callback: () => void,
-        options?: { timeout: number },
-      ) => number;
-      cancelIdleCallback?: (handle: number) => void;
-    };
-    if (typeof idleWindow.requestIdleCallback === "function") {
-      const handle = idleWindow.requestIdleCallback(() => setWorldReady(true), {
-        timeout: 700,
-      });
-      return () => idleWindow.cancelIdleCallback?.(handle);
-    }
-    const timer = window.setTimeout(() => setWorldReady(true), 350);
-    return () => window.clearTimeout(timer);
-  }, []);
-  useEffect(() => {
-    if (worldMode !== "explore") return;
-    try {
-      if (localStorage.getItem("crewww:walk-hint-seen")) return;
-    } catch {
-      /* ignore */
-    }
-    setWalkHint(true);
-    const t = window.setTimeout(() => {
-      setWalkHint(false);
-      try {
-        localStorage.setItem("crewww:walk-hint-seen", "1");
-      } catch {
-        /* ignore */
-      }
-    }, 6000);
-    return () => window.clearTimeout(t);
-  }, [worldMode]);
-  const [nearDestination, setNearDestination] =
-    useState<WorldDestinationId | null>(null);
-  const [moveInput, setMoveInput] = useState({ x: 0, z: 0 });
   const [journey, setJourney] = useState(0);
   const journeyTrackRef = useRef<HTMLDivElement | null>(null);
   const cardRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -216,24 +153,6 @@ export function ShowroomPage() {
       scale: rect.width / Math.min(500, window.innerWidth * 0.8),
     };
   };
-
-  const walkVectors = {
-    backward: { x: 0, z: -1 },
-    forward: { x: 0, z: 1 },
-    left: { x: -1, z: 0 },
-    right: { x: 1, z: 0 },
-  } as const;
-  const startWalk = (direction: keyof typeof walkVectors) =>
-    setMoveInput(walkVectors[direction]);
-  const stopWalk = () => setMoveInput({ x: 0, z: 0 });
-  const walkKey =
-    (direction: keyof typeof walkVectors) =>
-    (event: ReactKeyboardEvent<HTMLButtonElement>) => {
-      if (event.key === " " || event.key === "Enter") {
-        event.preventDefault();
-        startWalk(direction);
-      }
-    };
 
   const selectWorldDestination = (
     destination: keyof typeof worldCollections,
@@ -705,13 +624,12 @@ export function ShowroomPage() {
                     >
                       SHOP ALL HOODIES <span>↘</span>
                     </button>
-                    <button
+                    <Link
                       className="chapter-secondary"
-                      type="button"
-                      onClick={() => setWorldMode("explore")}
+                      to="/drops/psychedelic-minds?entered=1"
                     >
-                      EXPLORE THE BLOCK <span>↗</span>
-                    </button>
+                      ENTER THE UNIVERSE <span>↗</span>
+                    </Link>
                   </div>
                 </>
               )}
@@ -786,47 +704,7 @@ export function ShowroomPage() {
                 </>
               )}
             </div>
-            <div className="world-mode-bar" hidden={!FEATURES.worldWalk}>
-              <button
-                type="button"
-                aria-pressed={worldMode === "explore"}
-                onClick={() => {
-                  setWorldMode(
-                    worldMode === "explore" ? "cinematic" : "explore",
-                  );
-                  setNearDestination(null);
-                  setMoveInput({ x: 0, z: 0 });
-                }}
-              >
-                {worldMode === "explore"
-                  ? "EXIT WALK MODE"
-                  : "EXPLORE THE BLOCK"}
-              </button>
-              {worldMode === "explore" && (
-                <span>WASD · DRAG TO LOOK · E TO ENTER</span>
-              )}
-              {walkHint && (
-                <div className="walk-hint" role="status" aria-live="polite">
-                  <b>EXPLORE MODE</b>
-                  <span>
-                    WASD / arrows to move · drag to look · E to enter a store
-                  </span>
-                </div>
-              )}
-            </div>
-            {worldReady ? (
-              <Suspense fallback={<WorldStageFallback />}>
-                <CrewwwWorld
-                  onDestination={selectWorldDestination}
-                  mode={worldMode}
-                  moveInput={moveInput}
-                  onNearDestination={setNearDestination}
-                  progress={journey}
-                />
-              </Suspense>
-            ) : (
-              <WorldStageFallback />
-            )}
+            <ArtUniverse />
             <div
               className="chapter-wipe"
               key={`wipe-${chapterIndex}`}
@@ -857,73 +735,8 @@ export function ShowroomPage() {
               ))}
             </nav>
             <span className="hero-footnote">
-              SELECT A STORE / OR SHOP ALL ↘
+              HOVER A WORLD TO ENTER IT / CLICK TO TRAVEL ↗
             </span>
-            {worldMode === "explore" && (
-              <>
-                <div className="world-dpad" aria-label="Walk controls">
-                  <button
-                    type="button"
-                    aria-label="Walk backward"
-                    onPointerDown={() => startWalk("backward")}
-                    onPointerUp={stopWalk}
-                    onPointerLeave={stopWalk}
-                    onKeyDown={walkKey("backward")}
-                    onKeyUp={stopWalk}
-                    onBlur={stopWalk}
-                  >
-                    ↓
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Walk forward"
-                    onPointerDown={() => startWalk("forward")}
-                    onPointerUp={stopWalk}
-                    onPointerLeave={stopWalk}
-                    onKeyDown={walkKey("forward")}
-                    onKeyUp={stopWalk}
-                    onBlur={stopWalk}
-                  >
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Strafe left"
-                    onPointerDown={() => startWalk("left")}
-                    onPointerUp={stopWalk}
-                    onPointerLeave={stopWalk}
-                    onKeyDown={walkKey("left")}
-                    onKeyUp={stopWalk}
-                    onBlur={stopWalk}
-                  >
-                    ←
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Strafe right"
-                    onPointerDown={() => startWalk("right")}
-                    onPointerUp={stopWalk}
-                    onPointerLeave={stopWalk}
-                    onKeyDown={walkKey("right")}
-                    onKeyUp={stopWalk}
-                    onBlur={stopWalk}
-                  >
-                    →
-                  </button>
-                </div>
-                {nearDestination && (
-                  <button
-                    className="world-prompt"
-                    type="button"
-                    onClick={() => selectWorldDestination(nearDestination)}
-                  >
-                    PRESS E / ENTER{" "}
-                    {worldCollections[nearDestination].replace("CREWWW / ", "")}{" "}
-                    ↗
-                  </button>
-                )}
-              </>
-            )}
             <div className="world-journey" aria-hidden="true">
               <span>THE BLOCK</span>
               <i>
@@ -959,7 +772,7 @@ export function ShowroomPage() {
                 transform: `translateY(${journey * -20}px)`,
               }}
             >
-              SCROLL TO MOVE THROUGH THE BLOCK{" "}
+              SCROLL TO MOVE THROUGH THE UNIVERSE{" "}
               <i
                 style={{
                   display: "inline-block",

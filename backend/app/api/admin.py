@@ -75,7 +75,7 @@ async def upload_image(payload: ImageUploadIn) -> dict[str, str]:
             status_code=413,
             detail={"code": "image_too_large", "message": "Images must be under 5 MB."},
         )
-    directory = Path(os.getenv("UPLOAD_DIR", "/app/uploads"))
+    directory = Path(os.getenv("UPLOAD_DIR", "uploads"))
     directory.mkdir(parents=True, exist_ok=True)
     name = f"{uuid4().hex}{suffix}"
     (directory / name).write_bytes(content)

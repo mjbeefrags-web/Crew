@@ -26,21 +26,26 @@ if ($remote -match 'github\.com[:/]([^/]+)/([^\.]+)(\.git)?$') {
   exit 0
 }
 
-$api = "https://api.github.com/repos/$owner/$repo/actions/runs?branch=$branch&per_page=1"
-Write-Host "Watching $api"
+$headSha = git rev-parse HEAD
+$api = "https://api.github.com/repos/$owner/$repo/actions/runs?branch=$branch&per_page=5"
+Write-Host "Watching $api for $headSha"
 
 for ($attempt = 0; $attempt -lt 60; $attempt++) {
   try {
     $run = Invoke-RestMethod -Uri $api -Headers @{ "User-Agent" = "crewww-deploy" }
-    $latest = $run.workflow_runs | Select-Object -First 1
-    Write-Host "Run $($latest.run_number): $($latest.status) / $($latest.conclusion)"
-    if ($latest.status -eq "completed") {
-      if ($latest.conclusion -eq "success") {
-        Write-Host "Deployment succeeded: $($latest.html_url)"
-      } else {
-        Write-Warning "Deployment ended with $($latest.conclusion): $($latest.html_url)"
+    $latest = $run.workflow_runs | Where-Object { $_.head_sha -eq $headSha } | Select-Object -First 1
+    if (-not $latest) {
+      Write-Host "Waiting for the new run for this commit..."
+    } else {
+      Write-Host "Run $($latest.run_number): $($latest.status) / $($latest.conclusion)"
+      if ($latest.status -eq "completed") {
+        if ($latest.conclusion -eq "success") {
+          Write-Host "Deployment succeeded: $($latest.html_url)"
+        } else {
+          Write-Warning "Deployment ended with $($latest.conclusion): $($latest.html_url)"
+        }
+        exit 0
       }
-      exit 0
     }
   } catch {
     Write-Warning "Could not read Actions status: $($_.Exception.Message)"

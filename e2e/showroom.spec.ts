@@ -76,9 +76,7 @@ test("world storefront destinations open real collections and shop all stays dir
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/");
-  await expect(
-    page.locator(".world-stage canvas, .world-stage-fallback").first(),
-  ).toBeVisible();
+  await expect(page.locator(".art-universe").first()).toBeVisible();
   await page.getByRole("link", { name: /outside hours/i }).click();
   await expect(page).toHaveURL(/collection=/);
   await resultCount(page, 1);
@@ -439,7 +437,7 @@ test("3D fallback hides controls that cannot operate without WebGL", async ({
     });
   });
   await page.goto("/");
-  await expect(page.locator(".world-stage-fallback")).toBeVisible();
+  await expect(page.locator(".art-universe")).toBeVisible();
   await page
     .getByRole("button", { name: "Inspect Joy of Outdoors Hoodie" })
     .click();
