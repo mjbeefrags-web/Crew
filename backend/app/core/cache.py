@@ -8,17 +8,18 @@ never takes a dependency on a running Redis for correctness.
 from __future__ import annotations
 
 import asyncio
-import json
 import time
 from collections.abc import Awaitable, Callable
 from functools import wraps
 from typing import Any
 
+import orjson
 from fastapi import Request
 from fastapi.encoders import jsonable_encoder
 from redis.asyncio import Redis
 
 CACHE_PREFIX = "catalog:"
+KEY_SET = "catalog:keys"
 # Catalog data changes through admin writes, which invalidate this prefix.
 # A longer TTL keeps repeat visits fast without serving stale data after edits.
 DEFAULT_TTL = 300
@@ -27,13 +28,13 @@ DEFAULT_TTL = 300
 class ResponseCache:
     def __init__(self, redis: Redis | None) -> None:
         self.redis = redis
-        self.memory: dict[str, tuple[float, str]] = {}
+        self.memory: dict[str, tuple[float, bytes]] = {}
         self.lock = asyncio.Lock()
         self.hits = 0
         self.misses = 0
 
     async def get(self, key: str) -> Any | None:
-        payload: str | None = None
+        payload: bytes | str | None = None
         if self.redis is not None:
             try:
                 payload = await self.redis.get(key)
@@ -50,21 +51,34 @@ class ResponseCache:
             self.misses += 1
             return None
         self.hits += 1
-        return json.loads(payload)
+        return orjson.loads(payload)
 
-    async def set(self, key: str, payload: str, ttl: int = DEFAULT_TTL) -> None:
+    async def set(self, key: str, payload: bytes, ttl: int = DEFAULT_TTL) -> None:
         self.memory[key] = (time.time() + ttl, payload)
         if self.redis is not None:
             try:
                 await self.redis.setex(key, ttl, payload)
+                # Track keys explicitly so invalidation is one DEL, not SCAN.
+                await self.redis.sadd(KEY_SET, key)
             except Exception:
                 pass
 
     async def clear_prefix(self, prefix: str = CACHE_PREFIX) -> None:
         if self.redis is not None:
             try:
-                async for key in self.redis.scan_iter(match=f"{prefix}*"):
-                    await self.redis.delete(key)
+                keys = await self.redis.smembers(KEY_SET)
+                tracked = [
+                    key
+                    for key in keys
+                    if isinstance(key, str) and key.startswith(prefix)
+                ]
+                if tracked:
+                    await self.redis.delete(*tracked)
+                else:
+                    async for key in self.redis.scan_iter(match=f"{prefix}*"):
+                        await self.redis.delete(key)
+                if tracked:
+                    await self.redis.srem(KEY_SET, *tracked)
             except Exception:
                 pass
         for key in [key for key in self.memory if key.startswith(prefix)]:
@@ -91,8 +105,8 @@ def cached(ttl: int = DEFAULT_TTL):
             if hit is not None:
                 return hit
             value = await handler(request, *args, **kwargs)
-            payload = json.dumps(
-                jsonable_encoder(value), separators=(",", ":"), default=str
+            payload = orjson.dumps(
+                jsonable_encoder(value), option=orjson.OPT_NON_STR_KEYS
             )
             await cache.set(key, payload, ttl)
             return value

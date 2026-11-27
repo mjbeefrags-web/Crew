@@ -179,12 +179,39 @@ async def list_products(
         "price-desc": (lowest_price.desc(),),
         "name": (Product.name.asc(),),
     }
-    query = product_statement().where(and_(*filters))
-    total = (
-        await session.scalar(select(func.count()).select_from(Product).where(and_(*filters))) or 0
+    # A windowed count in the same statement avoids a second database round
+    # trip for the total while keeping the same page/filter semantics.
+    inner = (
+        select(Product.id.label("id"), func.count().over().label("total"))
+        .where(and_(*filters))
+        .order_by(*ordering[sort])
+        .limit(page_size)
+        .offset((page - 1) * page_size)
+        .subquery()
     )
-    query = query.order_by(*ordering[sort])
-    rows = (await session.scalars(query.offset((page - 1) * page_size).limit(page_size))).all()
+    result = await session.execute(
+        select(Product, inner.c.total)
+        .join(inner, Product.id == inner.c.id)
+        .options(
+            selectinload(Product.variants),
+            selectinload(Product.collection),
+            selectinload(Product.category_ref),
+            selectinload(Product.images),
+        )
+        .order_by(*ordering[sort])
+    )
+    pairs = result.all()
+    if pairs:
+        total = int(pairs[0][1])
+        rows = [row[0] for row in pairs]
+    else:
+        total = (
+            await session.scalar(
+                select(func.count()).select_from(Product).where(and_(*filters))
+            )
+            or 0
+        )
+        rows = []
     return ProductPageOut(
         items=[product_payload(product) for product in rows],
         total=total,
