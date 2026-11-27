@@ -72,6 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID || 'c6e7ab21-cbe4-4f76-9f24-a7f4ef96defc' }}
       RAILWAY_SERVICE_ID: ${{ vars.RAILWAY_SERVICE_ID || '148a2a29-5828-42ad-9ebb-1fc4905f9161' }}
     steps:
       - uses: actions/checkout@v4
@@ -82,9 +83,15 @@ jobs:
 
       - run: npm i -g @railway/cli
 
+      - name: Migrate and seed production database
+        working-directory: backend
+        run: |
+          railway run --project "$RAILWAY_PROJECT_ID" --service "$RAILWAY_SERVICE_ID" --environment production -- python -m alembic upgrade head
+          railway run --project "$RAILWAY_PROJECT_ID" --service "$RAILWAY_SERVICE_ID" --environment production -- python -m app.seed
+
       - name: Deploy backend
         working-directory: backend
-        run: railway up --service "$RAILWAY_SERVICE_ID" --environment production --ci
+        run: railway up --project "$RAILWAY_PROJECT_ID" --service "$RAILWAY_SERVICE_ID" --environment production --ci
 
   deploy-frontend:
     name: Deploy storefront to Cloudflare

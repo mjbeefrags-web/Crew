@@ -171,10 +171,15 @@ class InventoryAdjustIn(BaseModel):
 
 
 class CartLineIn(BaseModel):
-    product_id: UUID
+    product_id: str = Field(min_length=1, max_length=180)
     size: str = Field(min_length=1, max_length=32)
     color: str = Field(min_length=1, max_length=64)
     quantity: int = Field(ge=1, le=20)
+
+    @field_validator("product_id")
+    @classmethod
+    def normalize_product_id(cls, value: str) -> str:
+        return value.strip().lower()
 
 
 class CartQuantityIn(BaseModel):

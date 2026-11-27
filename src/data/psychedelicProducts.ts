@@ -12,7 +12,7 @@ const sizes = ["S", "M", "L", "XL", "XXL"] as const;
 
 export const psychedelicProducts: readonly Product[] = psychedelicPieces.map(
   (piece, index) => ({
-    id: `psychedelic-${String(index + 1).padStart(2, "0")}`,
+    id: `${piece.id}-psychedelic-hoodie`,
     slug: `${piece.id}-psychedelic-hoodie`,
     name: `${piece.name} Hoodie`,
     category: "hoodies",

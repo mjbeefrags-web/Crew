@@ -37,6 +37,22 @@ async def test_live_api_health_and_catalog() -> None:
         assert page["total"] >= 0
 
 
+async def test_live_psychedelic_add_to_bag_accepts_slug() -> None:
+    """The exact drop-page product can be added using its canonical slug."""
+    payload = {
+        "product_id": "mind-02-psychedelic-hoodie",
+        "size": "M",
+        "color": "Deep Red",
+        "quantity": 1,
+    }
+    async with httpx.AsyncClient(base_url=LIVE_API_URL, timeout=20) as client:
+        response = await client.post("/api/v1/cart/items", json=payload)
+
+    assert response.status_code == 200, response.text
+    cart = response.json()
+    assert any(item["sku"] == "CREW-PM02-DEEPRED-M" for item in cart["items"])
+
+
 async def test_live_cors_allows_cloudflare_origin() -> None:
     """The browser origin is explicitly allowed to call the API."""
     if not FRONTEND_ORIGIN:

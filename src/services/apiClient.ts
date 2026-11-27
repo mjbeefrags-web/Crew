@@ -72,7 +72,12 @@ export async function apiRequest<T>(
       ) {
         message = String(body.detail.message);
         code = "code" in body.detail ? String(body.detail.code) : code;
-      } else if (typeof body.detail === "string") message = body.detail;
+      } else if (typeof body.detail === "string") {
+        message = body.detail;
+      } else if (Array.isArray(body.detail)) {
+        const issue = body.detail[0] as { msg?: unknown } | undefined;
+        if (typeof issue?.msg === "string") message = issue.msg;
+      }
     } catch {
       /* retain generic response */
     }

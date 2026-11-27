@@ -45,6 +45,18 @@ payment_provider = MockPaymentProvider()
 email_provider = ConsoleEmailProvider()
 
 
+def product_filter(product_id: str):
+    """Accept either a database UUID or a stable catalog slug.
+
+    The psychedelic room uses canonical slugs from the shared frontend concept
+    data, while ProductPage uses the UUID returned by the catalog API.
+    """
+    try:
+        return Product.id == UUID(product_id)
+    except ValueError:
+        return Product.slug == product_id
+
+
 async def get_or_create_cart(
     request: Request,
     response: Response,
@@ -177,7 +189,7 @@ async def add_cart_item(
         select(ProductVariant)
         .join(Product)
         .where(
-            ProductVariant.product_id == payload.product_id,
+            product_filter(payload.product_id),
             Product.status.in_(["active", "sample"]),
             ProductVariant.size == payload.size,
             ProductVariant.color == payload.color,
@@ -394,7 +406,7 @@ async def checkout(
                     select(ProductVariant)
                     .join(Product)
                     .where(
-                        ProductVariant.product_id == line.product_id,
+                        product_filter(line.product_id),
                         Product.status.in_(["active", "sample"]),
                         ProductVariant.size == line.size,
                         ProductVariant.color == line.color,

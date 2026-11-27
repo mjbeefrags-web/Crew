@@ -277,6 +277,24 @@ async def test_guest_cart_and_server_priced_transactional_checkout(client):
 
 
 @pytest.mark.asyncio
+async def test_cart_accepts_catalog_slug_as_product_id(client):
+    await create_product(client)
+    added = await client.post(
+        "/api/v1/cart/items",
+        json={"product_id": "TEST-HOODIE", "size": "M", "color": "Black", "quantity": 1},
+    )
+    assert added.status_code == 200
+    assert added.json()["items"][0]["sku"] == "test-hoodie-black-m"
+
+    missing = await client.post(
+        "/api/v1/cart/items",
+        json={"product_id": "not-a-product", "size": "M", "color": "Black", "quantity": 1},
+    )
+    assert missing.status_code == 404
+    assert missing.json()["detail"]["code"] == "variant_unavailable"
+
+
+@pytest.mark.asyncio
 async def test_customer_order_ownership_wishlist_and_admin_stock_adjustment(client):
     product_id, variant_id = await create_product(client, stock=3)
     user, token = await create_user(client)

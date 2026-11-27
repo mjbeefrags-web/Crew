@@ -281,7 +281,8 @@ Every push to `main` runs `.github/workflows/ci-deploy.yml`:
 
 1. Frontend checks: `npm ci`, typecheck, Vitest, production build.
 2. Backend checks: pytest and Ruff.
-3. Deploys: `railway up` for the API, `wrangler deploy` for the storefront.
+3. Migrates and seeds Neon through `railway run`, then deploys with
+   `railway up`; `wrangler deploy` deploys the storefront.
 4. Live verification: smoke tests against the deployed API and frontend.
 
 Pull requests run checks only; they never deploy.
@@ -317,19 +318,31 @@ repository secret**:
 | `LIVE_ADMIN_PASSWORD` | Optional: enables the live admin-login test. |
 
 Optional repository variables with safe defaults are `VITE_API_BASE_URL`,
-`LIVE_API_URL`, `FRONTEND_ORIGIN`, `LIVE_FRONTEND_URL`, and
-`RAILWAY_SERVICE_ID`. The Cloudflare account ID is already in
-`wrangler.jsonc`.
+`LIVE_API_URL`, `FRONTEND_ORIGIN`, `LIVE_FRONTEND_URL`,
+`RAILWAY_PROJECT_ID`, and `RAILWAY_SERVICE_ID`. The Cloudflare account ID is
+already in `wrangler.jsonc`.
+
+The seed is idempotent: it creates the eight core products and the five
+Psychedelic Minds products with their five colourways, then adds any missing
+variants. The psychedelic room sends its canonical slug (for example,
+`mind-02-psychedelic-hoodie`) as the product id; the cart and checkout endpoints
+accept either that slug or the UUID returned by the catalog API.
 
 ### Communication tests
 
 - `src/config/runtime.test.ts` verifies the frontend strips trailing slashes
   from the API URL and defaults to mock mode.
+- `src/services/apiClient.test.ts` verifies API error messages are surfaced,
+  including FastAPI validation details.
+- `src/data/psychedelicProducts.test.ts` verifies drop-page product ids are
+  canonical catalog slugs with the selected colour and size available.
 - `backend/tests/test_contract.py` verifies API payloads match the frontend
   types without needing hosted services.
+- `backend/tests/test_api.py` verifies cart lines accept both UUIDs and slugs.
 - `backend/tests/test_live_communication.py` verifies the deployed boundaries:
-  health, catalog, CORS, admin login (when secrets exist), and that the live
-  Cloudflare bundle points at the live Railway API.
+  health, catalog, the exact `mind-02` / Deep Red / M add-to-bag request, CORS,
+  admin login (when secrets exist), and that the live Cloudflare bundle points
+  at the live Railway API.
 
 Run the live tests locally with:
 
