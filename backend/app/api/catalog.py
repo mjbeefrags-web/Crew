@@ -336,13 +336,54 @@ async def update_product(
         raise HTTPException(
             status_code=404, detail={"code": "product_not_found", "message": "Product not found."}
         )
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    changes = payload.model_dump(exclude_unset=True)
+    collection_name = changes.pop("collection", None)
+    if collection_name:
+        collection = await session.scalar(
+            select(Collection).where(Collection.name == collection_name)
+        )
+        if collection is None:
+            collection = Collection(
+                name=collection_name,
+                slug=collection_name.lower().replace(" / ", "-").replace(" ", "-"),
+                description="",
+            )
+            session.add(collection)
+            await session.flush()
+        product.collection_id = collection.id
+    price_minor = changes.pop("price_minor", None)
+    stock_quantity = changes.pop("stock_quantity", None)
+    for field, value in changes.items():
         setattr(product, field, value)
+    if price_minor is not None:
+        for variant in product.variants:
+            variant.price_minor = price_minor
+    if stock_quantity is not None:
+        for variant in product.variants:
+            variant.stock_quantity = stock_quantity
     await session.commit()
     await invalidate_catalog(request)
     product = await session.scalar(product_statement().where(Product.id == product_id))
     assert product is not None
     return product_payload(product)
+
+
+@admin.delete("/products/{product_id}", status_code=204)
+async def archive_product(
+    request: Request,
+    product_id: UUID,
+    session: AsyncSession = Depends(get_session),
+    _: User = Depends(admin_user),
+) -> None:
+    """Remove a product from sale without destroying order history."""
+    product = await session.scalar(select(Product).where(Product.id == product_id))
+    if product is None:
+        raise HTTPException(
+            status_code=404, detail={"code": "product_not_found", "message": "Product not found."}
+        )
+    product.status = "archived"
+    await session.commit()
+    await invalidate_catalog(request)
 
 
 @admin.post("/categories", status_code=201)

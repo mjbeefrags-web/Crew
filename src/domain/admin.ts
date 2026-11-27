@@ -135,6 +135,23 @@ export type AdminInsight = {
   body: string;
 };
 
+export type ServerMetrics = {
+  days: number;
+  generatedAt: string;
+  source: "server";
+  assumptions: Record<string, string | number | boolean>;
+  formulas: Record<string, string>;
+  kpis: Record<string, number>;
+  trend: Array<TimePoint & { moving_average_7d: number }>;
+  breakdowns: {
+    products: BreakdownRow[];
+    sizes: BreakdownRow[];
+    colors: BreakdownRow[];
+  };
+  low_stock: Array<{ sku: string; size: string; color: string; stock: number }>;
+  orders: AdminOrder[];
+};
+
 export type AiRecommendation = {
   title: string;
   detail: string;

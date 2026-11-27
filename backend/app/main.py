@@ -1,13 +1,16 @@
 import logging
+import os
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from redis.asyncio import Redis
 
 from app.api import admin as admin_routes
@@ -115,6 +118,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             for error in exc.errors()
         ]
         return JSONResponse(status_code=422, content={"detail": errors})
+
+    upload_dir = Path(os.getenv("UPLOAD_DIR", "/app/uploads"))
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    app.mount("/api/uploads", StaticFiles(directory=upload_dir), name="uploads")
 
     app.include_router(system.router, prefix="/api")
     app.include_router(system.admin, dependencies=[])

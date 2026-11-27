@@ -90,6 +90,7 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       PAYMENT_MODE: ${PAYMENT_MODE:-mock}
       EMAIL_MODE: ${EMAIL_MODE:-console}
+      UPLOAD_DIR: /app/uploads
       AI_PROVIDER: ${AI_PROVIDER:-local}
       AI_API_URL: ${AI_API_URL:-}
       AI_API_KEY: ${AI_API_KEY:-}
@@ -119,6 +120,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     environment: *api_environment
+    volumes:
+      - uploads_data:/app/uploads
     depends_on:
       migrate: { condition: service_completed_successfully }
       db: { condition: service_healthy }
@@ -170,6 +173,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  uploads_data:
 
 networks:
   internal:

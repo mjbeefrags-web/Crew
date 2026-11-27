@@ -1,11 +1,15 @@
-from uuid import UUID
+import base64
+import os
+from pathlib import Path
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.ai.advisor import advise, tool_manifest
+from app.analytics.metrics import compute_metrics
 from app.api.catalog import product_payload
 from app.api.commerce import order_payload
 from app.api.deps import admin_user
@@ -24,6 +28,7 @@ from app.schemas import (
     AdminProductOut,
     AiAdviceOut,
     AiAdviseIn,
+    ImageUploadIn,
     OrderOut,
     UserOut,
 )
@@ -31,6 +36,49 @@ from app.schemas import (
 router = APIRouter(
     prefix="/api/v1/admin", tags=["administration"], dependencies=[Depends(admin_user)]
 )
+
+
+@router.get("/metrics")
+async def admin_metrics(
+    session: AsyncSession = Depends(get_session),
+    days: int = Query(default=30, ge=7, le=365),
+    cogs_ratio: float = Query(default=0.45, ge=0, le=1),
+) -> dict[str, object]:
+    """Server-computed commercial metrics with formulas and assumptions."""
+    return await compute_metrics(session, days=days, cogs_ratio=cogs_ratio)
+
+
+@router.post("/uploads")
+async def upload_image(payload: ImageUploadIn) -> dict[str, str]:
+    """Store an admin-supplied product image and return its public URL."""
+    allowed = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".webp": "image/webp",
+    }
+    suffix = Path(payload.filename).suffix.lower()
+    if suffix not in allowed:
+        raise HTTPException(
+            status_code=415,
+            detail={"code": "unsupported_image", "message": "Use JPG, PNG or WebP images."},
+        )
+    try:
+        content = base64.b64decode(payload.data, validate=True)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=422, detail={"code": "invalid_image", "message": "Invalid base64 image."}
+        ) from exc
+    if not content or len(content) > 5_000_000:
+        raise HTTPException(
+            status_code=413,
+            detail={"code": "image_too_large", "message": "Images must be under 5 MB."},
+        )
+    directory = Path(os.getenv("UPLOAD_DIR", "/app/uploads"))
+    directory.mkdir(parents=True, exist_ok=True)
+    name = f"{uuid4().hex}{suffix}"
+    (directory / name).write_bytes(content)
+    return {"url": f"/api/uploads/{name}", "filename": name}
 
 
 @router.get("/ai/tools")

@@ -5,13 +5,15 @@ import type {
   AdminProduct,
   AdminVariant,
   AiAdvice,
+  ServerMetrics,
 } from "../domain/admin";
-import type { AdminService } from "./adminService";
+import type { AdminService, NewProduct } from "./adminService";
 import { featuredProducts } from "../data/mock/catalog";
 import { previewProducts } from "../data/mock/previewProducts";
 import { drops } from "../data/drops";
 import { mockCommerceService } from "./mockCommerceService";
 import { readInsightEvents } from "../lib/insights";
+import { computeAdminMetrics } from "../services/adminAnalytics";
 
 const DAY_MS = 86_400_000;
 const EMAILS = [
@@ -237,6 +239,55 @@ function sampleCarts(now: Date, products: AdminProduct[]) {
 }
 
 export const mockAdminService: AdminService = {
+  async metrics(days): Promise<ServerMetrics> {
+    const data = await this.load();
+    const computed = computeAdminMetrics(
+      data,
+      days === 7 ? 7 : days === 90 ? 90 : 30,
+    );
+    return {
+      days: computed.rangeDays,
+      generatedAt: computed.generatedAt,
+      source: "server",
+      assumptions: { cogs_ratio: 0.45, cogs_is_proxy: true },
+      formulas: { net_revenue_minor: "Sum of paid order totals" },
+      kpis: {
+        netRevenueMinor: computed.kpis.revenueMinor,
+        paidOrders: computed.kpis.paidOrders,
+        unitsSold: computed.kpis.units,
+        aovMinor: computed.kpis.aovMinor,
+        conversionProxy: computed.kpis.conversionProxy,
+        repeatCustomers: computed.kpis.repeatCustomers,
+        uniqueCustomers: computed.kpis.customers,
+        inventoryValueMinor: computed.kpis.inventoryValueMinor,
+      },
+      trend: computed.trend.map((point) => ({
+        ...point,
+        moving_average_7d: 0,
+      })),
+      breakdowns: {
+        products: computed.products,
+        sizes: computed.sizes,
+        colors: computed.colors,
+      },
+      low_stock: computed.lowStock.map((item) => ({
+        sku: item.sku,
+        size: item.size,
+        color: item.color,
+        stock: item.stockQuantity,
+      })),
+      orders: computed.recentOrders,
+    };
+  },
+  async createProduct(_input: NewProduct): Promise<void> {
+    // Demo mode keeps the catalogue deterministic; no persistent write.
+  },
+  async archiveProduct(_id: string): Promise<void> {
+    // Demo mode keeps the catalogue deterministic; no persistent write.
+  },
+  async uploadImage(_filename: string, dataUrl: string): Promise<string> {
+    return dataUrl;
+  },
   async advise(signals, question = ""): Promise<AiAdvice> {
     const kpis =
       signals.kpis && typeof signals.kpis === "object"

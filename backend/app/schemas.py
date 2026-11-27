@@ -128,6 +128,10 @@ class ProductCreateIn(BaseModel):
 class ProductUpdateIn(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=200)
     description: str | None = Field(default=None, max_length=4000)
+    collection: str | None = Field(default=None, min_length=2, max_length=160)
+    image_url: str | None = Field(default=None, max_length=500)
+    price_minor: int | None = Field(default=None, ge=0)
+    stock_quantity: int | None = Field(default=None, ge=0)
     status: Literal["draft", "active", "sample", "archived"] | None = None
     featured: bool | None = None
     is_new: bool | None = None
@@ -268,6 +272,11 @@ class ContactIn(BaseModel):
     email: EmailStr
     topic: str = Field(min_length=2, max_length=80)
     message: str = Field(min_length=10, max_length=4000)
+
+
+class ImageUploadIn(BaseModel):
+    filename: str = Field(min_length=3, max_length=180)
+    data: str = Field(min_length=32, max_length=8_000_000)
 
 
 class AiAdviseIn(BaseModel):

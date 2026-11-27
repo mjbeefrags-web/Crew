@@ -4,8 +4,9 @@ import type {
   AdminOrder,
   AdminProduct,
   AiAdvice,
+  ServerMetrics,
 } from "../domain/admin";
-import type { AdminService } from "./adminService";
+import type { AdminService, NewProduct } from "./adminService";
 import { apiRequest } from "./apiClient";
 
 type RawOrderItem = {
@@ -134,7 +135,87 @@ function normalizeCustomer(raw: RawCustomer): AdminCustomer {
   };
 }
 
+function normalizeMetrics(raw: Record<string, any>): ServerMetrics {
+  const kpis: Record<string, number> = {};
+  for (const [key, value] of Object.entries(raw.kpis ?? {})) {
+    kpis[
+      key.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase())
+    ] = Number(value) || 0;
+  }
+  return {
+    days: number(raw.days, 30),
+    generatedAt: text(raw.generated_at),
+    source: "server",
+    assumptions: raw.assumptions ?? {},
+    formulas: raw.formulas ?? {},
+    kpis,
+    trend: (raw.trend ?? []).map((point: Record<string, any>) => ({
+      date: text(point.date),
+      label: text(point.date).slice(5),
+      revenueMinor: number(point.revenue_minor),
+      orders: number(point.orders),
+      units: number(point.units),
+      moving_average_7d: number(point.moving_average_7d),
+    })),
+    breakdowns: {
+      products: (raw.breakdowns?.products ?? []).map(normalizeBreakdown),
+      sizes: (raw.breakdowns?.sizes ?? []).map(normalizeBreakdown),
+      colors: (raw.breakdowns?.colors ?? []).map(normalizeBreakdown),
+    },
+    low_stock: raw.low_stock ?? [],
+    orders: (raw.orders ?? []).map(normalizeOrder),
+  };
+}
+
+function normalizeBreakdown(row: Record<string, any>) {
+  return {
+    key: text(row.key),
+    label: text(row.label),
+    revenueMinor: number(row.revenue_minor),
+    units: number(row.units),
+    count: number(row.count),
+  };
+}
+
 export const apiAdminService: AdminService = {
+  async metrics(days): Promise<ServerMetrics> {
+    const raw = await apiRequest<Record<string, any>>(
+      `/api/v1/admin/metrics?days=${days}`,
+    );
+    return normalizeMetrics(raw);
+  },
+  async createProduct(input: NewProduct): Promise<void> {
+    await apiRequest("/api/v1/admin/products", {
+      method: "POST",
+      body: JSON.stringify({
+        slug: input.slug,
+        name: input.name,
+        category: input.category,
+        collection: input.collection,
+        description: input.description ?? "",
+        image_url: input.imageUrl ?? "",
+        sizes: input.sizes,
+        colors: input.colors,
+        price_minor: input.priceMinor,
+        stock_quantity: input.stockQuantity,
+        status: "active",
+        is_new: true,
+      }),
+    });
+  },
+  async archiveProduct(id): Promise<void> {
+    await apiRequest(`/api/v1/admin/products/${id}`, { method: "DELETE" });
+  },
+  async uploadImage(filename, dataUrl): Promise<string> {
+    const body = await apiRequest<{ url: string }>("/api/v1/admin/uploads", {
+      method: "POST",
+      body: JSON.stringify({
+        filename,
+        data: dataUrl.split(",")[1] ?? dataUrl,
+      }),
+    });
+    return body.url;
+  },
   async advise(signals, question = ""): Promise<AiAdvice> {
     return apiRequest<AiAdvice>("/api/v1/admin/ai/advise", {
       method: "POST",

@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import type { AdminData, AdminMetrics, MetricRange } from "../domain/admin";
 import { computeAdminMetrics } from "../services/adminAnalytics";
@@ -6,6 +7,9 @@ import { useAdminData } from "../features/admin/useAdminData";
 import { TimeSeriesChart } from "../features/admin/TimeSeriesChart";
 import { BarChart } from "../features/admin/BarChart";
 import { AiAdvisor } from "../features/admin/AiAdvisor";
+import { BusinessMetrics } from "../features/admin/BusinessMetrics";
+import { ProductManager } from "../features/admin/ProductManager";
+import { useAdminMetrics } from "../features/admin/useAdminMetrics";
 import { API_MODE } from "../config/runtime";
 import { formatMoneyMinor, formatPercent } from "../utils/formatMoneyMinor";
 
@@ -463,7 +467,9 @@ function Dashboard({
 
 export function AdminDashboardPage() {
   const [rangeDays, setRangeDays] = useState<MetricRange>(30);
+  const queryClient = useQueryClient();
   const query = useAdminData(rangeDays);
+  const model = useAdminMetrics(rangeDays);
   const metrics = useMemo(
     () => (query.data ? computeAdminMetrics(query.data, rangeDays) : null),
     [query.data, rangeDays],
@@ -531,6 +537,10 @@ export function AdminDashboardPage() {
         </figcaption>
       </figure>
 
+      {model.data && (
+        <BusinessMetrics metrics={model.data} currency={currency} />
+      )}
+
       {query.data?.limitations.length ? (
         <aside className="admin-data-note" aria-label="Data limitations">
           <strong>READ THIS FIRST</strong>
@@ -566,6 +576,18 @@ export function AdminDashboardPage() {
           currency={currency}
         />
       ) : null}
+
+      {query.data && (
+        <ProductManager
+          products={query.data.products}
+          currency={currency}
+          onChanged={() => {
+            void query.refetch();
+            void model.refetch();
+            void queryClient.invalidateQueries({ queryKey: ["admin", "data"] });
+          }}
+        />
+      )}
     </div>
   );
 }
