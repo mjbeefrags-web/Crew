@@ -118,48 +118,55 @@ Staging and production reject a non-empty bootstrap password. See
 | Admin login fails after pulling | `docker compose run --rm migrate` to create the bootstrap admin in the existing volume |
 | `psql` is not recognized | Use `docker compose exec db psql -U crewww -d crewww`, or add `C:\Program Files\PostgreSQL\<version>\bin` to `PATH` |
 
-## Deploy to Vercel + Railway + Neon + Upstash
+## Deploy to Cloudflare + Railway + Neon + Upstash
 
 This project uses a hybrid deployment model:
 
-- **Frontend:** Vercel (React 19 + Vite, free Hobby tier)
+- **Frontend:** Cloudflare Workers/Pages (static Vite assets, free tier)
 - **Backend:** Railway (FastAPI in Docker, no card required for the trial)
 - **Database:** Neon (hosted PostgreSQL, free tier)
 - **Cache:** Upstash (hosted Redis, free tier)
 
-The repo includes `vercel.json` for the frontend. `render.yaml` is kept as an
-alternative blueprint, but Railway is the documented path because it does not
-require payment information.
+The repo includes `wrangler.jsonc` for the Cloudflare frontend and
+`vercel.json` / `render.yaml` as alternative deployment configs. Railway is the
+documented backend path because Render requires payment information.
 
-### Frontend: Vercel
+### Frontend: Cloudflare
 
-Import the GitHub repo in Vercel as a **Vite** project. `vercel.json` already
-sets the build command (`npm run build`), output directory (`dist`), and SPA
-rewrite. Set these environment variables in the Vercel dashboard
-(Project → Settings → Environment Variables):
+Install Wrangler and sign in. It opens your browser for Cloudflare OAuth.
 
-| Variable | Value |
-|---|---|
-| `VITE_DATA_MODE` | `api` |
-| `VITE_API_BASE_URL` | `https://crewww-api-production.up.railway.app` |
-| `VITE_INITIAL_ROUTE` | `/` |
-| `VITE_FEATURE_RECENTLY_VIEWED` | `true` |
-| `VITE_FEATURE_COMMAND_PALETTE` | `true` |
-| `VITE_FEATURE_AMBIENT_SOUND` | `true` |
-| `VITE_FEATURE_WORLD_WALK` | `true` |
+```powershell
+npm i -g wrangler
+wrangler login
+```
+
+`VITE_*` values are inlined at build time. Set them before building:
+
+```powershell
+$env:VITE_DATA_MODE = 'api'
+$env:VITE_API_BASE_URL = 'https://crewww-api-production.up.railway.app'
+$env:VITE_INITIAL_ROUTE = '/'
+$env:VITE_FEATURE_RECENTLY_VIEWED = 'true'
+$env:VITE_FEATURE_COMMAND_PALETTE = 'true'
+$env:VITE_FEATURE_AMBIENT_SOUND = 'true'
+$env:VITE_FEATURE_WORLD_WALK = 'true'
+```
 
 Then deploy:
 
 ```powershell
-vercel --prod --confirm
+npm run deploy
 ```
 
-Alternatively, deploy the prebuilt `dist/` folder directly:
+`npm run deploy` runs `npm run build` followed by `wrangler deploy`.
+`wrangler.jsonc` configures the Worker's static assets and SPA fallback. The
+current production URL is:
 
-```powershell
-npm run build
-vercel --prod --confirm dist/
+```text
+https://crewww-storefront.crewww-storefront.workers.dev
 ```
+
+Rebuild and redeploy whenever `VITE_API_BASE_URL` changes.
 
 ### Backend: Railway
 
@@ -188,7 +195,7 @@ binds Uvicorn to port 8000. Then set the service variables:
 | `REDIS_URL` | `rediss://default:<token>@<host>.upstash.io:6379` | Upstash (see below) |
 | `REDIS_REQUIRED` | `true` | — |
 | `JWT_SECRET` | 40+ random characters | Generate with `openssl rand -hex 32` |
-| `FRONTEND_ORIGINS` | `https://your-vercel-url.vercel.app` | Your Vercel URL |
+| `FRONTEND_ORIGINS` | `https://crewww-storefront.crewww-storefront.workers.dev` | Your Cloudflare URL |
 | `PAYMENT_MODE` | `mock` | — |
 | `EMAIL_MODE` | `console` | — |
 | `AI_PROVIDER` | `local` | — |
@@ -260,13 +267,13 @@ connection strings from **Connection Details**.
 
 | Service | URL | Where to configure |
 |---|---|---|
-| Vercel frontend | `https://crewww-xyz.vercel.app` | `VITE_API_BASE_URL` in Vercel = Railway URL |
-| Railway backend | `https://crewww-api-production.up.railway.app` | `FRONTEND_ORIGINS` in Railway = Vercel URL |
+| Cloudflare frontend | `https://crewww-storefront.crewww-storefront.workers.dev` | `VITE_API_BASE_URL` at build time = Railway URL |
+| Railway backend | `https://crewww-api-production.up.railway.app` | `FRONTEND_ORIGINS` in Railway = Cloudflare URL |
 | Neon PostgreSQL | pooled + direct URLs | `DATABASE_URL` and `DATABASE_URL_UNPOOLED` in Railway |
 | Upstash Redis | `rediss://...` | `REDIS_URL` in Railway |
 
-After both deploys, open the Vercel URL. The frontend calls the Railway API,
-which reads Neon PostgreSQL and caches through Upstash Redis.
+After both deploys, open the Cloudflare URL. The frontend calls the Railway
+API, which reads Neon PostgreSQL and caches through Upstash Redis.
 
 ## Show it to clients on your Wi-Fi
 

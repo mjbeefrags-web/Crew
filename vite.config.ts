@@ -1,9 +1,10 @@
+import { cloudflare } from '@cloudflare/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), cloudflare()],
   build: {
     // Isolate the heavy Three.js runtime so the storefront entry only loads
     // it when a 3D route needs it (and the base bundle drops sharply).
